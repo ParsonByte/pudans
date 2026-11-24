@@ -27,7 +27,7 @@ export function RoleAccessPermissions({ onConfigureMenus, workspaces }: RoleAcce
             cell: ({ row }) => <WorkspaceCell workspace={row} />,
             colKey: "workspace",
             title: "工作区",
-            width: 170,
+            width: 200,
         },
         {
             cell: ({ row }) => (
@@ -42,14 +42,14 @@ export function RoleAccessPermissions({ onConfigureMenus, workspaces }: RoleAcce
         {
             cell: ({ row }) => <WorkspaceMenuCount workspace={row} />,
             colKey: "menus",
-            title: "可见菜单",
-            width: 80,
+            title: <span className="whitespace-nowrap">可见菜单</span>,
+            width: 112,
         },
         {
             cell: ({ row }) => <AccessCount total={row.operationCount} value={row.grantedOperationCount} />,
             colKey: "operations",
-            title: "可执行操作",
-            width: 90,
+            title: <span className="whitespace-nowrap">可执行操作</span>,
+            width: 128,
         },
         {
             cell: ({ row }) => <VisibleMenus entries={row.visibleEntries} />,
@@ -73,7 +73,7 @@ export function RoleAccessPermissions({ onConfigureMenus, workspaces }: RoleAcce
             {rows.length === 0 ? (
                 <Empty description="权限目录中还没有可访问的工作区" />
             ) : (
-                <Table<WorkspaceRow> columns={columns} data={rows} rowKey="__rowKey" />
+                <Table<WorkspaceRow> columns={columns} data={rows} rowKey="__rowKey" tableLayout="fixed" />
             )}
         </Card>
     );
@@ -81,13 +81,9 @@ export function RoleAccessPermissions({ onConfigureMenus, workspaces }: RoleAcce
 
 function WorkspaceCell({ workspace }: { workspace: RoleWorkspaceAccess }) {
     const name = workspace.workspace.name ?? workspace.workspace.id ?? "未命名工作区";
-    const slug = workspace.workspace.slug ?? workspace.workspace.id;
     const content = (
         <div className="min-w-0">
             <div className="truncate text-sm font-medium">{name}</div>
-            {slug ? (
-                <div className="truncate font-mono text-[10px] text-[var(--td-text-color-placeholder)]">{slug}</div>
-            ) : null}
         </div>
     );
 
@@ -131,16 +127,24 @@ function VisibleMenus({ entries }: { entries: RoleMenuEntry[] }) {
     const shownEntries = visibleEntries.slice(0, 3);
     const hiddenCount = visibleEntries.length - shownEntries.length;
 
+    const tooltip = labels.join("、");
+
     return (
-        <Tooltip content={labels.join("、")}>
-            <div className="flex flex-wrap items-center gap-1">
-                {shownEntries.map((entry) => (
-                    <Tag key={entry.menu.key ?? entry.menu.label} variant="light">
+        <div className="flex flex-wrap items-center gap-1">
+            {shownEntries.map((entry) => (
+                <Tooltip content={tooltip} key={entry.menu.key ?? entry.menu.label}>
+                    <Tag title={false} variant="light">
                         {entry.menu.label ?? entry.menu.key}
                     </Tag>
-                ))}
-                {hiddenCount > 0 ? <Tag variant="light">+{hiddenCount}</Tag> : null}
-            </div>
-        </Tooltip>
+                </Tooltip>
+            ))}
+            {hiddenCount > 0 ? (
+                <Tooltip content={tooltip}>
+                    <Tag title={false} variant="light">
+                        +{hiddenCount}
+                    </Tag>
+                </Tooltip>
+            ) : null}
+        </div>
     );
 }

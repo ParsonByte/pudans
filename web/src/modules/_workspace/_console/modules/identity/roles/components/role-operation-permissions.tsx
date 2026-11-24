@@ -104,12 +104,6 @@ function OperationPermissionTable({
             title: "操作",
         },
         {
-            cell: ({ row }) => <PermissionCode value={row.operation.permission ?? row.operation.key ?? "未配置"} />,
-            colKey: "permission",
-            title: "权限标识",
-            width: 170,
-        },
-        {
             cell: ({ row }) => (
                 <OperationCheckbox
                     allowedPermissions={allowedPermissions}
@@ -155,14 +149,6 @@ function OperationCell({ operation }: { operation: WorkspaceMenuOperation }) {
                 </Tooltip>
             ) : null}
         </div>
-    );
-}
-
-function PermissionCode({ value }: { value: string }) {
-    return (
-        <Tooltip content={value}>
-            <div className="truncate font-mono text-[10px] text-[var(--td-text-color-placeholder)]">{value}</div>
-        </Tooltip>
     );
 }
 

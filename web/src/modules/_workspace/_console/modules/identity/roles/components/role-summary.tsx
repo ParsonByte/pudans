@@ -21,8 +21,8 @@ import type { DropdownOption } from "tdesign-react";
 
 import { useDesignTokens } from "@/components/ui";
 
-import { CopyableIdentifier } from "../../../../components/copyable-identifier";
 import { isBuiltinRole, roleDisplayName } from "../../composables/_role";
+import { RoleIcon } from "./role-icon";
 
 type RoleSummaryProps = {
     canDelete: boolean;
@@ -93,7 +93,7 @@ export function RoleSummary({
                             color: builtin ? tokens.colorWarning : tokens.colorPrimary,
                         }}
                     >
-                        <SecuredIcon size={19} />
+                        <RoleIcon role={role} size={19} />
                     </span>
                     <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
@@ -113,11 +113,6 @@ export function RoleSummary({
                                     未保存
                                 </Tag>
                             ) : null}
-                        </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <div className="max-w-[280px] min-w-0">
-                                <CopyableIdentifier value={role.metadata.name} />
-                            </div>
                         </div>
                     </div>
                 </div>

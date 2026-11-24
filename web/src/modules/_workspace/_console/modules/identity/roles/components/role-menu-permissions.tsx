@@ -76,12 +76,6 @@ function MenuPermissionTable({ allowedPermissions, draft, editable, entries, onC
             title: "菜单",
         },
         {
-            cell: ({ row }) => <MenuPermissionIdentifiers entry={row} />,
-            colKey: "permission",
-            title: "权限标识",
-            width: 190,
-        },
-        {
             cell: ({ row }) => (
                 <MenuViewSwitch
                     allowedPermissions={allowedPermissions}
@@ -139,30 +133,6 @@ function MenuIdentity({ entry }: { entry: RoleMenuEntry }) {
                     </Tooltip>
                 ) : null}
             </div>
-        </div>
-    );
-}
-
-function MenuPermissionIdentifiers({ entry }: { entry: RoleMenuEntry }) {
-    const permissions = [
-        entry.view?.permission ? { label: "访问", value: entry.view.permission } : undefined,
-        entry.manage?.permission ? { label: "管理", value: entry.manage.permission } : undefined,
-    ].filter((item): item is { label: string; value: string } => Boolean(item));
-
-    if (permissions.length === 0) {
-        return <span className="font-mono text-[10px] text-[var(--td-text-color-placeholder)]">未配置</span>;
-    }
-
-    return (
-        <div className="flex min-w-0 flex-col gap-0.5">
-            {permissions.map((permission) => (
-                <Tooltip content={permission.value} key={permission.value}>
-                    <div className="flex min-w-0 gap-1.5 font-mono text-[10px]">
-                        <span className="shrink-0 text-[var(--td-text-color-placeholder)]">{permission.label}</span>
-                        <span className="truncate text-[var(--td-text-color-secondary)]">{permission.value}</span>
-                    </div>
-                </Tooltip>
-            ))}
         </div>
     );
 }

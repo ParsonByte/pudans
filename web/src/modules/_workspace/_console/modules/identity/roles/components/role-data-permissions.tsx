@@ -6,12 +6,15 @@ import { SearchIcon, SettingIcon } from "tdesign-icons-react";
 import { Button, Card, Empty, Input, Table, Tag, Tooltip } from "tdesign-react";
 import type { TableProps } from "tdesign-react";
 
+import { useMobile } from "@/hooks/ui/use-mobile";
+
 import {
     DIRECT_ROLE_RULE_SOURCE,
     type RoleCatalogIndex,
     type RoleRuleCollection,
     type RoleRuleRow,
     resourceLabel,
+    scopeLabel,
     verbLabel,
     verbTheme,
 } from "../composables/_role-permissions";
@@ -23,6 +26,7 @@ type RoleDataPermissionsProps = {
 };
 
 export function RoleDataPermissions({ collection, index, onConfigureOperations }: RoleDataPermissionsProps) {
+    const isMobile = useMobile();
     const [keyword, setKeyword] = useState("");
     const filteredRows = useMemo(() => {
         const query = keyword.trim().toLocaleLowerCase();
@@ -37,24 +41,25 @@ export function RoleDataPermissions({ collection, index, onConfigureOperations }
             cell: ({ row }) => <RuleResourceCell index={index} row={row} />,
             colKey: "resource",
             title: "资源",
-            width: 170,
+            width: isMobile ? 180 : "26%",
         },
         {
             cell: ({ row }) => <RuleVerbCell row={row} />,
             colKey: "verbs",
             title: "允许动作",
-            width: 130,
+            width: isMobile ? 240 : "28%",
         },
         {
-            cell: ({ row }) => <RuleScopeCell row={row} />,
+            cell: ({ row }) => <RuleScopeCell index={index} row={row} />,
             colKey: "scope",
             title: "范围",
-            width: 120,
+            width: isMobile ? 160 : "18%",
         },
         {
             cell: ({ row }) => <RuleSourceCell row={row} />,
             colKey: "sources",
             title: "来源",
+            width: isMobile ? 220 : "28%",
         },
     ];
 
@@ -97,9 +102,8 @@ function RuleResourceCell({ index, row }: { index: RoleCatalogIndex; row: RoleRu
         resources.length > 0
             ? resources.map((resource) => resourceLabel(index, resource))
             : urls.length > 0
-              ? ["非资源 URL"]
+              ? ["非资源接口"]
               : ["未指定资源"];
-    const raw = [...resources, ...urls].join(", ");
 
     return (
         <div className="min-w-0">
@@ -115,11 +119,6 @@ function RuleResourceCell({ index, row }: { index: RoleCatalogIndex; row: RoleRu
                     </Tag>
                 ) : null}
             </div>
-            <Tooltip content={raw}>
-                <div className="mt-1 truncate font-mono text-[10px] text-[var(--td-text-color-placeholder)]">
-                    {raw || "未填写"}
-                </div>
-            </Tooltip>
         </div>
     );
 }
@@ -142,7 +141,7 @@ function RuleVerbCell({ row }: { row: RoleRuleRow }) {
     );
 }
 
-function RuleScopeCell({ row }: { row: RoleRuleRow }) {
+function RuleScopeCell({ index, row }: { index: RoleCatalogIndex; row: RoleRuleRow }) {
     const resourceNames = row.rule.resourceNames ?? [];
     const urls = row.rule.nonResourceURLs ?? [];
     const values = [...resourceNames, ...urls];
@@ -153,9 +152,9 @@ function RuleScopeCell({ row }: { row: RoleRuleRow }) {
 
     return (
         <div className="flex flex-wrap items-center gap-1">
-            {values.map((value, index) => (
-                <Tag className="font-mono" key={`${value}:${index}`} variant="light">
-                    {value}
+            {values.map((value, valueIndex) => (
+                <Tag key={`${value}:${valueIndex}`} variant="light">
+                    {scopeLabel(index, value)}
                 </Tag>
             ))}
         </div>
@@ -165,23 +164,18 @@ function RuleScopeCell({ row }: { row: RoleRuleRow }) {
 function RuleSourceCell({ row }: { row: RoleRuleRow }) {
     const visibleSources = row.sources.slice(0, 2);
     const hiddenCount = Math.max(0, row.sources.length - visibleSources.length);
-
-    return (
-        <Tooltip content={row.sources.join("、")}>
-            <div className="flex flex-wrap items-center gap-1">
-                {visibleSources.map((source) => (
-                    <Tag
-                        key={source}
-                        theme={source === DIRECT_ROLE_RULE_SOURCE ? "primary" : "default"}
-                        variant="light"
-                    >
-                        {source}
-                    </Tag>
-                ))}
-                {hiddenCount > 0 ? <Tag variant="light">+{hiddenCount}</Tag> : null}
-            </div>
-        </Tooltip>
+    const content = (
+        <div className="flex flex-wrap items-center gap-1">
+            {visibleSources.map((source) => (
+                <Tag key={source} theme={source === DIRECT_ROLE_RULE_SOURCE ? "primary" : "default"} variant="light">
+                    {source}
+                </Tag>
+            ))}
+            {hiddenCount > 0 ? <Tag variant="light">+{hiddenCount}</Tag> : null}
+        </div>
     );
+
+    return hiddenCount > 0 ? <Tooltip content={row.sources.join("、")}>{content}</Tooltip> : content;
 }
 
 function matchesRule(row: RoleRuleRow, index: RoleCatalogIndex, query: string): boolean {
