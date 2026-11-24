@@ -1,0 +1,256 @@
+.card {
+    --cover-accent: var(--td-brand-color-5);
+    --cover-base: var(--td-bg-color-secondarycontainer);
+    --cover-ink: var(--td-text-color-primary);
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 12px;
+    flex-direction: column;
+    color: inherit;
+    background: var(--td-bg-color-container);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
+.card:hover {
+    border-color: var(--td-text-color-placeholder);
+    box-shadow: var(--td-shadow-1);
+    transform: translateY(-2px);
+}
+
+.card:focus-visible {
+    outline: 2px solid var(--td-brand-color);
+    outline-offset: 2px;
+}
+
+.cover {
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    aspect-ratio: 3 / 2;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--td-component-stroke);
+    color: var(--cover-ink);
+    background: var(--cover-base);
+    isolation: isolate;
+}
+
+.cover::before {
+    position: absolute;
+    width: 68%;
+    aspect-ratio: 1;
+    border: 1px solid color-mix(in srgb, var(--cover-ink) 14%, transparent);
+    border-radius: 50%;
+    background: color-mix(in srgb, white 22%, transparent);
+    content: "";
+}
+
+.cover::after {
+    position: absolute;
+    right: -12%;
+    bottom: -42%;
+    width: 66%;
+    aspect-ratio: 1.15;
+    border-radius: 48% 52% 38% 62%;
+    background: color-mix(in srgb, var(--cover-accent) 58%, transparent);
+    content: "";
+    transform: rotate(-18deg);
+}
+
+.coverShape {
+    position: absolute;
+    top: -42%;
+    left: -12%;
+    width: 70%;
+    aspect-ratio: 1.2;
+    border-radius: 38% 62% 55% 45%;
+    background: color-mix(in srgb, white 28%, transparent);
+    transform: rotate(24deg);
+}
+
+.coverFrame {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    width: clamp(68px, 29%, 92px);
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--cover-ink) 14%, transparent);
+    border-radius: 22px;
+    background: color-mix(in srgb, white 54%, transparent);
+    box-shadow: 0 16px 34px color-mix(in srgb, var(--cover-ink) 14%, transparent);
+    backdrop-filter: blur(12px);
+    transition: transform 180ms ease;
+}
+
+.card:hover .coverFrame {
+    transform: scale(1.04);
+}
+
+.coverIcon {
+    display: grid;
+    width: 58%;
+    aspect-ratio: 1;
+    place-items: center;
+    border-radius: 16px;
+    color: color-mix(in srgb, white 92%, var(--cover-base));
+    background: color-mix(in srgb, var(--cover-ink) 82%, transparent);
+}
+
+.coverStatus {
+    position: absolute;
+    z-index: 1;
+    right: 10px;
+    bottom: 10px;
+    padding: 3px 8px;
+    border: 1px solid color-mix(in srgb, var(--cover-ink) 12%, transparent);
+    border-radius: 999px;
+    color: color-mix(in srgb, var(--cover-ink) 78%, transparent);
+    background: color-mix(in srgb, white 58%, transparent);
+    font-size: 11px;
+    line-height: 16px;
+    backdrop-filter: blur(12px);
+}
+
+.body {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px 14px 14px;
+}
+
+.title {
+    overflow: hidden;
+    color: var(--td-text-color-primary);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.description {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--td-text-color-secondary);
+    font-size: 12px;
+    line-height: 19px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.coverClay {
+    --cover-accent: #d78f78;
+    --cover-base: #f0d9cf;
+    --cover-ink: #4d3028;
+}
+
+.coverSteel {
+    --cover-accent: #7190a2;
+    --cover-base: #dbe5e9;
+    --cover-ink: #263f4c;
+}
+
+.coverSky {
+    --cover-accent: #78a9d4;
+    --cover-base: #dcebf8;
+    --cover-ink: #23445c;
+}
+
+.coverSand {
+    --cover-accent: #c49a62;
+    --cover-base: #eee1ca;
+    --cover-ink: #4d3c25;
+}
+
+.coverAzure {
+    --cover-accent: #67a9dc;
+    --cover-base: #d7e9f7;
+    --cover-ink: #203f58;
+}
+
+.coverOcean {
+    --cover-accent: #5c9fd1;
+    --cover-base: #d4e9f8;
+    --cover-ink: #1d4663;
+}
+
+.coverSlate {
+    --cover-accent: #7488b0;
+    --cover-base: #dfe4ef;
+    --cover-ink: #29344d;
+}
+
+.coverMint {
+    --cover-accent: #6fa89d;
+    --cover-base: #d9ebe6;
+    --cover-ink: #23443d;
+}
+
+.coverPeach {
+    --cover-accent: #d6947b;
+    --cover-base: #f1dfd8;
+    --cover-ink: #503128;
+}
+
+.coverForest {
+    --cover-accent: #6e9b77;
+    --cover-base: #dce9da;
+    --cover-ink: #28432d;
+}
+
+.coverRose {
+    --cover-accent: #c98281;
+    --cover-base: #eedcdd;
+    --cover-ink: #4d292d;
+}
+
+@media (max-width: 767px) {
+    .card {
+        border-radius: 10px;
+    }
+
+    .card:hover {
+        transform: none;
+    }
+
+    .coverFrame {
+        width: 64px;
+        border-radius: 16px;
+    }
+
+    .coverIcon {
+        border-radius: 12px;
+    }
+
+    .coverStatus {
+        right: 8px;
+        bottom: 8px;
+        font-size: 10px;
+    }
+
+    .body {
+        gap: 3px;
+        padding: 10px;
+    }
+
+    .title {
+        font-size: 13px;
+        line-height: 20px;
+    }
+
+    .description {
+        font-size: 11px;
+        line-height: 17px;
+    }
+}
