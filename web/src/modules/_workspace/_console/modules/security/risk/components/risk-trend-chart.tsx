@@ -11,7 +11,7 @@ type RiskTrendChartProps = {
 };
 
 export function RiskTrendChart({ points }: RiskTrendChartProps) {
-    const { token, tone } = useDashboardTheme();
+    const { tone } = useDashboardTheme();
     const data = (points ?? []).map((point) => ({
         alerts: point.alerts ?? 0,
         blocked: point.blocked ?? 0,
@@ -25,7 +25,7 @@ export function RiskTrendChart({ points }: RiskTrendChartProps) {
             data={data}
             emptyText="暂无风险趋势数据"
             series={[
-                { color: token.colorPrimary, key: "events", label: "事件总量", type: "area" },
+                { color: tone("blue").base, key: "events", label: "事件总量", type: "area" },
                 { color: tone("red").base, key: "blocked", label: "阻断", type: "line" },
                 { color: tone("warning").base, key: "alerts", label: "告警", type: "line" },
             ]}

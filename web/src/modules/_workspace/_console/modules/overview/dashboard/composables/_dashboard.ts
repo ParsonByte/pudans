@@ -1,8 +1,10 @@
 import type { ComponentType } from "react";
 
 import type {
-    DashboardOverview as GeneratedDashboardOverview,
+    ActiveUser,
+    GlobalInfoSummary,
     LoginTrendPoint,
+    RecentOperation,
     RoleUserCount,
 } from "@pudans-dev/api-client";
 import {
@@ -17,21 +19,13 @@ import {
 } from "tdesign-icons-react";
 import type { IconProps } from "tdesign-icons-react";
 
-import { formatCount, operationLabel } from "../../../../composables/_format";
+import { formatCount } from "../../../../composables/_format";
 import type { DashboardTone } from "./_theme";
 
-export { formatCount, operationLabel };
-
-export type DashboardRange = 7 | 30 | 90;
-
-type ResultCount = {
-    count: number;
-    result: string;
-};
-
-type OperationCount = {
-    count: number;
-    operation: string;
+export type DashboardDateRange = {
+    days: number;
+    end: string;
+    start: string;
 };
 
 export type DashboardMetric = {
@@ -40,109 +34,140 @@ export type DashboardMetric = {
     value: number;
 };
 
+type OperationCount = {
+    count: number;
+    operation: string;
+};
+
 export type DashboardInsight = {
-    description: string;
-    severity: string;
-    title: string;
+    description?: string;
+    severity?: string;
+    title?: string;
 };
 
-export type DashboardData = GeneratedDashboardOverview & {
-    failureTrend: LoginTrendPoint[];
-    generatedAt: string;
-    insights: DashboardInsight[];
-    metrics: DashboardMetric[];
-    rangeDays: number;
-    resultDistribution: ResultCount[];
-    topOperations: OperationCount[];
+export type DashboardResultCount = {
+    count?: number;
+    result?: string;
 };
 
-export type MetricFormat = "number" | "percent";
+export type DashboardData = {
+    activeUsers?: ActiveUser[];
+    failureTrend?: LoginTrendPoint[];
+    generatedAt?: string;
+    globalInfo?: GlobalInfoSummary;
+    insights?: DashboardInsight[];
+    loginTrend?: LoginTrendPoint[];
+    metrics?: DashboardMetric[];
+    operationTrend?: LoginTrendPoint[];
+    rangeDays?: number;
+    recentAuditLogs?: RecentOperation[];
+    resultDistribution?: DashboardResultCount[];
+    roleDistribution?: RoleUserCount[];
+    riskRuleTrend?: LoginTrendPoint[];
+    todayOperations?: number;
+    topOperations?: OperationCount[];
+    totalRiskRules?: number;
+    totalRoles?: number;
+    totalUserGroups?: number;
+    totalUsers?: number;
+    totalWebhooks?: number;
+    webhookTrend?: LoginTrendPoint[];
+};
+
+type MetricFormat = "number" | "percent";
 
 export type MetricDefinition = {
     format: MetricFormat;
     icon: ComponentType<IconProps>;
+    iconBackground: string;
+    iconColor: string;
     label: string;
     lowerIsBetter?: boolean;
-    tone: DashboardTone;
 };
 
-export const DASHBOARD_RANGES: { label: string; value: DashboardRange }[] = [
-    { label: "近7天", value: 7 },
-    { label: "近30天", value: 30 },
-    { label: "近90天", value: 90 },
-];
+export type MetricChange = {
+    direction: "down" | "flat" | "up";
+    positive: boolean;
+    text: string;
+};
 
-export const DASHBOARD_METRIC_ORDER = [
-    "users",
-    "activeUsers",
-    "operations",
-    "loginSuccess",
-    "loginSuccessRate",
-    "newUsers",
-    "abnormalOperations",
-    "riskRules",
-];
+export type ActivityTrendPoint = {
+    date: string;
+    failures: number;
+    label: string;
+    logins: number;
+    operations: number;
+};
+
+export type CreationTrendPoint = {
+    date: string;
+    label: string;
+    riskRules: number;
+    webhooks: number;
+};
+
+export const PRIMARY_METRIC_KEYS = ["users", "activeUsers", "operations", "loginSuccessRate"] as const;
+
+export const SNAPSHOT_METRIC_KEYS = ["newUsers", "abnormalOperations", "riskRules", "loginSuccess"] as const;
 
 export const DASHBOARD_METRICS: Record<string, MetricDefinition> = {
     activeUsers: {
         format: "number",
         icon: ActivityIcon,
+        iconBackground: "var(--td-brand-color-light)",
+        iconColor: "var(--td-brand-color)",
         label: "活跃用户",
-        tone: "blue",
     },
     abnormalOperations: {
         format: "number",
         icon: ErrorTriangleIcon,
+        iconBackground: "var(--td-error-color-light)",
+        iconColor: "var(--td-error-color)",
         label: "异常操作",
         lowerIsBetter: true,
-        tone: "red",
-    },
-    loginSuccess: {
-        format: "number",
-        icon: LoginIcon,
-        label: "登录成功",
-        tone: "green",
     },
     loginSuccessRate: {
         format: "percent",
         icon: TrendingUpIcon,
+        iconBackground: "var(--td-success-color-light)",
+        iconColor: "var(--td-success-color)",
         label: "登录成功率",
-        tone: "purple",
+    },
+    loginSuccess: {
+        format: "number",
+        icon: LoginIcon,
+        iconBackground: "var(--td-success-color-light)",
+        iconColor: "var(--td-success-color)",
+        label: "登录成功",
     },
     newUsers: {
         format: "number",
         icon: UserAddIcon,
+        iconBackground: "var(--td-brand-color-light)",
+        iconColor: "var(--td-brand-color)",
         label: "新增用户",
-        tone: "magenta",
     },
     operations: {
         format: "number",
         icon: CursorIcon,
+        iconBackground: "var(--td-warning-color-light)",
+        iconColor: "var(--td-warning-color)",
         label: "操作总数",
-        tone: "orange",
     },
     riskRules: {
         format: "number",
         icon: SecuredIcon,
+        iconBackground: "var(--td-brand-color-light)",
+        iconColor: "var(--td-brand-color)",
         label: "风险规则",
-        tone: "geekblue",
     },
     users: {
         format: "number",
         icon: UsergroupIcon,
+        iconBackground: "var(--td-brand-color-light)",
+        iconColor: "var(--td-brand-color)",
         label: "用户总数",
-        tone: "gold",
     },
-};
-
-export function formatMetricValue(value: number, format: MetricFormat): string {
-    return format === "percent" ? `${value.toFixed(1)}%` : formatCount(value);
-}
-
-type MetricChange = {
-    direction: "down" | "flat" | "up";
-    positive: boolean;
-    text: string;
 };
 
 export function metricChange(value: number, previousValue: number, definition: MetricDefinition): MetricChange {
@@ -166,14 +191,6 @@ export function metricChange(value: number, previousValue: number, definition: M
 
     return { direction, positive, text };
 }
-
-export type ActivityTrendPoint = {
-    date: string;
-    failures: number;
-    label: string;
-    logins: number;
-    operations: number;
-};
 
 function countByDate(points?: LoginTrendPoint[]): Map<string, number> {
     const counts = new Map<string, number>();
@@ -202,33 +219,114 @@ export function mergeActivityTrend(overview: DashboardData): ActivityTrendPoint[
     }));
 }
 
-export type RoleSlice = Omit<RoleUserCount, "displayName" | "role" | "users"> & {
-    color: string;
-    displayName: string;
-    role: string;
-    users: number;
-};
+export function mergeCreationTrend(overview: DashboardData): CreationTrendPoint[] {
+    const riskRules = countByDate(overview.riskRuleTrend);
+    const webhooks = countByDate(overview.webhookTrend);
+    const dates = Array.from(new Set([...riskRules.keys(), ...webhooks.keys()])).sort();
 
-export function roleSlices(roles: RoleUserCount[] | undefined, colors: string[]): RoleSlice[] {
-    const sorted = [...(roles ?? [])].sort((left, right) => (right.users ?? 0) - (left.users ?? 0));
-    const visible = sorted.slice(0, 5);
-    const rest = sorted.slice(5);
+    return dates.map((date) => ({
+        date,
+        label: date.slice(5),
+        riskRules: riskRules.get(date) ?? 0,
+        webhooks: webhooks.get(date) ?? 0,
+    }));
+}
 
-    if (rest.length > 0) {
-        visible.push({
-            displayName: "其他角色",
-            role: "other",
-            users: rest.reduce((sum, item) => sum + (item.users ?? 0), 0),
-        } as RoleUserCount);
+export function metricCaption(key: string, overview: DashboardData, metrics: Map<string, DashboardMetric>): string {
+    const metricValue = (metricKey: string) => formatCount(metrics.get(metricKey)?.value ?? 0);
+
+    if (key === "users") {
+        return `风险规则 ${formatCount(overview.totalRiskRules)} 条 · 新增 ${metricValue("newUsers")} 人`;
     }
 
-    return visible.map((item, index) => ({
-        ...item,
-        color: colors[index % colors.length],
-        displayName: item.displayName ?? item.role ?? "未命名角色",
-        role: item.role ?? item.displayName ?? "unknown",
-        users: item.users ?? 0,
-    }));
+    if (key === "activeUsers") {
+        return `用户总数 ${formatCount(overview.totalUsers)} 人`;
+    }
+
+    if (key === "operations") {
+        return `今日 ${formatCount(overview.todayOperations)} 次 · 异常 ${metricValue("abnormalOperations")} 次`;
+    }
+
+    if (key === "loginSuccessRate") {
+        return `登录成功 ${metricValue("loginSuccess")} 次`;
+    }
+
+    return "";
+}
+
+export function userLabel(name?: string | null): string {
+    if (!name || name === "anonymous") {
+        return "匿名用户";
+    }
+
+    return name === "unknown" ? "未知用户" : name;
+}
+
+function dateValue(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+export function dashboardDateValue(value: Date | string | number): string {
+    if (value instanceof Date) {
+        return dateValue(value);
+    }
+
+    if (typeof value === "number") {
+        return dateValue(new Date(value));
+    }
+
+    return value.slice(0, 10);
+}
+
+export function dashboardRangeForDays(days: number, end = new Date()): DashboardDateRange {
+    const start = new Date(end);
+    start.setDate(start.getDate() - days + 1);
+
+    return {
+        days,
+        end: dateValue(end),
+        start: dateValue(start),
+    };
+}
+
+export function dashboardRangeDays(start: string, end: string): number {
+    const startTime = Date.parse(`${start}T00:00:00Z`);
+    const endTime = Date.parse(`${end}T00:00:00Z`);
+
+    return Math.floor((endTime - startTime) / 86_400_000) + 1;
+}
+
+export function dashboardRangeBounds(range: DashboardDateRange): { from: string; to: string } {
+    return {
+        from: new Date(`${range.start}T00:00:00.000`).toISOString(),
+        to: new Date(`${range.end}T23:59:59.999`).toISOString(),
+    };
+}
+
+export function resultTone(result: string): { label: string; tone: DashboardTone } {
+    if (result === "SUCCESS") {
+        return { label: "成功", tone: "green" };
+    }
+
+    if (result === "DENIED") {
+        return { label: "拒绝", tone: "warning" };
+    }
+
+    return { label: "失败", tone: "red" };
+}
+
+export function formatJourneyDuration(durationMs?: number | null): string {
+    if (!durationMs || durationMs <= 0) {
+        return "—";
+    }
+
+    const seconds = Math.ceil(durationMs / 1000);
+
+    return seconds < 60 ? "不足 1 分钟" : formatUptime(seconds);
 }
 
 export function formatUptime(seconds?: number | null): string {
@@ -244,39 +342,5 @@ export function formatUptime(seconds?: number | null): string {
         return `${days} 天 ${hours} 小时`;
     }
 
-    if (hours > 0) {
-        return `${hours} 小时 ${minutes} 分`;
-    }
-
-    return `${minutes} 分钟`;
-}
-
-export function formatJourneyDuration(durationMs?: number | null): string {
-    if (!durationMs || durationMs <= 0) {
-        return "—";
-    }
-
-    const seconds = Math.ceil(durationMs / 1000);
-
-    return seconds < 60 ? "不足 1 分钟" : formatUptime(seconds);
-}
-
-export function resultTone(result: string): { label: string; tone: DashboardTone } {
-    if (result === "SUCCESS") {
-        return { label: "成功", tone: "green" };
-    }
-
-    if (result === "DENIED") {
-        return { label: "拒绝", tone: "warning" };
-    }
-
-    return { label: "失败", tone: "red" };
-}
-
-export function userLabel(name?: string | null): string {
-    if (!name || name === "anonymous") {
-        return "匿名用户";
-    }
-
-    return name === "unknown" ? "未知用户" : name;
+    return hours > 0 ? `${hours} 小时 ${minutes} 分` : `${minutes} 分钟`;
 }

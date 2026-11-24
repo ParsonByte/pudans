@@ -54,11 +54,17 @@ export function EChart({ className, height = 320, option }: EChartProps) {
         }
 
         const chart = echarts.init(container, undefined, { renderer: "canvas" });
+        let resizeFrame = 0;
         chartRef.current = chart;
-        const observer = new ResizeObserver(() => chart.resize());
+        const observer = new ResizeObserver(() => {
+            window.cancelAnimationFrame(resizeFrame);
+            resizeFrame = window.requestAnimationFrame(() => chart.resize());
+        });
         observer.observe(container);
+        resizeFrame = window.requestAnimationFrame(() => chart.resize());
 
         return () => {
+            window.cancelAnimationFrame(resizeFrame);
             observer.disconnect();
             chart.dispose();
             chartRef.current = null;
@@ -66,7 +72,16 @@ export function EChart({ className, height = 320, option }: EChartProps) {
     }, []);
 
     useEffect(() => {
-        chartRef.current?.setOption(option, { notMerge: true });
+        const chart = chartRef.current;
+
+        if (!chart) {
+            return;
+        }
+
+        chart.setOption(option, { notMerge: true });
+        const resizeFrame = window.requestAnimationFrame(() => chart.resize());
+
+        return () => window.cancelAnimationFrame(resizeFrame);
     }, [option, resolvedTheme]);
 
     return <div className={className} ref={containerRef} style={{ height, width: "100%" }} />;
