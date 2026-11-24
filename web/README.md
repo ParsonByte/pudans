@@ -78,7 +78,7 @@ src/stores/_setup/           初始化完成状态
 src/stores/_workspace/ 工作区侧栏折叠状态
 src/stores/create-store.ts  通用状态仓库实现
 src/stores/use-store.ts     订阅仓库状态的 Hook
-src/styles/theme.css         全局样式、TDesign 主题与布局变量
+src/styles/_global.css       全局样式与布局
 ```
 
 ## 路由

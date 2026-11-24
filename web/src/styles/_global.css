@@ -1,0 +1,416 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+    body {
+        margin: 0;
+        background: var(--td-bg-color-page);
+        color: var(--td-text-color-primary);
+        font: var(--td-font-body-medium);
+        -webkit-font-smoothing: antialiased;
+    }
+}
+
+.app-shell {
+    --app-shell-header-height: 48px;
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+    background: var(--td-bg-color-page);
+}
+
+.app-shell__header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: var(--app-shell-header-height);
+    flex: 0 0 auto;
+    background: var(--td-bg-color-container);
+}
+
+.app-shell__header nav {
+    height: 100%;
+    min-width: 0;
+}
+
+.app-shell__header .t-head-menu .t-menu__logo:not(:empty) {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-right: 16px;
+}
+
+.app-shell__header .t-menu__logo > * {
+    margin-left: 0;
+}
+
+.app-shell__brand-group {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.app-shell__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--td-text-color-primary);
+    font: var(--td-font-title-medium);
+    text-decoration: none;
+}
+
+.app-shell__header .t-head-menu {
+    height: 100%;
+    background: var(--td-bg-color-container);
+}
+
+.app-shell__header .t-head-menu__inner {
+    height: 100%;
+    min-width: 0;
+    overflow: visible;
+    padding-inline: 20px;
+}
+
+.app-shell__header .t-head-menu__inner > .t-menu {
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+
+.app-shell__header .t-head-menu__inner > .t-menu::-webkit-scrollbar {
+    display: none;
+}
+
+.app-shell__header .t-head-menu .t-menu__item {
+    flex-shrink: 0;
+}
+
+.app-shell__header .t-menu__operations {
+    height: 100%;
+    margin-right: 0;
+    overflow: visible;
+    line-height: normal;
+}
+
+.app-shell :is(a, button):focus-visible {
+    outline: 2px solid var(--td-brand-color);
+    outline-offset: 2px;
+}
+
+.app-shell__header :is(a, button):focus-visible {
+    outline-offset: -2px;
+}
+
+.app-shell__sidebar-toggle.t-button {
+    color: var(--td-text-color-primary);
+}
+
+.app-shell__sidebar-toggle.t-button:hover {
+    background: var(--td-bg-color-container-hover);
+}
+
+.app-shell__body {
+    display: flex;
+    min-width: 0;
+    min-height: calc(100dvh - var(--app-shell-header-height));
+    flex: 1;
+}
+
+.app-shell__aside {
+    position: sticky;
+    top: var(--app-shell-header-height);
+    align-self: flex-start;
+    height: calc(100dvh - var(--app-shell-header-height));
+    flex: 0 0 auto;
+    overflow: hidden;
+    background: var(--td-bg-color-container);
+}
+
+.app-shell__nav {
+    height: 100%;
+}
+
+.app-shell__nav > .t-default-menu {
+    height: 100%;
+}
+
+.app-shell__nav-loading {
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    padding-top: 24px;
+}
+
+.app-shell__content {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.app-switcher__trigger.t-button {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 4px;
+    border-radius: var(--td-radius-medium);
+    color: var(--td-text-color-secondary);
+}
+
+.app-switcher__trigger.t-button:hover {
+    color: var(--td-text-color-primary);
+    background: var(--td-bg-color-container-hover);
+}
+
+.app-switcher__panel {
+    width: 232px;
+    height: 80px;
+}
+
+.theme-menu {
+    position: relative;
+    display: flex;
+    width: 60px;
+    min-width: 60px;
+    height: 32px;
+    flex-shrink: 0;
+    padding: 2px;
+    border-radius: var(--td-radius-medium);
+    background: var(--td-bg-color-component);
+}
+
+.theme-menu__thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--td-radius-medium);
+    background: var(--td-bg-color-container);
+    box-shadow: 0 2px 4px rgb(0 0 0 / 15%);
+    transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-menu__thumb[data-theme="dark"] {
+    transform: translateX(28px);
+}
+
+.theme-menu__option.t-button {
+    position: relative;
+    z-index: 1;
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: var(--td-radius-medium);
+    color: var(--td-text-color-disabled);
+    background: transparent;
+}
+
+.theme-menu__option.t-button:hover {
+    background: transparent;
+}
+
+.theme-menu__option.t-button .t-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    transition: color 0.2s linear;
+}
+
+.theme-menu__option--light[aria-pressed="true"] {
+    color: #ffbd2e;
+}
+
+.theme-menu__option--dark[aria-pressed="true"] {
+    color: var(--td-text-color-primary);
+}
+
+.theme-menu__option:focus-visible {
+    outline: 2px solid var(--td-brand-color);
+    outline-offset: 1px;
+}
+
+@keyframes light-to-dark {
+    from {
+        clip-path: polygon(0 0, 0 0, calc(tan(8deg) * -100vh) 100%, calc(tan(8deg) * -100vh) 100%);
+    }
+
+    to {
+        clip-path: polygon(0 0, calc((tan(8deg) * 100vh) + 100%) 0, 100% 100%, calc(tan(8deg) * -100vh) 100%);
+    }
+}
+
+@keyframes dark-to-light {
+    from {
+        clip-path: polygon(
+            calc((tan(8deg) * 100vh) + 100%) 0,
+            calc((tan(8deg) * 100vh) + 100%) 0,
+            100% 100%,
+            100% 100%
+        );
+    }
+
+    to {
+        clip-path: polygon(0 0, calc((tan(8deg) * 100vh) + 100%) 0, 100% 100%, calc(tan(8deg) * -100vh) 100%);
+    }
+}
+
+:root::view-transition-group(root) {
+    animation-duration: 1s;
+}
+
+:root::view-transition-new(root),
+:root::view-transition-old(root) {
+    mix-blend-mode: normal;
+}
+
+:root::view-transition-old(root) {
+    animation: none;
+}
+
+:root::view-transition-new(root) {
+    animation-name: dark-to-light;
+}
+
+:root.dark::view-transition-new(root) {
+    animation-name: light-to-dark;
+}
+
+.app-page {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 24px 32px 48px;
+}
+
+.app-page__title {
+    margin: 0;
+    color: var(--td-text-color-primary);
+    font: var(--td-font-headline-small);
+}
+
+.global-dialog__close:focus-visible,
+.notification-close-button:focus-visible {
+    outline: 2px solid var(--td-brand-color);
+    outline-offset: 2px;
+}
+
+.global-dialog {
+    display: flex;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 96px);
+    flex-direction: column;
+}
+
+.global-dialog .t-dialog__close {
+    width: auto;
+    height: auto;
+    padding: 0;
+}
+
+.global-dialog .t-dialog__close .t-button {
+    flex-shrink: 0;
+}
+
+.global-dialog__headerless {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    position: relative;
+}
+
+.global-dialog__floating-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+}
+
+.global-dialog .t-dialog__footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.global-dialog .t-dialog__footer .t-button + .t-button {
+    margin-left: 0;
+}
+
+.global-dialog .t-dialog__body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.legal-tabs {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.legal-tabs > .t-tabs__header {
+    flex-shrink: 0;
+}
+
+.legal-tabs > .t-tabs__content {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+@media (max-width: 1023px) {
+    .app-page {
+        padding: 20px 24px 40px;
+    }
+}
+
+@media (max-width: 767px) {
+    .app-shell__header .t-head-menu__inner {
+        padding-inline: 12px;
+    }
+
+    .app-shell__header .t-head-menu .t-menu__logo:not(:empty) {
+        margin-right: 12px;
+    }
+
+    .app-shell__brand span {
+        display: none;
+    }
+
+    .app-page {
+        padding: 16px 16px 32px;
+    }
+
+    .global-dialog {
+        max-width: calc(100vw - 24px);
+        padding: 16px;
+    }
+}
+
+@media (max-width: 389px) {
+    .app-page {
+        padding-inline: 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .theme-menu__thumb {
+        transition: none;
+    }
+
+    :root::view-transition-group(root) {
+        animation-duration: 0.01ms;
+    }
+}
