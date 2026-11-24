@@ -3,7 +3,6 @@ package cn.tolim.pudans.core.live.recorder;
 import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
 import static cn.tolim.pudans.extension.contract.index.query.Queries.in;
 
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,6 +13,8 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -65,9 +66,9 @@ public class LiveRecordingRecovery {
 
     private final String instanceId = UUID.randomUUID().toString();
 
-    // 启动时异步恢复失联实例遗留的录制
-    @PostConstruct
-    public void start() {
+    // 就绪后再恢复，Scheme 注册完成早于该事件，构造期扫描会因缺少 Scheme 直接失败
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady(ApplicationReadyEvent ignored) {
         Schedulers.boundedElastic().schedule(() -> recover().subscribe(
                 count -> {
                     if (count > 0) {

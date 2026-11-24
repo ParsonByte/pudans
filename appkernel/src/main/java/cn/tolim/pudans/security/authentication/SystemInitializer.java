@@ -67,7 +67,7 @@ public class SystemInitializer implements SuperAdminInitializer {
     Mono<User> ensureSuperAdmin(InitializationParam param) {
         return client.fetch(User.class, param.getUsername())
                 .flatMap(admin -> verifyExistingAdmin(admin, param))
-                .switchIfEmpty(Mono.defer(() -> client.create(createAdmin(param))
+                .switchIfEmpty(Mono.defer(() -> client.createInternal(createAdmin(param))
                         .doOnNext(this::publishCreated)
                         .onErrorResume(DuplicateNameException.class, e -> client.get(User.class, param.getUsername())
                                 .flatMap(admin -> verifyExistingAdmin(admin, param)))));
