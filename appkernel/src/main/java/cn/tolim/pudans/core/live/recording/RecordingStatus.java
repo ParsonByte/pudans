@@ -113,6 +113,27 @@ public class RecordingStatus {
         });
     }
 
+    // 续传成功后允许失败录制补记完成，并移出失败计数
+    public Mono<LiveRecording> completeAfterResume(String name, Consumer<LiveRecording.Status> mutation) {
+        return fetchRequired(name)
+                .flatMap(recording -> {
+                    var status = recording.getStatus();
+                    if (status.getState() != LiveRecordingState.FAILED) {
+                        return Mono.error(LIVE_RECORDING_NOT_READY.exception());
+                    }
+                    mutation.accept(status);
+                    status.setState(LiveRecordingState.COMPLETED);
+                    status.setMessage("续传完成");
+                    status.setErrorCode(null);
+                    if (status.getEndedAt() == null) {
+                        status.setEndedAt(Instant.now());
+                    }
+                    return client.update(recording);
+                })
+                .doOnNext(updated -> metrics.recordingRemoved(updated.getMetadata().getName()))
+                .retryWhen(conflictRetry());
+    }
+
     // 多错误并存时保留最能阻塞恢复的错误码
     public Mono<LiveRecording> fail(String name, LiveErrorCode code, String message) {
         return fetchRequired(name)
