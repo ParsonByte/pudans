@@ -12,12 +12,15 @@ import static org.mockito.Mockito.when;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ReactiveValueOperations;
@@ -174,6 +177,18 @@ class LiveRecordingRecoveryTest {
         assertThat(recovery.seedFailedMetrics().block()).isEqualTo(1);
 
         verify(metrics).recordingFailed("live-failed");
+    }
+
+    // 构造期扫描拿不到 Scheme，启动回填必须挂在就绪事件上
+    @Test
+    void startsRecoveryOnlyAfterApplicationReady() {
+        var listeners = Arrays.stream(LiveRecordingRecovery.class.getDeclaredMethods())
+                .filter(method -> method.isAnnotationPresent(EventListener.class))
+                .filter(method -> Arrays.asList(method.getAnnotation(EventListener.class).value())
+                        .contains(ApplicationReadyEvent.class))
+                .toList();
+
+        assertThat(listeners).hasSize(1);
     }
 
     private static LiveRecording recording(String name, LiveRecordingState state, Instant createdAt) {
