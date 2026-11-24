@@ -409,6 +409,8 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 status.getSegmentCount(),
                 status.getPartCount(),
                 status.getLocalBytes(),
+                status.getLastWriteAt(),
+                status.getLastPacketAt(),
                 spec.getStoragePolicy(),
                 spec.getRetryOf(),
                 spec.isAuto());
