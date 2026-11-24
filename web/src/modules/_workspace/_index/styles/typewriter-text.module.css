@@ -1,0 +1,58 @@
+.root {
+    display: inline-grid;
+    max-width: 100%;
+}
+
+.measure,
+.visible {
+    grid-area: 1 / 1;
+}
+
+.measure {
+    visibility: hidden;
+}
+
+.visible {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: left;
+}
+
+.cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    margin-left: 2px;
+    border-radius: 1px;
+    background: currentcolor;
+    vertical-align: -0.08em;
+    animation: blink 0.8s step-end infinite;
+    transition: opacity 160ms ease;
+}
+
+.cursorComplete {
+    opacity: 0;
+    animation: none;
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cursor {
+        animation: none;
+    }
+}
