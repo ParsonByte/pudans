@@ -1,0 +1,62 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-account-profile
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "uc.account.profile"
+    rbac.authorization.pudans.tolim.cn/ui-component: "profile"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "uc"
+    rbac.authorization.pudans.tolim.cn/ui-label: "个人设置"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看飞书同步的账号资料与个人简介。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:user-round"
+    rbac.authorization.pudans.tolim.cn/ui-group: "账户"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "account"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-public: "true"
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-account-security
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "uc.account.security"
+    rbac.authorization.pudans.tolim.cn/ui-component: "security"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "uc"
+    rbac.authorization.pudans.tolim.cn/ui-label: "安全中心"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理密码、双重验证、通行密钥与登录设备。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-check"
+    rbac.authorization.pudans.tolim.cn/ui-group: "账户"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "account"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-public: "true"
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-account-identities
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "uc.account.identities"
+    rbac.authorization.pudans.tolim.cn/ui-component: "identities"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "uc"
+    rbac.authorization.pudans.tolim.cn/ui-label: "身份提供商"
+    rbac.authorization.pudans.tolim.cn/ui-description: "自助绑定飞书与 OIDC 身份，方便快捷登录。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:link-2"
+    rbac.authorization.pudans.tolim.cn/ui-group: "账户"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "account"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-public: "true"
+rules: []

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 
-import { ThemeMenu } from "@/components/ui";
+import { ThemeMenu, UserMenu } from "@/components/ui";
 import { useMobile } from "@/hooks/ui/use-mobile";
 import { useThemeSync } from "@/hooks/ui/use-theme-sync";
 
@@ -27,7 +27,12 @@ type AppShellProps = {
 };
 
 export function AppShell({
-    actions = <ThemeMenu />,
+    actions = (
+        <div className="app-shell__actions">
+            <ThemeMenu />
+            <UserMenu />
+        </div>
+    ),
     activeGroup,
     activeItem,
     children,

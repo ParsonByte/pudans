@@ -71,6 +71,7 @@ src/routes/(_auth)/route.tsx 唯一认证路由入口
 src/routes/(_setup)/route.tsx 初始化路由入口
 src/routes/(_workspace)/index.ts 工作区视图注册表
 src/routes/(_workspace)/(_console)/<group>/<menu>/route.tsx 控制台各菜单路由入口
+src/routes/(_workspace)/(_uc)/<group>/<menu>/route.tsx 个人中心各菜单路由入口
 src/routes/_authenticated/route.tsx 会话认证检查
 src/stores/                  客户端状态仓库
 src/stores/_auth/            认证会话与两步验证状态
@@ -86,11 +87,11 @@ src/styles/_global.css       全局样式与布局
 - `/sign-in`：认证页，默认密码登录 / 通行密钥 / 外部登录；开启登录验证码时在提交后弹出图片验证码弹窗，启用两步验证的账号在密码或通行密钥校验后进入动态验证码步骤；`?routes=forgot-password` 切换找回密码，`?routes=legal&tab=terms|privacy|confidentiality` 打开法律协议弹层。
 - `/setup`：首次运行初始化页，创建超级管理员并设置站点名称与站点地址；管理员邮箱由飞书同步，初始化表单不填写邮箱。该页面也作为 `/` 在首次运行时展示，`/setup` 通过 rewrite 指向它。
 - `/`：首次运行时渲染初始化页；初始化完成后重定向到 `/sign-in`。
-- `/workspace/<workspace>?<group>=<menu>`：工作区统一入口，例如 `/workspace/console?overview=dashboard`、`/workspace/index?other=account-profile`。工作区 `slug`、分组 `key`、菜单和顺序都由 `/navigation` 返回，前端不维护工作区或菜单路径；未带有效参数时使用导航首个可访问菜单。
+- `/workspace/<workspace>?<group>=<menu>`：工作区统一入口，例如 `/workspace/console?overview=dashboard`、`/workspace/uc?account=profile`。工作区 `slug`、分组 `key`、菜单和顺序都由 `/navigation` 返回，前端不维护工作区或菜单路径；未带有效参数时使用导航首个可访问菜单。
 
 `src/app/(auth)/sign-in/page.tsx` 对应 `/sign-in`，通过 `src/routes/(_auth)/route.tsx` 渲染，页面内容放在 `src/modules/_auth`。`src/app/(setup)/page.tsx` 对应 `/`，`/setup` 通过 Next rewrite 渲染该页面，通过 `src/routes/(_setup)/route.tsx` 进入视图，页面内容放在 `src/modules/_setup`。`src/app/(workspace)/[workspace]/layout.tsx` 使用 `WorkspaceLayout`；布局通过 `useDynamicMenu` 读取 `/navigation`，按 `ui-group` 与 `ui-group-key` 分组，按 `ui-parent` 组装二级菜单，并组合公共 `AppShell`。Next 路由组不产生 URL，`/workspace/:workspace` 由 `next.config.ts` rewrite 到 `/[workspace]`。
 
-工作区页面统一位于 `src/app/(workspace)/[workspace]/page.tsx`，页面从 `useDynamicMenu` 读取当前工作区、分组和菜单，再从 `src/routes/(_workspace)/index.ts` 的视图注册表选择入口。控制台菜单入口位于 `src/routes/(_workspace)/(_console)/<group>/<menu>/route.tsx`，视图放在 `src/modules/_workspace/_console/modules/<group>/<menu>`，每个菜单使用独立的 `index.tsx`。
+工作区页面统一位于 `src/app/(workspace)/[workspace]/page.tsx`，页面从 `useDynamicMenu` 读取当前工作区、分组和菜单，再从 `src/routes/(_workspace)/index.ts` 的视图注册表选择入口。控制台菜单入口位于 `src/routes/(_workspace)/(_console)/<group>/<menu>/route.tsx`，视图放在 `src/modules/_workspace/_console/modules/<group>/<menu>`；个人中心菜单入口位于 `src/routes/(_workspace)/(_uc)/<group>/<menu>/route.tsx`，视图放在 `src/modules/_workspace/_uc/modules/<group>/<menu>`，每个菜单使用独立的 `index.tsx`。
 
 新增工作区时，在后端 `extensions/workspace/<workspace>/` 声明工作区模板和菜单模板：工作区填写 `ui-slug`，菜单填写 `ui-group-key`；`ui-order` 同时控制分组与菜单顺序。前端无需新增 `app` 目录；实现菜单视图后，在 `WORKSPACE_VIEWS[workspaceSlug][groupKey][menuKey]` 注册对应路由入口即可。
 
@@ -118,6 +119,14 @@ src/styles/_global.css       全局样式与布局
 
 创建和编辑统一使用 `GlobalDialog`，在屏幕正中弹出；详情使用结构化字段和表格，不直接回显 JSON。操作反馈统一使用 `MessagePlugin`，错误与警告使用右侧 `NotificationPlugin`。
 
+## 个人中心页面
+
+| 菜单       | 查询参数（基路径 `/workspace/uc`） | 当前实现                                          |
+| ---------- | ---------------------------------- | ------------------------------------------------- |
+| 个人设置   | `?account=profile`                 | 飞书同步资料、个人简介编辑、账号状态与角色        |
+| 安全中心   | `?account=security`                | 修改密码、双重验证、通行密钥与登录设备管理        |
+| 身份提供商 | `?account=identities`              | 飞书与 OIDC 身份绑定、OIDC 回调处理与身份连接解绑 |
+
 ## 认证
 
 [src/modules/_setup/composables/_setup-guard.ts](src/modules/_setup/composables/_setup-guard.ts) 提供初始化状态检查，[src/middleware.ts](src/middleware.ts) 在页面渲染前请求 `/apis/api.pudans.tolim.cn/v1alpha1/login/status`：
@@ -142,7 +151,7 @@ src/styles/_global.css       全局样式与布局
 
 ## 状态管理
 
-- 服务端状态统一使用 TanStack Query，查询键按 `["console", <domain>, ...]` 命名，变更后失效对应前缀。
+- 服务端状态统一使用 TanStack Query，查询键按工作区和业务域命名（如 `["console", <domain>, ...]`、`["uc", <domain>, ...]`），变更后失效对应前缀。
 - 列表分页、排序和筛选通过 `useTableUrlState` 同步到 URL，公共封装在 `modules/_workspace/_console/composables/_table.ts`。
 - 工作区侧栏折叠状态放在 `src/stores/_workspace`，通过 `AppShell` 的受控 `collapsed` 属性驱动。
 - `useDynamicMenu` 中的 `useSearchParams` 由 `WorkspaceLayout` 内部 Suspense 承接，页面中的查询参数读取由 `AppContainer` 的 Suspense 边界承接。

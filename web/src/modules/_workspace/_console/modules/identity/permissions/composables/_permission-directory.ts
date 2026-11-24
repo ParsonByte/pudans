@@ -8,7 +8,7 @@ const DISPLAY_TEXT_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [[/\
 
 const WORKSPACE_LABELS: Record<string, string> = {
     console: "管理控制台",
-    default: "个人工作区",
+    uc: "个人中心",
 };
 
 export type PermissionWorkspaceGroup = {

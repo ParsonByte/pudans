@@ -17,10 +17,20 @@ import { AnnotationsRoute } from "./(_console)/system/annotations/route";
 import { ConfigMapsRoute } from "./(_console)/system/config-maps/route";
 import { SettingsRoute } from "./(_console)/system/settings/route";
 import { WebhooksRoute } from "./(_console)/system/webhooks/route";
+import { IdentitiesRoute } from "./(_uc)/account/identities/route";
+import { ProfileRoute } from "./(_uc)/account/profile/route";
+import { SecurityRoute } from "./(_uc)/account/security/route";
 
 type WorkspaceViews = Record<string, Record<string, ComponentType>>;
 
 export const WORKSPACE_VIEWS: Record<string, WorkspaceViews> = {
+    uc: {
+        account: {
+            profile: ProfileRoute,
+            security: SecurityRoute,
+            identities: IdentitiesRoute,
+        },
+    },
     console: {
         overview: {
             dashboard: DashboardRoute,

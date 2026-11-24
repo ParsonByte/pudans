@@ -38,12 +38,16 @@ function readCookie(name: string): string | undefined {
     return entry ? decodeURIComponent(entry.slice(prefix.length)) : undefined;
 }
 
-function formHeaders(): Record<string, string> {
+function csrfHeaders(): Record<string, string> {
     const csrfToken = readCookie("XSRF-TOKEN");
 
+    return csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {};
+}
+
+function formHeaders(): Record<string, string> {
     return {
         "Content-Type": "application/x-www-form-urlencoded",
-        ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
+        ...csrfHeaders(),
     };
 }
 
@@ -194,6 +198,10 @@ export function completeLogin(session: SessionView, redirectTo?: string, onDenie
 
     setAuthSession(session);
     window.location.assign(resolvePostLoginRedirect(redirectTo, session.redirectUrl));
+}
+
+export async function signOut(): Promise<void> {
+    await axiosInstance.post("/logout", undefined, { headers: csrfHeaders() });
 }
 
 export function isTwoFactorSessionExpired(error: unknown): boolean {

@@ -6,6 +6,17 @@ type AssertionOptions = {
     userVerification?: UserVerificationRequirement;
 };
 
+type RegistrationOptions = {
+    attestation?: AttestationConveyancePreference;
+    authenticatorSelection?: AuthenticatorSelectionCriteria;
+    challenge: string;
+    excludeCredentials?: Array<{ type?: string; id: string }>;
+    pubKeyCredParams?: Array<{ alg: number; type?: string }>;
+    rp?: { id?: string; name?: string };
+    timeout?: number;
+    user: { displayName?: string; id: string; name: string };
+};
+
 function base64UrlToBuffer(value: string): ArrayBuffer {
     const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
     const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
@@ -75,5 +86,63 @@ export function serializeAssertion(credential: PublicKeyCredential): string {
         type: credential.type,
         response: responseJson,
         clientExtensionResults: credential.getClientExtensionResults(),
+    });
+}
+
+export async function createPasskeyRegistration(options: Record<string, unknown>): Promise<string> {
+    if (typeof window === "undefined" || !window.PublicKeyCredential || !navigator.credentials) {
+        throw new Error("当前浏览器不支持通行密钥。");
+    }
+
+    const publicKey = options as unknown as RegistrationOptions;
+
+    if (!publicKey.challenge || !publicKey.user?.id) {
+        throw new Error("通行密钥注册参数缺失。");
+    }
+
+    const credential = await navigator.credentials.create({
+        publicKey: {
+            attestation: publicKey.attestation,
+            authenticatorSelection: publicKey.authenticatorSelection,
+            challenge: base64UrlToBuffer(publicKey.challenge),
+            excludeCredentials: publicKey.excludeCredentials?.map((descriptor) => ({
+                type: "public-key" as const,
+                id: base64UrlToBuffer(descriptor.id),
+            })),
+            pubKeyCredParams:
+                publicKey.pubKeyCredParams?.map((parameter) => ({
+                    alg: parameter.alg,
+                    type: "public-key" as const,
+                })) ?? [],
+            rp: {
+                id: publicKey.rp?.id,
+                name: publicKey.rp?.name ?? window.location.hostname,
+            },
+            timeout: publicKey.timeout,
+            user: {
+                displayName: publicKey.user.displayName ?? publicKey.user.name,
+                id: base64UrlToBuffer(publicKey.user.id),
+                name: publicKey.user.name,
+            },
+        },
+    });
+
+    if (!(credential instanceof PublicKeyCredential)) {
+        throw new Error("浏览器未返回通行密钥。");
+    }
+
+    const response = credential.response as AuthenticatorAttestationResponse;
+
+    return JSON.stringify({
+        authenticatorAttachment: credential.authenticatorAttachment ?? undefined,
+        clientExtensionResults: credential.getClientExtensionResults(),
+        id: credential.id,
+        rawId: bufferToBase64Url(credential.rawId),
+        response: {
+            attestationObject: bufferToBase64Url(response.attestationObject),
+            clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+            transports: response.getTransports?.(),
+        },
+        type: credential.type,
     });
 }

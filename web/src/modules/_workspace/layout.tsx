@@ -54,11 +54,14 @@ function buildNavigation(groups: DynamicMenuGroup[], selection?: DynamicMenuSele
     return {
         activeGroup,
         activeItem,
-        groups: groups.map((group) => ({
-            href: group.items[0]?.path,
-            key: group.key,
-            label: group.label,
-        })),
+        groups:
+            groups.length > 1
+                ? groups.map((group) => ({
+                      href: group.items[0]?.path,
+                      key: group.key,
+                      label: group.label,
+                  }))
+                : [],
         items: selection?.group ? buildMenuItems(selection.group) : [],
     };
 }

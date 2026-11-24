@@ -66,13 +66,13 @@ class PermissionDirectoryTest {
     private static List<Role> catalogRoles() {
         return List.of(
                 template(
-                        "role-template-workspace-default",
+                        "role-template-workspace-uc",
                         annotations(
                                 Role.UI_TYPE_ANNO, Role.UI_TYPE_WORKSPACE,
-                                Role.UI_WORKSPACE_ANNO, "default",
-                                Role.UI_SLUG_ANNO, "index",
-                                Role.UI_LABEL_ANNO, "PUDANS",
-                                Role.UI_DESCRIPTION_ANNO, "工作区",
+                                Role.UI_WORKSPACE_ANNO, "uc",
+                                Role.UI_SLUG_ANNO, "uc",
+                                Role.UI_LABEL_ANNO, "个人中心",
+                                Role.UI_DESCRIPTION_ANNO, "个人中心",
                                 Role.UI_ORDER_ANNO, "10")),
                 template(
                         "role-template-workspace-console",
@@ -80,19 +80,19 @@ class PermissionDirectoryTest {
                                 Role.UI_TYPE_ANNO, Role.UI_TYPE_WORKSPACE,
                                 Role.UI_WORKSPACE_ANNO, "console",
                                 Role.UI_SLUG_ANNO, "console",
-                                Role.UI_LABEL_ANNO, "PUDANS Console",
-                                Role.UI_DESCRIPTION_ANNO, "统一终端访问管控",
+                                Role.UI_LABEL_ANNO, "管理控制台",
+                                Role.UI_DESCRIPTION_ANNO, "管理控制台",
                                 Role.UI_ORDER_ANNO, "20")),
                 template(
-                        "role-template-view-overview",
+                        "role-template-view-account-profile",
                         annotations(
                                 Role.UI_TYPE_ANNO, Role.UI_TYPE_MENU,
                                 Role.UI_ACTION_ANNO, Role.UI_ACTION_VIEW,
-                                Role.UI_MENU_ANNO, "default.overview",
-                                Role.UI_WORKSPACE_ANNO, "default",
-                                Role.UI_LABEL_ANNO, "总览",
-                                Role.UI_GROUP_ANNO, "PUDANS",
-                                Role.UI_GROUP_KEY_ANNO, "other",
+                                Role.UI_MENU_ANNO, "uc.account.profile",
+                                Role.UI_WORKSPACE_ANNO, "uc",
+                                Role.UI_LABEL_ANNO, "个人设置",
+                                Role.UI_GROUP_ANNO, "账户",
+                                Role.UI_GROUP_KEY_ANNO, "account",
                                 Role.UI_ORDER_ANNO, "10",
                                 Role.UI_PUBLIC_ANNO, "true")),
                 template(
@@ -135,15 +135,19 @@ class PermissionDirectoryTest {
         StepVerifier.create(service.catalog())
                 .assertNext(catalog -> {
                     assertThat(catalog.workspaces()).hasSize(2);
-                    var defaultWorkspace = catalog.workspaces().get(0);
-                    assertThat(defaultWorkspace.id()).isEqualTo("default");
-                    assertThat(defaultWorkspace.slug()).isEqualTo("index");
-                    assertThat(defaultWorkspace.menus()).hasSize(1);
-                    assertThat(defaultWorkspace.menus().get(0).publicMenu()).isTrue();
+                    var ucWorkspace = catalog.workspaces().get(0);
+                    assertThat(ucWorkspace.id()).isEqualTo("uc");
+                    assertThat(ucWorkspace.slug()).isEqualTo("uc");
+                    assertThat(ucWorkspace.name()).isEqualTo("个人中心");
+                    assertThat(ucWorkspace.plan()).isEqualTo("个人中心");
+                    assertThat(ucWorkspace.menus()).hasSize(1);
+                    assertThat(ucWorkspace.menus().get(0).publicMenu()).isTrue();
 
                     var consoleWorkspace = catalog.workspaces().get(1);
                     assertThat(consoleWorkspace.id()).isEqualTo("console");
                     assertThat(consoleWorkspace.slug()).isEqualTo("console");
+                    assertThat(consoleWorkspace.name()).isEqualTo("管理控制台");
+                    assertThat(consoleWorkspace.plan()).isEqualTo("管理控制台");
                     var users = consoleWorkspace.menus().get(0);
                     assertThat(users.key()).isEqualTo("console.users");
                     assertThat(users.component()).isEqualTo("users");
@@ -184,11 +188,11 @@ class PermissionDirectoryTest {
         StepVerifier.create(service.navigation(List.of("users:view")))
                 .assertNext(navigation -> {
                     assertThat(navigation.workspaces()).hasSize(2);
-                    var defaultWorkspace = navigation.workspaces().get(0);
-                    assertThat(defaultWorkspace.slug()).isEqualTo("index");
-                    assertThat(defaultWorkspace.menus()).extracting(PermissionDirectory.NavigationMenu::key)
-                            .containsExactly("default.overview");
-                    assertThat(defaultWorkspace.menus().getFirst().groupKey()).isEqualTo("other");
+                    var ucWorkspace = navigation.workspaces().get(0);
+                    assertThat(ucWorkspace.slug()).isEqualTo("uc");
+                    assertThat(ucWorkspace.menus()).extracting(PermissionDirectory.NavigationMenu::key)
+                            .containsExactly("uc.account.profile");
+                    assertThat(ucWorkspace.menus().getFirst().groupKey()).isEqualTo("account");
                     var consoleWorkspace = navigation.workspaces().get(1);
                     assertThat(consoleWorkspace.slug()).isEqualTo("console");
                     assertThat(consoleWorkspace.menus()).extracting(PermissionDirectory.NavigationMenu::key)
@@ -229,7 +233,7 @@ class PermissionDirectoryTest {
                     assertThat(navigation.workspaces()).hasSize(1);
                     assertThat(navigation.workspaces().get(0).menus())
                             .extracting(PermissionDirectory.NavigationMenu::key)
-                            .containsExactly("default.overview");
+                            .containsExactly("uc.account.profile");
                 })
                 .verifyComplete();
     }

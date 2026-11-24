@@ -8,3 +8,4 @@ export { RESULT_LABELS, ResultTag } from "./result-tag";
 export { SectionCard } from "./section-card";
 export { StatTile } from "./stat-tile";
 export { ThemeMenu } from "./theme-menu";
+export { UserMenu } from "./user-menu";

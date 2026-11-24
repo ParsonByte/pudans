@@ -90,6 +90,63 @@ class BuiltinRoleDefinitionsTest {
     }
 
     @Test
+    void personalCenterMenusBelongToTheUcWorkspace() {
+        var allMenus = definitions.allRoles().stream()
+                .filter(role -> Role.UI_TYPE_MENU.equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_TYPE_ANNO)))
+                .toList();
+        var workspaces = definitions.allRoles().stream()
+                .filter(role -> Role.UI_TYPE_WORKSPACE.equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_TYPE_ANNO)))
+                .toList();
+        var personalCenter = workspaces.stream()
+                .filter(role -> "uc".equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO)))
+                .toList();
+        var managementConsole = workspaces.stream()
+                .filter(role -> "console".equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO)))
+                .toList();
+        var menus = allMenus.stream()
+                .filter(role -> "uc".equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO)))
+                .toList();
+
+        assertThat(workspaces)
+                .extracting(role -> MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO))
+                .contains("console", "uc")
+                .doesNotContain("default");
+        assertThat(personalCenter).singleElement().satisfies(role -> {
+            var annotations = MetadataUtil.nullSafeAnnotations(role);
+            assertThat(annotations.get(Role.UI_SLUG_ANNO)).isEqualTo("uc");
+            assertThat(annotations.get(Role.UI_LABEL_ANNO)).isEqualTo("个人中心");
+            assertThat(annotations.get(Role.UI_DESCRIPTION_ANNO)).isEqualTo("个人中心");
+        });
+        assertThat(managementConsole).singleElement().satisfies(role -> {
+            var annotations = MetadataUtil.nullSafeAnnotations(role);
+            assertThat(annotations.get(Role.UI_SLUG_ANNO)).isEqualTo("console");
+            assertThat(annotations.get(Role.UI_LABEL_ANNO)).isEqualTo("管理控制台");
+            assertThat(annotations.get(Role.UI_DESCRIPTION_ANNO)).isEqualTo("管理控制台");
+        });
+        assertThat(menus)
+                .extracting(role -> role.getMetadata().getName())
+                .containsExactlyInAnyOrder(
+                        "role-template-view-account-profile",
+                        "role-template-view-account-security",
+                        "role-template-view-account-identities");
+        assertThat(menus)
+                .extracting(role -> MetadataUtil.nullSafeAnnotations(role).get(Role.UI_COMPONENT_ANNO))
+                .containsExactlyInAnyOrder("profile", "security", "identities");
+        assertThat(menus)
+                .extracting(role -> MetadataUtil.nullSafeAnnotations(role).get(Role.UI_MENU_ANNO))
+                .containsExactlyInAnyOrder(
+                        "uc.account.profile", "uc.account.security", "uc.account.identities");
+        assertThat(allMenus)
+                .extracting(role -> MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO))
+                .doesNotContain("default");
+    }
+
+    @Test
     void menuViewTemplatesDeclareDynamicGroupMetadata() {
         var menus = definitions.allRoles().stream()
                 .filter(role -> Role.UI_TYPE_MENU.equals(

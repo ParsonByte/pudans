@@ -1,0 +1,15 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-workspace-uc
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/ui-type: "workspace"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "uc"
+    rbac.authorization.pudans.tolim.cn/ui-slug: "uc"
+    rbac.authorization.pudans.tolim.cn/ui-label: "个人中心"
+    rbac.authorization.pudans.tolim.cn/ui-description: "个人中心"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:user-round"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+rules: []

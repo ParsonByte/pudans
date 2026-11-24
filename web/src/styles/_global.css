@@ -99,6 +99,12 @@
     line-height: normal;
 }
 
+.app-shell__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .app-shell :is(a, button):focus-visible {
     outline: 2px solid var(--td-brand-color);
     outline-offset: 2px;
@@ -238,6 +244,53 @@
 .theme-menu__option:focus-visible {
     outline: 2px solid var(--td-brand-color);
     outline-offset: 1px;
+}
+
+.app-shell__user-menu-trigger.t-button {
+    display: inline-flex;
+    height: 32px;
+    align-items: center;
+    padding: 2px 4px;
+    border: 1px solid transparent;
+    border-radius: var(--td-radius-medium);
+    color: var(--td-text-color-primary);
+    background: transparent;
+}
+
+.app-shell__user-menu-trigger.t-button:hover {
+    color: var(--td-text-color-primary);
+    background: transparent;
+}
+
+.app-shell__user-menu-trigger.t-button:focus {
+    border-color: var(--td-brand-color);
+    outline: none;
+}
+
+.app-shell__user-menu-trigger.t-button .t-button__text {
+    display: inline-flex;
+    align-items: center;
+}
+
+.app-shell__user-menu-content {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 6px;
+}
+
+.app-shell__user-menu-name {
+    max-width: 120px;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-shell__user-menu-chevron {
+    flex-shrink: 0;
+    color: var(--td-text-color-placeholder);
 }
 
 @keyframes light-to-dark {
@@ -386,6 +439,14 @@
     }
 
     .app-shell__brand span {
+        display: none;
+    }
+
+    .app-shell__user-menu-trigger.t-button {
+        padding-inline: 3px;
+    }
+
+    .app-shell__user-menu-name {
         display: none;
     }
 
