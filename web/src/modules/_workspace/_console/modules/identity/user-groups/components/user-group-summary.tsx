@@ -18,8 +18,12 @@ import type { DropdownOption } from "tdesign-react";
 
 import { useDesignTokens } from "@/components/ui";
 
-import { CopyableIdentifier } from "../../../../components/copyable-identifier";
-import { isBuiltinUserGroup, isSuperAdminsUserGroup, userGroupDisplayName } from "../composables/_user-group";
+import {
+    isBuiltinUserGroup,
+    isSuperAdminsUserGroup,
+    userGroupDescription,
+    userGroupDisplayName,
+} from "../composables/_user-group";
 
 type UserGroupSummaryProps = {
     canDelete: boolean;
@@ -45,6 +49,7 @@ export function UserGroupSummary({
     const tokens = useDesignTokens();
     const builtin = isBuiltinUserGroup(group);
     const superAdmins = isSuperAdminsUserGroup(group);
+    const description = userGroupDescription(group);
     const options: DropdownOption[] = [
         { content: "刷新用户组", prefixIcon: <RefreshIcon />, value: "refresh" },
         ...(canDelete && !builtin
@@ -79,11 +84,11 @@ export function UserGroupSummary({
                                 </Tag>
                             ) : null}
                         </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <div className="max-w-[280px] min-w-0">
-                                <CopyableIdentifier value={group.metadata.name} />
-                            </div>
-                        </div>
+                        {description ? (
+                            <p className="mt-2 line-clamp-2 max-w-xl text-xs text-[var(--td-text-color-secondary)]">
+                                {description}
+                            </p>
+                        ) : null}
                     </div>
                 </div>
 

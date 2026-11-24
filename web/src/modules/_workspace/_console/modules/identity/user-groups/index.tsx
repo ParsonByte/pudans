@@ -6,18 +6,16 @@ import { useParams } from "next/navigation";
 
 import type { UserGroup } from "@pudans-dev/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { AddIcon, RefreshIcon, UsergroupAddIcon } from "tdesign-icons-react";
-import { Button, Card, Skeleton } from "tdesign-react";
+import { AddIcon } from "tdesign-icons-react";
+import { Breadcrumb, Button, Card, Empty, Skeleton } from "tdesign-react";
 
 import { confirmGlobalDialog } from "@/components/ui";
 import { usePermission } from "@/hooks/utils/use-permission";
 import { useQueryParams } from "@/hooks/utils/use-query-params";
 
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatCountOrDash } from "../../../composables/_format";
 import { useConsoleSession } from "../../../composables/_session";
 import { IdentityLoadState } from "../components/identity-load-state";
-import { IdentityPageOverview } from "../components/identity-page-overview";
 import { USER_PERMISSIONS } from "../users/composables/_user-permissions";
 import { UserGroupDetailPanel } from "./components/user-group-detail-panel";
 import { UserGroupEditorModal } from "./components/user-group-editor-modal";
@@ -27,12 +25,12 @@ import {
     isBuiltinUserGroup,
     sortUserGroups,
     userGroupDisplayName,
-    userGroupRoleNames,
 } from "./composables/_user-group";
 import { useDeleteUserGroup } from "./composables/_user-group-actions";
 import { useUserGroupsQuery } from "./composables/_user-group-queries";
 
 const USER_GROUP_QUERY_KEY = ["console", "user-groups"] as const;
+const { BreadcrumbItem } = Breadcrumb;
 
 export function UserGroupsView() {
     const { workspace } = useParams<{ workspace: string }>();
@@ -50,15 +48,6 @@ export function UserGroupsView() {
     const [editorGroup, setEditorGroup] = useState<UserGroup | "create" | null>(null);
 
     const groups = useMemo(() => sortUserGroups(groupsQuery.data ?? []), [groupsQuery.data]);
-    const groupCounts = useMemo(() => {
-        const builtin = groups.filter(isBuiltinUserGroup).length;
-        return {
-            builtin,
-            custom: groups.length - builtin,
-            roles: groups.reduce((total, group) => total + userGroupRoleNames(group).length, 0),
-        };
-    }, [groups]);
-    const overview = groupsQuery.isPending ? undefined : { total: groups.length, ...groupCounts };
     const requestedGroup = searchParams.get("group") ?? undefined;
     const selectedGroup = useMemo(
         () => groups.find((group) => group.metadata.name === requestedGroup) ?? groups[0],
@@ -103,107 +92,85 @@ export function UserGroupsView() {
 
     if (sessionQuery.isPending) {
         return (
-            <Card>
-                <Skeleton animation="gradient" theme="paragraph" />
-            </Card>
+            <div className="flex w-full min-w-0 flex-col gap-4">
+                <UserGroupsBreadcrumb />
+                <Card bordered={false} shadow={false}>
+                    <Skeleton animation="gradient" theme="paragraph" />
+                </Card>
+            </div>
         );
     }
 
     if (sessionQuery.error) {
         return (
-            <IdentityLoadState
-                action={
-                    <Button onClick={() => void sessionQuery.refetch()} theme="primary">
-                        重试
-                    </Button>
-                }
-                description={consoleErrorMessage(sessionQuery.error)}
-                title="无法读取当前会话权限"
-            />
+            <div className="flex w-full min-w-0 flex-col gap-4">
+                <UserGroupsBreadcrumb />
+                <IdentityLoadState
+                    action={
+                        <Button onClick={() => void sessionQuery.refetch()} theme="primary">
+                            重试
+                        </Button>
+                    }
+                    description={consoleErrorMessage(sessionQuery.error)}
+                    title="无法读取当前会话权限"
+                />
+            </div>
         );
     }
 
     if (!can(USER_GROUP_PERMISSIONS.view)) {
-        return <IdentityLoadState description="当前账号没有查看用户组的权限。" title="无权查看" />;
+        return (
+            <div className="flex w-full min-w-0 flex-col gap-4">
+                <UserGroupsBreadcrumb />
+                <IdentityLoadState description="当前账号没有查看用户组的权限。" title="无权查看" />
+            </div>
+        );
     }
 
     return (
         <>
-            <div className="flex min-w-0 flex-col gap-4">
-                <IdentityPageOverview
-                    actions={
-                        <>
-                            {canCreate ? (
-                                <Button icon={<AddIcon />} onClick={() => setEditorGroup("create")} theme="primary">
-                                    新建用户组
-                                </Button>
-                            ) : null}
-                            <Button
-                                icon={<RefreshIcon />}
-                                loading={groupsQuery.isFetching}
-                                onClick={refreshGroups}
-                                variant="outline"
-                            >
-                                刷新
-                            </Button>
-                        </>
-                    }
-                    icon={<UsergroupAddIcon />}
-                    metrics={[
-                        { label: "用户组总数", value: formatCountOrDash(overview?.total) },
-                        { label: "系统内置", value: formatCountOrDash(overview?.builtin) },
-                        { label: "自定义用户组", value: formatCountOrDash(overview?.custom) },
-                        { label: "角色绑定条目", value: formatCountOrDash(overview?.roles) },
-                    ]}
-                    title="用户组与成员"
-                />
-                <div className="grid min-w-0 gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
-                    <UserGroupListPanel
-                        groups={groups}
-                        loading={groupsQuery.isPending}
-                        onCreate={canCreate ? () => setEditorGroup("create") : undefined}
-                        onSelect={selectGroup}
-                        selectedName={selectedGroup?.metadata.name}
-                    />
-                    {groupsQuery.isPending ? (
-                        <UserGroupDetailSkeleton />
-                    ) : groupsQuery.error ? (
-                        <IdentityLoadState
-                            action={
-                                <Button onClick={() => void groupsQuery.refetch()} theme="primary">
-                                    重试
-                                </Button>
-                            }
-                            description={consoleErrorMessage(groupsQuery.error)}
-                            title="用户组列表加载失败"
-                        />
-                    ) : selectedGroup ? (
-                        <UserGroupDetailPanel
-                            canDelete={canDelete}
-                            canGroupMembers={canGroupMembers}
-                            canUpdate={canUpdate}
-                            canViewUsers={canViewUsers}
-                            group={selectedGroup}
-                            key={selectedGroup.metadata.name}
-                            onDelete={confirmDelete}
-                            onEdit={setEditorGroup}
-                            onRefresh={refreshGroups}
-                            workspace={workspace}
-                        />
-                    ) : (
-                        <IdentityLoadState
-                            action={
-                                canCreate ? (
-                                    <Button icon={<AddIcon />} onClick={() => setEditorGroup("create")} theme="primary">
-                                        新建用户组
-                                    </Button>
-                                ) : undefined
-                            }
-                            title="暂无用户组"
-                            type="empty"
-                        />
-                    )}
-                </div>
+            <div className="flex w-full min-w-0 flex-col gap-4">
+                <UserGroupsBreadcrumb />
+                <Card bordered={false} bodyClassName="!p-0" className="min-w-0 overflow-hidden" shadow={false}>
+                    <div className="flex min-w-0 flex-col lg:flex-row">
+                        <div className="w-full shrink-0 border-b border-[var(--td-component-border)] p-4 lg:w-[232px] lg:border-r lg:border-b-0 lg:p-6">
+                            <UserGroupListPanel
+                                error={groupsQuery.error}
+                                groups={groups}
+                                loading={groupsQuery.isPending}
+                                onCreate={canCreate ? () => setEditorGroup("create") : undefined}
+                                onRetry={groupsQuery.error ? () => void groupsQuery.refetch() : undefined}
+                                onSelect={selectGroup}
+                                selectedName={selectedGroup?.metadata.name}
+                            />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            {groupsQuery.isPending ? (
+                                <UserGroupDetailSkeleton />
+                            ) : groupsQuery.error ? (
+                                <UserGroupDetailError
+                                    error={groupsQuery.error}
+                                    onRetry={() => void groupsQuery.refetch()}
+                                />
+                            ) : selectedGroup ? (
+                                <UserGroupDetailPanel
+                                    canDelete={canDelete}
+                                    canGroupMembers={canGroupMembers}
+                                    canUpdate={canUpdate}
+                                    canViewUsers={canViewUsers}
+                                    group={selectedGroup}
+                                    key={selectedGroup.metadata.name}
+                                    onDelete={confirmDelete}
+                                    onEdit={setEditorGroup}
+                                    onRefresh={refreshGroups}
+                                    workspace={workspace}
+                                />
+                            ) : (
+                                <UserGroupDetailEmpty canCreate={canCreate} onCreate={() => setEditorGroup("create")} />
+                            )}
+                        </div>
+                    </div>
+                </Card>
             </div>
             {editorGroup ? (
                 <UserGroupEditorModal
@@ -216,10 +183,54 @@ export function UserGroupsView() {
     );
 }
 
+function UserGroupsBreadcrumb() {
+    return (
+        <Breadcrumb>
+            <BreadcrumbItem>身份与权限</BreadcrumbItem>
+            <BreadcrumbItem>用户组</BreadcrumbItem>
+        </Breadcrumb>
+    );
+}
+
 function UserGroupDetailSkeleton() {
     return (
-        <Card className="min-h-[480px] overflow-hidden">
+        <div className="min-h-[480px] p-4 lg:p-6">
             <Skeleton animation="gradient" theme="paragraph" />
-        </Card>
+        </div>
+    );
+}
+
+function UserGroupDetailError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+    return (
+        <div className="flex min-h-[420px] items-center justify-center p-6">
+            <Empty
+                action={
+                    <Button onClick={onRetry} theme="primary">
+                        重试
+                    </Button>
+                }
+                description={consoleErrorMessage(error)}
+                title="用户组列表加载失败"
+                type="fail"
+            />
+        </div>
+    );
+}
+
+function UserGroupDetailEmpty({ canCreate, onCreate }: { canCreate: boolean; onCreate: () => void }) {
+    return (
+        <div className="flex min-h-[420px] items-center justify-center p-6">
+            <Empty
+                action={
+                    canCreate ? (
+                        <Button icon={<AddIcon />} onClick={onCreate} theme="primary">
+                            新建用户组
+                        </Button>
+                    ) : undefined
+                }
+                title="暂无用户组"
+                type="empty"
+            />
+        </div>
     );
 }
