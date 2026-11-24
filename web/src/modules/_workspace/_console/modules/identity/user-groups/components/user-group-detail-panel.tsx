@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import type { UserGroup } from "@pudans-dev/api-client";
-import { Card, Tabs } from "tdesign-react";
+import { Tabs } from "tdesign-react";
 import type { TabValue } from "tdesign-react";
 
 import { useRolesQuery } from "../../roles/composables/_role-queries";
@@ -81,33 +81,37 @@ export function UserGroupDetailPanel({
         {
             label: "成员",
             panel: (
-                <UserGroupMembers
-                    canManage={canManageMembers}
-                    canViewUsers={canViewUsers}
-                    error={membersQuery.error}
-                    groupName={group.metadata.name}
-                    loading={membersQuery.isPending}
-                    members={membersQuery.data}
-                    onAdd={() => setMembersOpen(true)}
-                    onRetry={() => void membersQuery.refetch()}
-                    workspace={workspace}
-                />
+                <div className="pt-4">
+                    <UserGroupMembers
+                        canManage={canManageMembers}
+                        canViewUsers={canViewUsers}
+                        error={membersQuery.error}
+                        groupName={group.metadata.name}
+                        loading={membersQuery.isPending}
+                        members={membersQuery.data}
+                        onAdd={() => setMembersOpen(true)}
+                        onRetry={() => void membersQuery.refetch()}
+                        workspace={workspace}
+                    />
+                </div>
             ),
             value: "members",
         },
         {
             label: "角色",
             panel: (
-                <UserGroupRoles
-                    canManage={canManageRoles}
-                    group={group}
-                    onAdd={() => setRolesOpen(true)}
-                    onRemove={removeRole}
-                    onRetry={() => void rolesQuery.refetch()}
-                    roles={rolesQuery.data ?? []}
-                    rolesError={rolesQuery.error}
-                    rolesPending={rolesQuery.isPending}
-                />
+                <div className="pt-4">
+                    <UserGroupRoles
+                        canManage={canManageRoles}
+                        group={group}
+                        onAdd={() => setRolesOpen(true)}
+                        onRemove={removeRole}
+                        onRetry={() => void rolesQuery.refetch()}
+                        roles={rolesQuery.data ?? []}
+                        rolesError={rolesQuery.error}
+                        rolesPending={rolesQuery.isPending}
+                    />
+                </div>
             ),
             value: "roles",
         },
@@ -115,9 +119,8 @@ export function UserGroupDetailPanel({
 
     return (
         <>
-            <Card
-                className="min-w-0 overflow-hidden"
-                header={
+            <div className="min-w-0">
+                <div className="border-b border-[var(--td-component-border)] px-4 py-5 lg:px-6">
                     <UserGroupSummary
                         canDelete={canDeleteGroup}
                         canEdit={canEditProfile}
@@ -128,13 +131,11 @@ export function UserGroupDetailPanel({
                         onRefresh={onRefresh}
                         roleCount={roleNames.length}
                     />
-                }
-                headerBordered
-            >
-                <div className="px-4 pt-5 pb-6 sm:px-6 sm:pt-6">
+                </div>
+                <div className="px-4 pt-5 pb-6 lg:px-6">
                     <Tabs list={items} onChange={setActiveTab} value={activeTab} />
                 </div>
-            </Card>
+            </div>
             {membersOpen ? (
                 <AddUserGroupMembersModal
                     groupName={group.metadata.name}

@@ -5,11 +5,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import type { ListedUser } from "@pudans-dev/api-client";
-import { AddIcon, ArrowRightIcon, SearchIcon, UserClearIcon } from "tdesign-icons-react";
+import { AddIcon, SearchIcon, UserClearIcon } from "tdesign-icons-react";
 import { Button, Card, Empty, Input, Skeleton, Table } from "tdesign-react";
 import type { TableProps } from "tdesign-react";
 
 import { confirmGlobalDialog } from "@/components/ui";
+import { useMediaQuery } from "@/hooks/ui/use-media-query";
 
 import { EmptyValue } from "../../../../components/empty-value";
 import { consoleErrorMessage } from "../../../../composables/_errors";
@@ -48,6 +49,14 @@ export function UserGroupMembers({
 }: UserGroupMembersProps) {
     const removeMember = useRemoveUserGroupMember();
     const [keyword, setKeyword] = useState("");
+    const showEmail = useMediaQuery("(min-width: 1280px)");
+    const showPhone = useMediaQuery("(min-width: 1440px)");
+    const showRegisteredAt = useMediaQuery("(min-width: 1280px)");
+    const showStatusColumn = useMediaQuery("(min-width: 1280px)");
+    const userWidth = showPhone ? (canManage ? "22%" : "24%") : showEmail ? (canManage ? "32%" : "36%") : undefined;
+    const emailWidth = showPhone ? (canManage ? "20%" : "22%") : canManage ? "26%" : "28%";
+    const registeredWidth = showPhone ? "20%" : canManage ? "20%" : "22%";
+    const statusWidth = canManage ? "10%" : "12%";
     const rows = useMemo<MemberRow[]>(() => {
         const query = keyword.trim().toLocaleLowerCase();
         const sorted = [...(members ?? [])].sort((left, right) =>
@@ -91,32 +100,73 @@ export function UserGroupMembers({
 
     const columns: NonNullable<TableProps<MemberRow>["columns"]> = [
         {
-            cell: ({ row }) => <MemberCell canViewUsers={canViewUsers} member={row} workspace={workspace} />,
+            cell: ({ row }) => (
+                <MemberCell
+                    canViewUsers={canViewUsers}
+                    member={row}
+                    showInlineStatus={!showStatusColumn}
+                    workspace={workspace}
+                />
+            ),
             colKey: "user",
             title: "用户",
+            width: userWidth,
         },
-        {
-            cell: ({ row }) => row.email || <EmptyValue />,
-            colKey: "email",
-            title: "邮箱",
-        },
-        {
-            cell: ({ row }) => row.phone || <EmptyValue />,
-            colKey: "phone",
-            title: "手机号",
-        },
-        {
-            cell: ({ row }) => (row.registeredAt ? formatDateTime(row.registeredAt) : "未填写"),
-            colKey: "registeredAt",
-            title: "注册时间",
-            width: 170,
-        },
-        {
-            cell: ({ row }) => <UserStatusTag disabled={row.disabled} />,
-            colKey: "status",
-            title: "状态",
-            width: 90,
-        },
+        ...(showEmail
+            ? [
+                  {
+                      cell: ({ row }: { row: MemberRow }) =>
+                          row.email ? (
+                              <span className="block truncate" title={row.email}>
+                                  {row.email}
+                              </span>
+                          ) : (
+                              <EmptyValue />
+                          ),
+                      colKey: "email",
+                      title: "邮箱",
+                      width: emailWidth,
+                  },
+              ]
+            : []),
+        ...(showPhone
+            ? [
+                  {
+                      cell: ({ row }: { row: MemberRow }) =>
+                          row.phone ? (
+                              <span className="block truncate" title={row.phone}>
+                                  {row.phone}
+                              </span>
+                          ) : (
+                              <EmptyValue />
+                          ),
+                      colKey: "phone",
+                      title: "手机号",
+                      width: canManage ? "17%" : "18%",
+                  },
+              ]
+            : []),
+        ...(showRegisteredAt
+            ? [
+                  {
+                      cell: ({ row }: { row: MemberRow }) =>
+                          row.registeredAt ? formatDateTime(row.registeredAt) : "未填写",
+                      colKey: "registeredAt",
+                      title: "注册时间",
+                      width: registeredWidth,
+                  },
+              ]
+            : []),
+        ...(showStatusColumn
+            ? [
+                  {
+                      cell: ({ row }: { row: MemberRow }) => <UserStatusTag disabled={row.disabled} />,
+                      colKey: "status",
+                      title: "状态",
+                      width: statusWidth,
+                  },
+              ]
+            : []),
         ...(canManage
             ? [
                   {
@@ -134,7 +184,7 @@ export function UserGroupMembers({
                       ),
                       colKey: "actions",
                       title: "操作",
-                      width: 100,
+                      width: 88,
                   },
               ]
             : []),
@@ -149,7 +199,14 @@ export function UserGroupMembers({
                     </Button>
                 ) : null
             }
-            header={<div className="text-base font-semibold">成员</div>}
+            header={
+                <div className="flex items-baseline gap-2">
+                    <span className="text-base font-semibold">成员</span>
+                    <span className="text-xs font-normal text-[var(--td-text-color-secondary)]">
+                        {loading ? "加载中" : `${rows.length} 位`}
+                    </span>
+                </div>
+            }
             headerBordered
         >
             <div className="flex flex-col gap-4">
@@ -186,16 +243,24 @@ export function UserGroupMembers({
                         description={keyword ? "没有匹配的成员" : "这个用户组还没有成员"}
                     />
                 ) : (
-                    <Table<MemberRow>
-                        columns={columns}
-                        data={rows}
-                        pagination={{
-                            defaultPageSize: 10,
-                            pageSizeOptions: [10, 20, 50],
-                            showPageSize: true,
-                        }}
-                        rowKey="__rowKey"
-                    />
+                    <div className="min-w-0 overflow-x-auto">
+                        <Table<MemberRow>
+                            columns={columns}
+                            data={rows}
+                            pagination={
+                                rows.length > 10
+                                    ? {
+                                          defaultPageSize: 10,
+                                          pageSizeOptions: [10, 20, 50],
+                                          showPageSize: showStatusColumn,
+                                          total: rows.length,
+                                      }
+                                    : undefined
+                            }
+                            rowKey="__rowKey"
+                            tableLayout="fixed"
+                        />
+                    </div>
                 )}
             </div>
         </Card>
@@ -205,21 +270,23 @@ export function UserGroupMembers({
 function MemberCell({
     canViewUsers,
     member,
+    showInlineStatus,
     workspace,
 }: {
     canViewUsers: boolean;
     member: ListedUser;
+    showInlineStatus: boolean;
     workspace: string;
 }) {
     const displayName = member.displayName || member.name || "未命名用户";
     const loginName = member.loginName || member.name;
     const content = (
         <>
-            <UserAvatar name={displayName} size={34} />
+            <UserAvatar name={displayName} size={34} src={member.avatar} />
             <div className="min-w-0">
                 <div className="flex min-w-0 items-center gap-1.5">
                     <span className="truncate text-sm font-medium">{displayName}</span>
-                    {canViewUsers && member.name ? <ArrowRightIcon className="shrink-0" size={12} /> : null}
+                    {showInlineStatus ? <UserStatusTag disabled={member.disabled} /> : null}
                 </div>
                 <div className="truncate font-mono text-[10px] text-[var(--td-text-color-placeholder)]">
                     {loginName ? `@${loginName}` : "未填写"}
