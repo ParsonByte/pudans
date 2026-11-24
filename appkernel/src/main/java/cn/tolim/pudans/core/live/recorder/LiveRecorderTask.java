@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import reactor.core.publisher.Mono;
 
@@ -367,7 +368,7 @@ public class LiveRecorderTask implements Runnable {
                 }
                 lastPacketAt = writer.lastPacketAt();
                 // 重新收到数据包说明已恢复，先发恢复告警再刷新心跳
-                notifyRecovered();
+                notifyRecovered(Instant.now());
                 heartbeat(writer);
             }
             return null;
@@ -387,16 +388,9 @@ public class LiveRecorderTask implements Runnable {
         if (merger.isFailed(recordingName)) {
             return Outcome.failure(merger.failureCode(recordingName), "录制成品处理失败");
         }
-        // 首次失败即开始计时，达到阈值才发一次断流告警
+        // 记录本次失败，达到阈值才发一次断流告警
         var now = Instant.now();
-        outage.begin(now);
-        if (outage.alertDue(now, properties.getAlert().getStreamInterruptThreshold())) {
-            var payload = alertPayload();
-            payload.put("errorCode", lastCode.name());
-            payload.put("message", message);
-            sendAlert("live.stream.interrupted", payload);
-            outage.markAlerted();
-        }
+        recordInterruption(now, lastCode, message);
         if (recovery.streamRetries >= properties.getRecorder().getMaxRetries()) {
             return Outcome.failure(lastCode, message);
         }
@@ -431,32 +425,52 @@ public class LiveRecorderTask implements Runnable {
         return null;
     }
 
-    // 断流后重新收到数据包时发送恢复告警并归零计时
-    private void notifyRecovered() {
-        var interrupted = outage.end(Instant.now());
-        if (interrupted == null) {
+    // 记录一次拉流失败：首次失败开始计时，达到阈值时发送断流告警
+    void recordInterruption(Instant now, LiveErrorCode lastCode, String message) {
+        outage.begin(now, lastCode.name(), message);
+        if (!outage.alertDue(now, properties.getAlert().getStreamInterruptThreshold())) {
             return;
         }
-        var payload = alertPayload();
-        payload.put("interruptedMillis", interrupted.toMillis());
+        var payload = alertPayload(outage.startedAt(), now);
+        payload.put("errorCode", lastCode.name());
+        payload.put("message", message);
+        sendAlert("live.stream.interrupted", payload);
+        outage.markAlerted();
+    }
+
+    // 恢复时归零计时，只有发过中断告警的断流才补发恢复告警
+    void notifyRecovered(Instant now) {
+        var recovered = outage.end(now);
+        if (recovered == null) {
+            return;
+        }
+        if (!recovered.alerted()) {
+            log.info("短时断流已恢复，未发送恢复告警 [{}]", recordingName);
+            return;
+        }
+        var payload = alertPayload(recovered.startedAt(), now);
+        payload.put("errorCode", recovered.errorCode());
+        payload.put("message", recovered.message());
+        payload.put("durationMillis", recovered.duration().toMillis());
         sendAlert("live.stream.recovered", payload);
     }
 
-    // 组装告警公共字段，错误码按需追加
-    private Map<String, Object> alertPayload() {
+    // 组装告警公共字段，断流起点与事件时刻由调用方给定
+    private Map<String, Object> alertPayload(@Nullable Instant startedAt, Instant at) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("recordingName", recordingName);
         payload.put("sourceName", sourceName);
         payload.put("roomId", roomId);
-        payload.put("at", Instant.now().toString());
+        payload.put("startedAt", startedAt == null ? null : startedAt.toString());
+        payload.put("at", at.toString());
         return payload;
     }
 
-    // 告警异步发送，失败只记录日志
+    // 告警异步发送，断流类告警不去重，失败只记录日志
     private void sendAlert(String type, Map<String, Object> payload) {
         try {
             liveAlerts
-                    .alert(type, recordingName, payload)
+                    .alertAlways(type, recordingName, payload)
                     .onErrorResume(error -> {
                         log.warn("直播告警发送失败 [{}]：{}", type, error.getMessage());
                         return Mono.empty();
