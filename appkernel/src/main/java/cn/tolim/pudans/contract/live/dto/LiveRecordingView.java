@@ -10,4 +10,5 @@ public record LiveRecordingView(
         LiveRecordingState state, String errorCode, Instant startedAt,
         Instant endedAt, long durationMillis, long totalBytes,
         int segmentCount, int partCount, long localBytes,
+        Instant lastWriteAt, Instant lastPacketAt,
         String storagePolicy, String retryOf, boolean auto) {}
