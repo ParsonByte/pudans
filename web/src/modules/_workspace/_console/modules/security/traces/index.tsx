@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { type AuditSessionSummary, apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { HistoryIcon, RefreshIcon } from "tdesign-icons-react";
-import { Button, Empty, Select, Skeleton, Tag, Tooltip } from "tdesign-react";
+import { Breadcrumb, Button, Empty, RadioGroup, Select, Skeleton, Tag, Tooltip } from "tdesign-react";
 import type { TableProps } from "tdesign-react";
 
 import { GlobalDialog, ResultTag, SectionCard } from "@/components/ui";
@@ -28,14 +28,24 @@ import { formatCount, formatDateTime, formatDuration, operationLabel } from "../
 import { DASHBOARD_RANGES, type DashboardRange } from "../../../composables/_range";
 import { RESULT_OPTIONS } from "../../../composables/_results";
 import { useConsoleTableState } from "../../../composables/_table";
+import { dashboardRangeBounds, dashboardRangeForDays } from "../../overview/dashboard/composables/_dashboard";
 import { useDashboardTheme } from "../../overview/dashboard/composables/_theme";
 import { SecuritySearchInput } from "../components/security-search-input";
 
 const OPERATION_LIMIT = 2;
 
+const { BreadcrumbItem } = Breadcrumb;
+
 type SessionRow = AuditSessionSummary & {
     rowId: string;
 };
+
+type TraceTab = "overview" | "sessions";
+
+const TRACE_TAB_OPTIONS: Array<{ label: string; value: TraceTab }> = [
+    { label: "链路概览", value: "overview" },
+    { label: "用户会话", value: "sessions" },
+];
 
 export function TracesView() {
     const table = useConsoleTableState();
@@ -43,10 +53,12 @@ export function TracesView() {
     const { setParams } = useQueryParams();
     const { token } = useDashboardTheme();
     const [range, setRange] = useState<DashboardRange>(7);
+    const [activeTab, setActiveTab] = useState<TraceTab>("overview");
     const [selectedSession, setSelectedSession] = useState<AuditSessionSummary>();
     const uid = table.filters.uid ?? "";
     const operation = table.filters.operation ?? "";
     const result = table.filters.result ?? "";
+    const rangeBounds = useMemo(() => dashboardRangeBounds(dashboardRangeForDays(range)), [range]);
     const overviewQuery = useQuery({
         placeholderData: keepPreviousData,
         queryFn: async () => (await apiClient.auditLog.getAuditOverview({ days: range })).data,
@@ -57,20 +69,30 @@ export function TracesView() {
     const sessionsQuery = useQuery({
         placeholderData: keepPreviousData,
         queryFn: async () => {
-            const from = new Date(Date.now() - range * 86_400_000).toISOString();
-
             return (
                 await apiClient.auditLog.listAuditSessions({
-                    from,
+                    from: rangeBounds.from,
                     operation: operation || undefined,
                     page: table.page,
                     result: result || undefined,
                     size: table.pageSize,
+                    to: rangeBounds.to,
                     uid: uid || undefined,
                 })
             ).data;
         },
-        queryKey: ["console", "traces", "sessions", table.page, table.pageSize, uid, operation, result, range],
+        queryKey: [
+            "console",
+            "traces",
+            "sessions",
+            table.page,
+            table.pageSize,
+            uid,
+            operation,
+            result,
+            rangeBounds.from,
+            rangeBounds.to,
+        ],
     });
     const detailQuery = useQuery({
         enabled: Boolean(selectedSession?.sessionId),
@@ -167,10 +189,10 @@ export function TracesView() {
             width: 168,
         },
         {
-            cell: ({ row }) => formatDuration(row.durationMs),
+            cell: ({ row }) => <span className="whitespace-nowrap">{formatDuration(row.durationMs)}</span>,
             colKey: "durationMs",
             title: "耗时",
-            width: 96,
+            width: 112,
         },
         {
             cell: ({ row }) => {
@@ -226,32 +248,49 @@ export function TracesView() {
                 </div>
             ),
             colKey: "actions",
+            fixed: "right",
             title: "操作",
             width: 132,
         },
     ];
 
     return (
-        <div className="flex min-w-0 flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-                <Select
-                    onChange={(value) => {
-                        setRange(value as DashboardRange);
-                        table.setPage(1);
-                    }}
-                    options={DASHBOARD_RANGES}
-                    style={{ width: 132 }}
-                    value={range}
-                />
-                <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
-                    刷新
-                </Button>
-                <Button icon={<HistoryIcon />} onClick={() => setParams({ security: "replay" })}>
-                    回溯与归档
-                </Button>
+        <div className="flex w-full min-w-0 flex-col gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <Breadcrumb>
+                    <BreadcrumbItem>安全与审计</BreadcrumbItem>
+                    <BreadcrumbItem>链路</BreadcrumbItem>
+                </Breadcrumb>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                        aria-label="链路统计范围"
+                        onChange={(value) => {
+                            setRange(value as DashboardRange);
+                            table.setPage(1);
+                        }}
+                        options={DASHBOARD_RANGES}
+                        style={{ width: 132 }}
+                        value={range}
+                    />
+                    <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
+                        刷新
+                    </Button>
+                    <Button icon={<HistoryIcon />} onClick={() => setParams({ security: "replay" })}>
+                        回溯与归档
+                    </Button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+            <RadioGroup
+                className="w-fit"
+                onChange={(value) => setActiveTab(value as TraceTab)}
+                options={TRACE_TAB_OPTIONS}
+                theme="button"
+                value={activeTab}
+                variant="default-filled"
+            />
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12" hidden={activeTab !== "overview"}>
                 <SessionMetricGrid loading={sessionsQuery.isPending} page={sessionPage} />
 
                 <div className="md:col-span-2 xl:col-span-7">
@@ -301,54 +340,53 @@ export function TracesView() {
                 </div>
             </div>
 
-            <ConsoleTable
-                columns={columns}
-                data={sessionRows}
-                error={sessionsQuery.error}
-                extra={
-                    <Button
-                        loading={sessionsQuery.isFetching}
-                        onClick={() => void sessionsQuery.refetch()}
-                        size="small"
-                    >
-                        刷新
-                    </Button>
-                }
-                loading={sessionsQuery.isPending}
-                onRetry={() => void sessionsQuery.refetch()}
-                pagination={{ ...table.pagination, total: sessionPage?.total ?? 0 }}
-                rowKey="rowId"
-                title="用户会话链路"
-                toolbar={
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <div className="min-w-0 flex-1 sm:max-w-[220px]">
-                            <SecuritySearchInput
-                                onChange={() => undefined}
-                                onSearch={(value) => table.setFilter("uid", value || null)}
-                                placeholder="用户 UID"
-                                value={uid}
-                            />
-                        </div>
-                        <div className="min-w-0 flex-1 sm:max-w-[220px]">
-                            <SecuritySearchInput
-                                onChange={() => undefined}
-                                onSearch={(value) => table.setFilter("operation", value || null)}
-                                placeholder="会话内的操作"
-                                value={operation}
-                            />
-                        </div>
-                        <Select
-                            clearable
-                            onChange={(value) => table.setFilter("result", (value as string | undefined) ?? null)}
-                            options={RESULT_OPTIONS}
-                            placeholder="会话结果"
-                            style={{ width: 144 }}
-                            value={result || undefined}
-                        />
-                        <Button onClick={() => table.reset()}>重置</Button>
-                    </div>
-                }
-            />
+            <div hidden={activeTab !== "sessions"}>
+                <SectionCard title="用户会话链路">
+                    <ConsoleTable
+                        cardless
+                        columns={columns}
+                        data={sessionRows}
+                        error={sessionsQuery.error}
+                        loading={sessionsQuery.isPending}
+                        onRetry={sessionsQuery.error ? () => void sessionsQuery.refetch() : undefined}
+                        pagination={{ ...table.pagination, total: sessionPage?.total ?? 0 }}
+                        rowKey="rowId"
+                        toolbar={
+                            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                                <div className="min-w-0 sm:max-w-[220px] sm:flex-1">
+                                    <SecuritySearchInput
+                                        onChange={() => undefined}
+                                        onSearch={(value) => table.setFilter("uid", value || null)}
+                                        placeholder="用户 UID"
+                                        value={uid}
+                                    />
+                                </div>
+                                <div className="min-w-0 sm:max-w-[220px] sm:flex-1">
+                                    <SecuritySearchInput
+                                        onChange={() => undefined}
+                                        onSearch={(value) => table.setFilter("operation", value || null)}
+                                        placeholder="会话内的操作"
+                                        value={operation}
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Select
+                                        clearable
+                                        onChange={(value) =>
+                                            table.setFilter("result", (value as string | undefined) ?? null)
+                                        }
+                                        options={RESULT_OPTIONS}
+                                        placeholder="会话结果"
+                                        style={{ width: 144 }}
+                                        value={result || undefined}
+                                    />
+                                    <Button onClick={() => table.reset()}>重置</Button>
+                                </div>
+                            </div>
+                        }
+                    />
+                </SectionCard>
+            </div>
 
             <GlobalDialog
                 footer={false}
