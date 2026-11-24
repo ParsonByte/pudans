@@ -6,7 +6,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Storage"
-    rbac.authorization.pudans.tolim.cn/display-name: "Storage Policy View"
+    rbac.authorization.pudans.tolim.cn/display-name: "存储策略查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
@@ -39,7 +39,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-storage-policies" ]
     rbac.authorization.pudans.tolim.cn/module: "Storage"
-    rbac.authorization.pudans.tolim.cn/display-name: "Storage Policy Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "存储策略管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
@@ -79,7 +79,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Storage"
-    rbac.authorization.pudans.tolim.cn/display-name: "Storage File View"
+    rbac.authorization.pudans.tolim.cn/display-name: "存储文件查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage-files"

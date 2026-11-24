@@ -6,7 +6,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Users Management"
-    rbac.authorization.pudans.tolim.cn/display-name: "User View"
+    rbac.authorization.pudans.tolim.cn/display-name: "用户查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
@@ -15,8 +15,6 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-label: "用户"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看、创建、导入和管理用户。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:users"
-    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
-    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
     rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
     rbac.authorization.pudans.tolim.cn/ui-order: "100"
@@ -40,7 +38,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-users", "role-template-manage-usergroups" ]
     rbac.authorization.pudans.tolim.cn/module: "Users Management"
-    rbac.authorization.pudans.tolim.cn/display-name: "User Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "用户管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
@@ -89,7 +87,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Roles Management"
-    rbac.authorization.pudans.tolim.cn/display-name: "Role View"
+    rbac.authorization.pudans.tolim.cn/display-name: "角色查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.roles"
@@ -98,8 +96,6 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-label: "角色"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看、创建和维护角色及其权限。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-check"
-    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
-    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
     rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
     rbac.authorization.pudans.tolim.cn/ui-order: "110"
@@ -131,7 +127,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-roles", "role-template-audit-logs" ]
     rbac.authorization.pudans.tolim.cn/module: "Roles Management"
-    rbac.authorization.pudans.tolim.cn/display-name: "Role Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "角色管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.roles"
@@ -156,7 +152,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Users Management"
-    rbac.authorization.pudans.tolim.cn/display-name: "User Group View"
+    rbac.authorization.pudans.tolim.cn/display-name: "用户组查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.user-groups"
@@ -165,8 +161,6 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-label: "用户组"
     rbac.authorization.pudans.tolim.cn/ui-description: "维护用户组、成员与角色绑定。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:users-round"
-    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
-    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
     rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
     rbac.authorization.pudans.tolim.cn/ui-order: "120"
@@ -193,7 +187,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-usergroups" ]
     rbac.authorization.pudans.tolim.cn/module: "Users Management"
-    rbac.authorization.pudans.tolim.cn/display-name: "User Group Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "用户组管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.user-groups"
@@ -218,7 +212,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Permissions"
-    rbac.authorization.pudans.tolim.cn/display-name: "Permission Catalog View"
+    rbac.authorization.pudans.tolim.cn/display-name: "权限目录查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.permissions"
@@ -227,8 +221,6 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-label: "权限目录"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看工作区、菜单与权限资源目录。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:key-round"
-    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
-    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
     rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
     rbac.authorization.pudans.tolim.cn/ui-order: "130"
@@ -272,6 +264,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-manage-settings" ]'
+    rbac.authorization.pudans.tolim.cn/display-name: "身份提供商管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.auth-providers"
