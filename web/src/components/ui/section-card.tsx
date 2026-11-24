@@ -16,10 +16,9 @@ export function SectionCard({ bodyClassName, children, className, extra, title }
     return (
         <Card
             actions={extra}
+            bordered={false}
             bodyClassName={bodyClassName}
             className={`h-full ${className ?? ""}`}
-            bordered
-            shadow
             title={title}
         >
             {children}
