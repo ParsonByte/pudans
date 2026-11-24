@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/modules/_workspace/_index/modules/dream-space/components/index.ts"],
   "ignore": ["src/hooks/**"],
   "ignoreDependencies": [
     "@ai-sdk/react",
