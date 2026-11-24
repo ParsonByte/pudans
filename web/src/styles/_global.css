@@ -139,6 +139,54 @@
     background: var(--td-bg-color-container);
 }
 
+.index-sidebar__layout {
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    flex-direction: column;
+}
+
+.index-sidebar__navigation {
+    min-height: 0;
+    flex: 0 1 auto;
+    overflow-y: auto;
+    padding: 8px 0 0;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.index-sidebar__navigation > .t-default-menu {
+    background: transparent;
+}
+
+.index-sidebar__conversations {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 12px;
+    background: var(--td-bg-color-container);
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.index-sidebar__conversation-empty {
+    display: flex;
+    min-height: 104px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin-top: 10px;
+    border: 1px dashed var(--td-component-stroke);
+    border-radius: var(--td-radius-large);
+    background: var(--td-bg-color-secondarycontainer);
+    padding: 16px 12px;
+    text-align: center;
+}
+
+.index-sidebar[data-collapsed="true"] .index-sidebar__conversations {
+    display: none;
+}
+
 .app-shell__nav {
     height: 100%;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { useEffect } from "react";
 
 import { ThemeMenu, UserMenu } from "@/components/ui";
@@ -9,7 +9,7 @@ import { useThemeSync } from "@/hooks/ui/use-theme-sync";
 
 import { AppContainer } from "./app-container";
 import { AppHeader } from "./app-header";
-import type { AppShellGroup, AppShellItem } from "./app-shell-types";
+import type { AppShellGroup, AppShellItem, AppShellSidebarProps } from "./app-shell-types";
 import { AppSidebar } from "./app-sidebar";
 
 type AppShellProps = {
@@ -24,6 +24,7 @@ type AppShellProps = {
     onCollapse?: (collapsed: boolean) => void;
     onNavigate: (href: string) => void;
     pageTitle?: string;
+    sidebar?: ComponentType<AppShellSidebarProps>;
 };
 
 export function AppShell({
@@ -43,6 +44,7 @@ export function AppShell({
     onCollapse,
     onNavigate,
     pageTitle,
+    sidebar: Sidebar,
 }: AppShellProps) {
     const { isDark } = useThemeSync();
     const isCompact = useMobile();
@@ -65,14 +67,23 @@ export function AppShell({
                 onToggleSidebar={onToggleSidebar}
             />
             <div className="app-shell__body">
-                <AppSidebar
-                    activeItem={activeItem}
-                    collapsed={menuCollapsed}
-                    isDark={isDark}
-                    items={items}
-                    loading={loading}
-                    onNavigate={onNavigate}
-                />
+                {Sidebar ? (
+                    <Sidebar
+                        activeItem={activeItem}
+                        collapsed={menuCollapsed}
+                        isDark={isDark}
+                        onNavigate={onNavigate}
+                    />
+                ) : (
+                    <AppSidebar
+                        activeItem={activeItem}
+                        collapsed={menuCollapsed}
+                        isDark={isDark}
+                        items={items}
+                        loading={loading}
+                        onNavigate={onNavigate}
+                    />
+                )}
                 <div className="app-shell__content">
                     <AppContainer>{children}</AppContainer>
                 </div>

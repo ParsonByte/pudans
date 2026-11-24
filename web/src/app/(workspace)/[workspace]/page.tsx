@@ -7,16 +7,19 @@ import { useParams } from "next/navigation";
 import { Empty, Loading } from "tdesign-react";
 
 import { useDynamicMenu } from "@/composables/useDynamicMenu";
+import { HOME_WORKSPACE_KEY } from "@/composables/workspace-navigation";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { IndexView } from "@/modules/_workspace/_index";
 import { WORKSPACE_VIEWS } from "@/routes/(_workspace)";
 
 function WorkspacePageContent() {
     const { workspace } = useParams<{ workspace: string }>();
     const dynamicMenu = useDynamicMenu(workspace);
     const prompt = useMessagePrompt();
+    const isIndexWorkspace = workspace === HOME_WORKSPACE_KEY;
     const selection = dynamicMenu.selection;
     const View =
-        dynamicMenu.workspaceKey && selection
+        !isIndexWorkspace && dynamicMenu.workspaceKey && selection
             ? WORKSPACE_VIEWS[dynamicMenu.workspaceKey]?.[selection.group.key]?.[selection.item.menuKey]
             : undefined;
 
@@ -26,6 +29,10 @@ function WorkspacePageContent() {
         }
 
         if (dynamicMenu.error) {
+            return;
+        }
+
+        if (isIndexWorkspace) {
             return;
         }
 
@@ -54,6 +61,7 @@ function WorkspacePageContent() {
         dynamicMenu.loading,
         dynamicMenu.notFound,
         dynamicMenu.workspaceKey,
+        isIndexWorkspace,
         prompt,
         selection,
         workspace,
@@ -73,6 +81,10 @@ function WorkspacePageContent() {
 
     if (dynamicMenu.notFound || !dynamicMenu.workspaceKey) {
         return <Empty description="工作区不可用" />;
+    }
+
+    if (isIndexWorkspace) {
+        return <IndexView />;
     }
 
     if (!selection) {

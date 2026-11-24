@@ -9,7 +9,9 @@ import { Button, Loading } from "tdesign-react";
 
 import { AppShell, type AppShellGroup, type AppShellItem } from "@/components/layouts";
 import { type DynamicMenuGroup, type DynamicMenuSelection, useDynamicMenu } from "@/composables/useDynamicMenu";
+import { HOME_WORKSPACE_KEY } from "@/composables/workspace-navigation";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { IndexSidebar } from "@/modules/_workspace/_index/components/index-sidebar";
 import { setWorkspaceCollapsed, useWorkspaceStore } from "@/stores/_workspace";
 
 type WorkspaceLayoutProps = {
@@ -72,6 +74,7 @@ function WorkspaceLayoutContent({ children, workspace }: WorkspaceLayoutProps) {
     const prompt = useMessagePrompt();
     const { collapsed } = useWorkspaceStore();
     const reportedNavigation = useRef<string | undefined>(undefined);
+    const sidebar = workspace === HOME_WORKSPACE_KEY ? IndexSidebar : undefined;
     const navigation = useMemo(
         () => buildNavigation(dynamicMenu.groups, dynamicMenu.selection),
         [dynamicMenu.groups, dynamicMenu.selection],
@@ -136,6 +139,7 @@ function WorkspaceLayoutContent({ children, workspace }: WorkspaceLayoutProps) {
             onCollapse={setWorkspaceCollapsed}
             onNavigate={(href) => router.push(href)}
             pageTitle={dynamicMenu.selection?.item.label ?? dynamicMenu.navigationWorkspace?.name}
+            sidebar={sidebar}
         >
             {children}
         </AppShell>

@@ -17,4 +17,11 @@ export type AppShellItem = {
     label: string;
 };
 
+export type AppShellSidebarProps = {
+    activeItem?: string;
+    collapsed: boolean;
+    isDark: boolean;
+    onNavigate: (href: string) => void;
+};
+
 export const SIDE_NAVIGATION_ID = "workspace-side-navigation";
