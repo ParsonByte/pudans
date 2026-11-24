@@ -38,8 +38,7 @@ public class LiveAlerts {
 
     // 按类型与主体去重后发送领域事件告警
     public Mono<Void> alert(String type, String subject, Map<String, Object> payload) {
-        if (!StringUtils.hasText(type) || !StringUtils.hasText(subject)) {
-            log.warn("直播告警缺少类型或主体，已忽略：type={}，subject={}", type, subject);
+        if (!validSubject(type, subject)) {
             return Mono.empty();
         }
         var dedupeKey = DEDUPE_PREFIX + type + ":" + subject;
@@ -57,6 +56,23 @@ public class LiveAlerts {
                     publish(type, payload);
                     return Mono.empty();
                 });
+    }
+
+    // 断流与恢复按事件实时发送，不经过 Redis 去重
+    public Mono<Void> alertAlways(String type, String subject, Map<String, Object> payload) {
+        if (!validSubject(type, subject)) {
+            return Mono.empty();
+        }
+        return Mono.fromRunnable(() -> publish(type, payload));
+    }
+
+    // 类型与主体都非空才允许发送，空值时只记录日志
+    private boolean validSubject(String type, String subject) {
+        if (StringUtils.hasText(type) && StringUtils.hasText(subject)) {
+            return true;
+        }
+        log.warn("直播告警缺少类型或主体，已忽略：type={}，subject={}", type, subject);
+        return false;
     }
 
     // 同一房间连续限流按房间去重告警，窗口内多个房间被限流再发全局告警
