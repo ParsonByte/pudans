@@ -1,0 +1,1577 @@
+.theme {
+    --composer-radius: 18px;
+    --composer-advanced-badge: linear-gradient(135deg, #ff9a5c, #f548c1);
+    --composer-ambient: rgb(24 28 40 / 10%);
+    --composer-bg: #fff;
+    --composer-border: rgb(0 0 0 / 8%);
+    --composer-card-bg: rgb(0 0 0 / 4%);
+    --composer-chip: rgb(0 0 0 / 5%);
+    --composer-chip-hover: rgb(0 0 0 / 8%);
+    --composer-divider: rgb(0 0 0 / 22%);
+    --composer-faint: rgb(0 0 0 / 38%);
+    --composer-icon: rgb(0 0 0 / 55%);
+    --composer-icon-hover: #111;
+    --composer-mode-border: rgb(0 0 0 / 14%);
+    --composer-mode-bar-bg: rgb(0 0 0 / 3%);
+    --composer-muted: rgb(0 0 0 / 55%);
+    --composer-option-active: rgb(0 0 0 / 10%);
+    --composer-option-bg: rgb(0 0 0 / 4%);
+    --composer-option-hover: rgb(0 0 0 / 7%);
+    --composer-panel-bg: rgb(250 250 251 / 97%);
+    --composer-panel-border: rgb(0 0 0 / 8%);
+    --composer-shadow: 0 22px 72px rgb(24 28 40 / 14%), 0 4px 18px rgb(24 28 40 / 8%);
+    --composer-shadow-strong:
+        0 0 0 1px var(--composer-border), 0 22px 72px rgb(24 28 40 / 14%), 0 4px 18px rgb(24 28 40 / 8%);
+    --composer-switch-off-bg: rgb(0 0 0 / 16%);
+    --composer-switch-off-hover: rgb(0 0 0 / 22%);
+    --composer-switch-on-bg: #1a1a1a;
+    --composer-switch-on-knob: #fff;
+    --composer-track: rgb(0 0 0 / 12%);
+    --composer-track-hover: rgb(0 0 0 / 18%);
+    --composer-text: #1a1a1a;
+    color-scheme: light;
+}
+
+.composer {
+    position: relative;
+    width: min(100%, 1040px);
+    margin-inline: auto;
+}
+
+.composerStage {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--composer-radius);
+    background: var(--composer-bg);
+    box-shadow:
+        0 0 0 1px var(--composer-border),
+        var(--composer-shadow);
+    isolation: isolate;
+}
+
+.composerStageCollapsed {
+    height: 86px;
+}
+
+.composerStageExpanded {
+    height: 86px;
+}
+
+.composerLayer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.composerExpandedLayer {
+    z-index: 0;
+    pointer-events: none;
+}
+
+.composerCollapsedLayer {
+    z-index: 1;
+    background: var(--composer-bg);
+    pointer-events: auto;
+}
+
+.composerStageExpanded .composerExpandedLayer {
+    pointer-events: auto;
+}
+
+.composerStageExpanded .composerCollapsedLayer {
+    pointer-events: none;
+}
+
+:global(.dark) .theme {
+    --composer-ambient: rgb(0 0 0 / 24%);
+    --composer-bg: #1f1f20;
+    --composer-border: rgb(255 255 255 / 8%);
+    --composer-card-bg: rgb(255 255 255 / 7%);
+    --composer-chip: rgb(255 255 255 / 7%);
+    --composer-chip-hover: rgb(255 255 255 / 12%);
+    --composer-divider: rgb(255 255 255 / 28%);
+    --composer-faint: rgb(255 255 255 / 38%);
+    --composer-icon: rgb(255 255 255 / 54%);
+    --composer-icon-hover: #fff;
+    --composer-mode-border: rgb(255 255 255 / 18%);
+    --composer-mode-bar-bg: rgb(255 255 255 / 5%);
+    --composer-muted: #a1a1a3;
+    --composer-option-active: rgb(255 255 255 / 16%);
+    --composer-option-bg: rgb(255 255 255 / 6%);
+    --composer-option-hover: rgb(255 255 255 / 10%);
+    --composer-panel-bg: rgb(63 63 65 / 94%);
+    --composer-panel-border: rgb(255 255 255 / 12%);
+    --composer-shadow: 0 22px 72px rgb(0 0 0 / 34%), 0 4px 18px rgb(0 0 0 / 24%);
+    --composer-shadow-strong:
+        0 0 0 1px var(--composer-border), 0 22px 72px rgb(0 0 0 / 36%), 0 4px 18px rgb(0 0 0 / 24%);
+    --composer-switch-off-bg: rgb(255 255 255 / 16%);
+    --composer-switch-off-hover: rgb(255 255 255 / 22%);
+    --composer-switch-on-bg: #d8d8db;
+    --composer-switch-on-knob: #343436;
+    --composer-track: rgb(255 255 255 / 14%);
+    --composer-track-hover: rgb(255 255 255 / 22%);
+    --composer-text: #f5f5f5;
+    color-scheme: dark;
+}
+
+.composer::before {
+    position: absolute;
+    right: 10%;
+    bottom: -16px;
+    left: 10%;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--composer-ambient);
+    content: "";
+    filter: blur(44px);
+    pointer-events: none;
+}
+
+.sender {
+    --td-bg-color-container-hover: var(--composer-option-hover);
+    --td-bg-color-secondarycontainer: var(--composer-option-bg);
+    --td-chat-input-actions-item-bg: var(--composer-option-bg);
+    --td-chat-input-actions-item-hover-bg: var(--composer-option-hover);
+    --td-chat-input-actions-item-wh: 36px;
+    --td-chat-input-attachments-margin: 8px 0 var(--td-comp-margin-xs) 0;
+    --td-chat-input-background: transparent;
+    --td-chat-input-box-shadow: none;
+    --td-chat-input-content-default-border: transparent;
+    --td-chat-input-font-size: 14px;
+    --td-chat-input-hover-border: transparent;
+    --composer-content-padding-top: 14px;
+    --composer-content-padding-inline: 18px;
+    --td-chat-input-padding: var(--composer-content-padding-top) var(--composer-content-padding-inline);
+    --td-chat-input-radius: var(--composer-radius);
+    --td-chat-input-shadow: none;
+    --td-chat-input-textarea-max-height: 190px;
+    --td-component-border: var(--composer-border);
+    --td-component-stroke: var(--composer-border);
+    --td-text-color-anti: #fff;
+    --td-text-color-placeholder: var(--composer-faint);
+    --td-text-color-primary: var(--composer-text);
+    --td-text-color-secondary: var(--composer-muted);
+    display: block;
+    position: relative;
+}
+
+.sender::part(t-chat__input__footer) {
+    align-items: stretch;
+}
+
+.sender::part(t-chat__input__footer__left) {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.sender::part(t-chat__input__footer__right) {
+    display: none;
+}
+
+.sender::part(t-chat__input__textarea__wrapper) {
+    padding-top: 12px;
+}
+
+.sender::part(t-chat__input__content) {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.modeBar {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: calc(var(--composer-content-padding-top) * -1) calc(var(--composer-content-padding-inline) * -1) 0;
+    padding: 10px var(--composer-content-padding-inline) 8px;
+    border-radius: var(--composer-radius) var(--composer-radius) 0 0;
+    background: var(--composer-mode-bar-bg);
+}
+
+.modeActions {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.modeActions::-webkit-scrollbar {
+    display: none;
+}
+
+.modeButton:global(.t-button) {
+    height: 30px;
+    flex: 0 0 auto;
+    padding-inline: 8px;
+    border-radius: 8px;
+    color: var(--composer-muted);
+    background: transparent;
+}
+
+.modeButton:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.modeButton:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.modeButtonActive:global(.t-button) {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.modeBarEnd {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+}
+
+.aiHint {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--composer-faint);
+    font-size: 12px;
+    line-height: 20px;
+    white-space: nowrap;
+}
+
+.modeTrigger:global(.t-button) {
+    height: 30px;
+    padding-inline: 8px;
+    border-radius: 8px;
+    color: var(--composer-muted);
+}
+
+.modeTrigger:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.modeTrigger:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+
+.modeTriggerArrow {
+    color: var(--composer-faint);
+}
+
+.iconButton:global(.t-button) {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 8px;
+    color: var(--composer-icon);
+}
+
+.iconButton:global(.t-button):hover {
+    color: var(--composer-icon-hover);
+    background: var(--composer-option-bg);
+}
+
+.uploadGroup {
+    display: flex;
+    flex: 0 0 auto;
+    align-self: stretch;
+    align-items: flex-start;
+    gap: 8px;
+    margin-right: 16px;
+}
+
+.uploadButton:global(.t-button) {
+    display: flex;
+    width: 62px;
+    min-width: 62px;
+    height: 62px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--composer-border);
+    border-radius: 14px;
+    color: var(--composer-icon);
+    background: var(--composer-option-bg);
+}
+
+.uploadButton:global(.t-button):hover {
+    color: var(--composer-icon-hover);
+    background: var(--composer-option-hover);
+}
+
+.mediaPairGroup {
+    gap: 4px;
+}
+
+.mediaUploadButton:global(.t-button) {
+    overflow: hidden;
+    padding: 0;
+}
+
+.mediaUploadButton:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.mediaUploadImage {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 13px;
+    background-position: center;
+    background-size: cover;
+}
+
+.mediaUploadVideo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 13px;
+    object-fit: cover;
+}
+
+.mediaPairArrow {
+    display: inline-flex;
+    height: 62px;
+    align-items: center;
+    justify-content: center;
+    color: var(--composer-faint);
+}
+
+.uploadIcon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.uploadCount {
+    position: absolute;
+    top: -8px;
+    right: -11px;
+    display: inline-flex;
+    min-width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 4px;
+    border-radius: 9px;
+    color: #fff;
+    background: #ff6b7a;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 18px;
+}
+
+.toolbar {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.counter {
+    align-self: flex-end;
+    color: var(--composer-faint);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 18px;
+}
+
+.toolbarMain {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.toolbarLeading {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.settingsCapsule:global(.t-button) {
+    height: 32px;
+    padding-inline: 14px;
+    border-radius: 999px;
+    color: var(--composer-text);
+    background: var(--composer-chip);
+}
+
+.settingsCapsule:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-chip-hover);
+}
+
+.settingsCapsule:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.capsuleDivider {
+    width: 1px;
+    height: 10px;
+    background: var(--composer-divider);
+}
+
+.textTools {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 14px;
+}
+
+.audioBar {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.audioBar::-webkit-scrollbar {
+    display: none;
+}
+
+.audioBar > * {
+    flex: 0 0 auto;
+}
+
+.audioControl:global(.t-button) {
+    height: 32px;
+    padding-inline: 8px;
+    border-radius: 9px;
+    color: var(--composer-muted);
+    background: transparent;
+    white-space: nowrap;
+}
+
+.audioControl:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.audioControl:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.audioSlash {
+    margin-right: 1px;
+    color: var(--composer-faint);
+    font-size: 15px;
+    font-weight: 300;
+}
+
+.audioVoiceButton:global(.t-button) {
+    height: 34px;
+    padding-inline: 6px 8px;
+    border-radius: 9px;
+    color: var(--composer-text);
+    background: transparent;
+}
+
+.audioVoiceButton:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.audioVoiceButton:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+
+.audioVoiceAvatar {
+    flex: 0 0 auto;
+    color: #fff;
+    background: linear-gradient(145deg, #ea8d67, #9f5b4b);
+    font-size: 11px;
+}
+
+.audioControlArrow {
+    color: var(--composer-faint);
+}
+
+.audioDivider {
+    width: 1px;
+    height: 14px;
+    margin-inline: 5px;
+    background: var(--composer-border);
+}
+
+.audioSettingsPanel {
+    width: min(292px, calc(100vw - 24px));
+    padding: 15px 16px 13px;
+    border: 1px solid var(--composer-panel-border);
+    border-radius: 18px;
+    color: var(--composer-text);
+    background: var(--composer-panel-bg);
+    box-shadow: 0 28px 80px var(--composer-ambient);
+    backdrop-filter: blur(28px) saturate(1.15);
+}
+
+.audioSettingsSection + .audioSettingsSection {
+    margin-top: 20px;
+}
+
+.audioSettingsHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--composer-text);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 18px;
+}
+
+.audioSettingsHeader span:last-child {
+    color: var(--composer-muted);
+}
+
+.audioSlider:global(.t-slider) {
+    --td-bg-color-secondarycomponent: var(--composer-track);
+    --td-bg-color-secondarycomponent-hover: var(--composer-track-hover);
+    --td-brand-color: var(--composer-text);
+    --td-brand-color-focus: var(--composer-option-active);
+    width: calc(100% - 16px);
+    margin: 10px 8px 0;
+}
+
+.audioSlider :global(.t-slider__rail),
+.audioSlider :global(.t-slider__track) {
+    height: 4px;
+}
+
+.audioSlider :global(.t-slider__button) {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--composer-text);
+    background: var(--composer-bg);
+    box-shadow: 0 1px 4px var(--composer-ambient);
+}
+
+.audioSliderLimits {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    color: var(--composer-faint);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    line-height: 14px;
+}
+
+.audioVoiceMenu {
+    width: min(184px, calc(100vw - 24px));
+    padding: 8px;
+    border: 1px solid var(--composer-panel-border);
+    border-radius: 16px;
+    color: var(--composer-text);
+    background: var(--composer-panel-bg);
+    box-shadow: 0 28px 80px var(--composer-ambient);
+    backdrop-filter: blur(28px) saturate(1.15);
+}
+
+.audioVoiceMenuItem:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: 42px;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 10px;
+    border-radius: 10px;
+    color: var(--composer-text);
+    background: transparent;
+}
+
+.audioVoiceMenuItem:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.audioVoiceMenuItem:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.audioTagPanel {
+    display: flex;
+    width: min(392px, calc(100vw - 24px));
+    height: 338px;
+    padding: 8px;
+    border: 1px solid var(--composer-panel-border);
+    border-radius: 20px;
+    color: var(--composer-text);
+    background: var(--composer-panel-bg);
+    box-shadow: 0 28px 80px var(--composer-ambient);
+    backdrop-filter: blur(28px) saturate(1.15);
+}
+
+.audioTagCategories {
+    display: flex;
+    width: 132px;
+    flex: 0 0 132px;
+    flex-direction: column;
+    gap: 3px;
+    padding: 4px 8px 4px 0;
+    border-right: 1px solid var(--composer-border);
+}
+
+.audioTagCategory:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: 38px;
+    justify-content: space-between;
+    padding-inline: 10px;
+    border-radius: 9px;
+    color: var(--composer-muted);
+    background: transparent;
+    font-size: 12px;
+}
+
+.audioTagCategory:global(.t-button):hover,
+.audioTagCategoryActive:global(.t-button) {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.audioTagCategory:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.audioTagOptions {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    padding: 4px 0 4px 8px;
+    overscroll-behavior: contain;
+}
+
+.audioTagOption:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: 38px;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 12px;
+    border-radius: 9px;
+    color: var(--composer-text);
+    background: transparent;
+    font-size: 12px;
+}
+
+.audioTagOption:global(.t-button):hover,
+.audioTagOptionActive:global(.t-button) {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.audioTagOption:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.toggleOption {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 7px;
+}
+
+.toggleLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--composer-muted);
+    font-size: 12px;
+    line-height: 20px;
+    white-space: nowrap;
+}
+
+.gradientSwitch:global(.t-switch) {
+    width: 28px;
+    min-width: 28px;
+    height: 16px;
+    background: linear-gradient(90deg, #7c3aed, #ec4899);
+    opacity: 0.58;
+}
+
+.gradientSwitch:global(.t-switch:hover) {
+    opacity: 0.82;
+}
+
+.gradientSwitch:global(.t-switch.t-is-checked) {
+    opacity: 1;
+}
+
+.gradientSwitch :global(.t-switch__handle) {
+    top: 2px;
+    width: 12px;
+    height: 12px;
+}
+
+.gradientSwitch:global(.t-switch.t-is-checked) :global(.t-switch__handle) {
+    top: 2px;
+    width: 12px;
+    height: 12px;
+}
+
+.advancedButton:global(.t-button) {
+    height: 32px;
+    padding-inline: 12px;
+    border: 1px solid var(--composer-border);
+    border-radius: 999px;
+    color: var(--composer-muted);
+    background: var(--composer-option-bg);
+}
+
+.advancedButton:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-hover);
+}
+
+.advancedButton:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.advancedBadge {
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--composer-advanced-badge);
+    transform: rotate(45deg);
+}
+
+.toolbarActions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.modelButton:global(.t-button) {
+    height: 32px;
+    padding-inline: 12px;
+    border: 1px solid var(--composer-border);
+    border-radius: 999px;
+    color: var(--composer-text);
+    background: var(--composer-chip);
+}
+
+.modelButton:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-chip-hover);
+}
+
+.modelButton:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.quantity:global(.t-input-number) {
+    width: 76px;
+    flex: 0 0 76px;
+}
+
+.quantity :global(.t-input) {
+    border-color: var(--composer-border);
+    border-radius: 10px;
+    color: var(--composer-text);
+    background: var(--composer-chip);
+}
+
+.quantity :global(.t-input:hover) {
+    border-color: var(--composer-mode-border);
+    background: var(--composer-chip-hover);
+}
+
+.quantity :global(.t-input__inner) {
+    padding-inline: 2px;
+    color: var(--composer-text);
+    background: transparent;
+    font-size: 12px;
+    text-align: center;
+}
+
+.quantity :global(.t-input-number__increase),
+.quantity :global(.t-input-number__decrease) {
+    border-color: var(--composer-border);
+    color: var(--composer-muted);
+    background: transparent;
+}
+
+.quantity :global(.t-input-number__increase:hover),
+.quantity :global(.t-input-number__decrease:hover) {
+    color: var(--composer-icon-hover);
+    background: var(--composer-option-bg);
+}
+
+.sendButton:global(.t-button) {
+    height: 40px;
+    padding-inline: 16px;
+    border: 0;
+    border-radius: 13px;
+    color: #fff;
+    background: linear-gradient(100deg, #ff9a5c 0%, #ff705f 36%, #f548c1 100%);
+    box-shadow: 0 8px 20px rgb(247 80 160 / 28%);
+    font-weight: 600;
+}
+
+.sendButton:global(.t-button):hover {
+    color: #fff;
+    background: linear-gradient(100deg, #ffad70 0%, #ff7c6b 36%, #ff5ad0 100%);
+}
+
+.sendButton:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.sendButton:global(.t-button):disabled {
+    opacity: 0.48;
+    color: #fff;
+    background: linear-gradient(100deg, #ff9a5c 0%, #ff705f 36%, #f548c1 100%);
+    box-shadow: none;
+}
+
+.settingsPopup :global(.t-popup__content),
+.advancedPopup :global(.t-popup__content),
+.modelPopup :global(.t-popup__content),
+.modePopup :global(.t-popup__content),
+.audioPanelPopup :global(.t-popup__content),
+.audioSettingsPopup :global(.t-popup__content),
+.audioVoicePopup :global(.t-popup__content) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.advancedPanel {
+    width: min(392px, calc(100vw - 24px));
+    padding: 10px;
+    border: 1px solid var(--composer-panel-border);
+    border-radius: 20px;
+    color: var(--composer-text);
+    background: var(--composer-panel-bg);
+    box-shadow: 0 28px 80px var(--composer-ambient);
+    backdrop-filter: blur(28px) saturate(1.15);
+}
+
+.advancedHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    padding: 12px;
+    border-radius: 14px;
+    background: var(--composer-card-bg);
+}
+
+.seedRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.seedInput:global(.t-input) {
+    height: 36px;
+    flex: 1 1 auto;
+    border-color: var(--composer-border);
+    border-radius: 9px;
+    background: var(--composer-option-bg);
+}
+
+.seedInput :global(.t-input__inner) {
+    color: var(--composer-text);
+    background: transparent;
+    font-size: 12px;
+}
+
+.diceButton:global(.t-button) {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    border: 1px solid var(--composer-border);
+    border-radius: 9px;
+    color: var(--composer-muted);
+    background: var(--composer-option-bg);
+}
+
+.diceButton:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-hover);
+}
+
+.seedSlider:global(.t-slider) {
+    --td-brand-color: transparent;
+    width: calc(100% - 16px);
+    margin: 10px 8px 0;
+}
+
+.seedSlider :global(.t-slider__rail) {
+    height: 4px;
+    background: linear-gradient(90deg, #5eead4, #60a5fa, #a78bfa, #f472b6, #fb923c);
+    opacity: 0.9;
+}
+
+.seedSlider :global(.t-slider__track) {
+    height: 4px;
+    background: transparent;
+}
+
+.seedSlider :global(.t-slider__button) {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    background: #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 32%);
+}
+
+.settingsPanel {
+    width: min(392px, calc(100vw - 24px));
+    padding: 10px;
+    border: 1px solid var(--composer-panel-border);
+    border-radius: 20px;
+    color: var(--composer-text);
+    background: var(--composer-panel-bg);
+    box-shadow: 0 28px 80px var(--composer-ambient);
+    backdrop-filter: blur(28px) saturate(1.15);
+}
+
+.settingsHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 2px 6px 10px;
+}
+
+.previewModeLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--composer-muted);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.previewHelp {
+    display: inline-flex;
+    color: var(--composer-faint);
+}
+
+.previewSwitch:global(.t-switch) {
+    width: 34px;
+    min-width: 34px;
+    height: 18px;
+    background: var(--composer-switch-off-bg);
+}
+
+.previewSwitch:global(.t-switch:hover) {
+    background: var(--composer-switch-off-hover);
+}
+
+.previewSwitch:global(.t-switch.t-is-checked) {
+    background: var(--composer-switch-on-bg);
+}
+
+.previewSwitch :global(.t-switch__handle) {
+    top: 2px;
+    width: 14px;
+    height: 14px;
+}
+
+.previewSwitch:global(.t-switch.t-is-checked) :global(.t-switch__handle) {
+    top: 2px;
+    width: 14px;
+    height: 14px;
+}
+
+.previewSwitch:global(.t-switch.t-is-checked) :global(.t-switch__handle)::before {
+    background: var(--composer-switch-on-knob);
+}
+
+.settingsCard {
+    padding: 12px;
+    border-radius: 14px;
+    background: var(--composer-card-bg);
+}
+
+.settingsCard + .settingsCard {
+    margin-top: 8px;
+}
+
+.durationCard {
+    padding-bottom: 26px;
+}
+
+.settingsLabel {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--composer-muted);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.resolutionGrid {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.tripleOptionGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.optionTile:global(.t-button) {
+    display: flex;
+    min-width: 0;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+    font-size: 12px;
+}
+
+.optionTile:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-hover);
+}
+
+.optionTileActive:global(.t-button) {
+    color: var(--composer-text);
+    background: var(--composer-option-active);
+    box-shadow: inset 0 0 0 1px var(--composer-mode-border);
+}
+
+.optionTile:global(.t-button) :global(.t-button__text) {
+    font-size: 12px;
+}
+
+.ratioGrid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.imageRatioGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.ratioOption:global(.t-button) {
+    display: flex;
+    height: 60px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.ratioOption:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-hover);
+}
+
+.ratioOptionActive:global(.t-button) {
+    color: var(--composer-text);
+    background: var(--composer-option-active);
+    box-shadow: inset 0 0 0 1px var(--composer-mode-border);
+}
+
+.ratioOption:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+}
+
+.ratioPreviewBox {
+    display: flex;
+    width: 36px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+}
+
+.ratioPreview {
+    display: block;
+    border: 1.5px solid currentcolor;
+    border-radius: 3px;
+}
+
+.settingsSectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.settingsSectionHeader .settingsLabel {
+    margin-bottom: 0;
+}
+
+.durationValue {
+    display: inline-flex;
+    min-width: 34px;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 7px;
+    border-radius: 6px;
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.durationSlider:global(.t-slider) {
+    --td-bg-color-secondarycomponent: var(--composer-track);
+    --td-bg-color-secondarycomponent-hover: var(--composer-track-hover);
+    --td-brand-color: var(--composer-text);
+    --td-brand-color-focus: var(--composer-option-active);
+    width: calc(100% - 20px);
+    margin: 8px 10px 0;
+}
+
+.durationSlider :global(.t-slider__rail),
+.durationSlider :global(.t-slider__track) {
+    height: 4px;
+}
+
+.durationSlider :global(.t-slider__button) {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--composer-text);
+    background: var(--composer-bg);
+    box-shadow: 0 1px 4px var(--composer-ambient);
+}
+
+.durationSlider :global(.t-slider__button:hover) {
+    background: var(--composer-bg);
+}
+
+.durationSlider :global(.t-slider__mark-text) {
+    color: var(--composer-faint);
+    font-size: 11px;
+}
+
+.modelPanel {
+    width: min(300px, calc(100vw - 24px));
+    padding: 10px;
+    border: 1px solid var(--composer-panel-border);
+    border-radius: 18px;
+    color: var(--composer-text);
+    background: var(--composer-panel-bg);
+    box-shadow: 0 28px 80px var(--composer-ambient);
+    backdrop-filter: blur(28px) saturate(1.15);
+}
+
+.modePanel {
+    width: min(252px, calc(100vw - 24px));
+}
+
+.modelPanelTitle {
+    display: block;
+    padding: 4px 8px 8px;
+    color: var(--composer-muted);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.modelOption:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: 54px;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 8px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    color: var(--composer-text);
+    background: transparent;
+}
+
+.modelOption:global(.t-button):hover {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.modelOptionActive:global(.t-button) {
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.modelOption:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+}
+
+.modelOptionIcon {
+    display: inline-flex;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    color: var(--composer-text);
+    background: var(--composer-option-bg);
+}
+
+.modelOptionText {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.modelOptionName {
+    color: var(--composer-text);
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.modelOptionMeta {
+    color: var(--composer-faint);
+    font-size: 11px;
+    line-height: 16px;
+}
+
+.collapsedBar {
+    display: flex;
+    width: 100%;
+    min-height: 86px;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 0;
+    color: var(--composer-text);
+    background: transparent;
+    box-shadow: none;
+    cursor: text;
+    font: inherit;
+    text-align: left;
+}
+
+.collapsedBar:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--composer-mode-border);
+}
+
+.collapsedIcons {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+}
+
+.collapsedIcon {
+    display: flex;
+    width: 64px;
+    min-width: 64px;
+    height: 64px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--composer-border);
+    border-radius: 14px;
+    color: var(--composer-icon);
+    background: var(--composer-option-bg);
+}
+
+.collapsedIconsMultiple .collapsedIcon {
+    width: 52px;
+    min-width: 52px;
+    height: 52px;
+    border-radius: 12px;
+}
+
+.collapsedBody {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-self: stretch;
+    align-items: center;
+    padding-right: 76px;
+}
+
+.collapsedText {
+    width: 100%;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.collapsedPlaceholder {
+    color: var(--composer-faint);
+}
+
+.collapsedCounter {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    color: var(--composer-faint);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    line-height: 18px;
+    white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+    .theme {
+        --composer-radius: 16px;
+    }
+
+    .composerStageCollapsed,
+    .composerStageExpanded {
+        height: 66px;
+    }
+
+    .sender {
+        --composer-content-padding-top: 12px;
+        --composer-content-padding-inline: 12px;
+        --td-chat-input-padding: var(--composer-content-padding-top) var(--composer-content-padding-inline) 10px;
+        --td-chat-input-radius: var(--composer-radius);
+    }
+
+    .modeBar {
+        gap: 8px;
+        border-radius: var(--composer-radius) var(--composer-radius) 0 0;
+    }
+
+    .aiHint {
+        display: none;
+    }
+
+    .uploadGroup {
+        gap: 6px;
+        margin-right: 10px;
+    }
+
+    .mediaPairGroup {
+        gap: 2px;
+    }
+
+    .mediaPairArrow {
+        height: 50px;
+    }
+
+    .uploadButton:global(.t-button) {
+        width: 50px;
+        min-width: 50px;
+        height: 50px;
+        border-radius: 12px;
+    }
+
+    .toolbarMain {
+        align-items: flex-end;
+        gap: 8px;
+    }
+
+    .toolbarLeading {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .audioToolbar .toolbarMain {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .audioToolbar .toolbarLeading {
+        width: 100%;
+        flex-wrap: nowrap;
+    }
+
+    .audioToolbar .toolbarActions {
+        justify-content: flex-end;
+    }
+
+    .audioToolbar .audioBar {
+        width: 100%;
+        gap: 0;
+    }
+
+    .audioControl:global(.t-button) {
+        padding-inline: 6px;
+    }
+
+    .audioControl:global(.t-button) :global(.t-button__text) {
+        gap: 4px;
+        font-size: 11px;
+    }
+
+    .audioVoiceButton:global(.t-button) {
+        padding-inline: 5px 7px;
+    }
+
+    .audioVoiceButton:global(.t-button) :global(.t-button__text) {
+        gap: 4px;
+        font-size: 11px;
+    }
+
+    .audioDivider {
+        margin-inline: 2px;
+    }
+
+    .audioBar > .audioControl:nth-of-type(4) .audioControlArrow {
+        display: none;
+    }
+
+    .audioTagPanel {
+        width: calc(100vw - 24px);
+        height: 316px;
+    }
+
+    .audioTagCategories {
+        width: 112px;
+        flex-basis: 112px;
+    }
+
+    .textTools {
+        gap: 10px;
+    }
+
+    .toggleOption {
+        gap: 5px;
+    }
+
+    .advancedButton:global(.t-button) {
+        height: 28px;
+        padding-inline: 9px;
+    }
+
+    .settingsCapsule:global(.t-button) {
+        height: 28px;
+        padding-inline: 10px;
+    }
+
+    .modelButton:global(.t-button) {
+        height: 28px;
+        padding-inline: 9px;
+    }
+
+    .quantity:global(.t-input-number) {
+        display: none;
+    }
+
+    .sendButton:global(.t-button) {
+        height: 36px;
+        padding-inline: 13px;
+    }
+
+    .collapsedBar {
+        min-height: 66px;
+        gap: 10px;
+        padding: 8px 10px;
+    }
+
+    .collapsedIcon {
+        width: 48px;
+        min-width: 48px;
+        height: 48px;
+        border-radius: 12px;
+    }
+
+    .collapsedIcons {
+        gap: 4px;
+    }
+
+    .collapsedIconsMultiple .collapsedIcon {
+        width: 42px;
+        min-width: 42px;
+        height: 42px;
+        border-radius: 10px;
+    }
+
+    .collapsedBody {
+        padding-right: 52px;
+    }
+
+    .collapsedText {
+        font-size: 13px;
+    }
+
+    .collapsedCounter {
+        font-size: 11px;
+    }
+}
