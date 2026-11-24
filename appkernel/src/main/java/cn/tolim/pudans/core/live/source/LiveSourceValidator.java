@@ -80,13 +80,16 @@ public class LiveSourceValidator {
     public Mono<Optional<String>> resolveStoragePolicy(Boolean autoRecord, String storagePolicy) {
         var required = autoRecord == null || autoRecord;
         if (!StringUtils.hasText(storagePolicy)) {
+            // 没传策略+手动录制
             if (!required) {
                 return Mono.just(Optional.empty());
             }
+            // 没传策略+自动录制
             return storagePolicyResolver
                     .resolve(null)
                     .map(policy -> Optional.of(policy.getMetadata().getName()));
         }
+        // 自动录制+传入策略
         return storagePolicyResolver
                 .resolve(storagePolicy)
                 .map(policy -> Optional.of(policy.getMetadata().getName()));

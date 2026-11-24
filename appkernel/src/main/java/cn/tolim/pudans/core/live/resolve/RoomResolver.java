@@ -51,10 +51,11 @@ public class RoomResolver {
                 .flatMap(parsed -> resolve(parsed.platform(), parsed.roomId(), force));
     }
 
-    // 优先缓存，冷却期内直接拒绝解析
+    // 优先缓存，冷却期内直接拒绝解析  查某个房间现在在不在播
     public Mono<LiveRoomInfo> resolve(LivePlatform platform, String roomId, boolean force) {
         var cached = force ? Mono.<java.util.Optional<LiveRoomInfo>>just(java.util.Optional.empty())
                 : cache.cached(platform, roomId);
+        // 缓存未命中
         return cached.flatMap(found -> {
             if (found.isPresent()) {
                 metrics.resolveCacheHit(platform.name());
