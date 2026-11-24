@@ -13,7 +13,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
@@ -22,12 +24,19 @@ public class LiveMetrics {
 
     private static final String UNKNOWN = "unknown";
 
+    private static final String FAILED_KEY = "pudans:live:recordings:failed";
+
     private final MeterRegistry registry;
 
     // 活动与排队数直接读注册表，采集时不必再查录制列表
     private final LiveRecorderRegistry recorderRegistry;
 
+    private final ReactiveStringRedisTemplate redisTemplate;
+
     private final AtomicLong activeSources = new AtomicLong();
+
+    // 失败数只在 leader 上按共享集合上报，避免多实例重复计数
+    private final AtomicLong failedCount = new AtomicLong();
 
     // 失败录制只保留名字，靠状态迁移增删，避免每次采集扫库
     private final Set<String> failedRecordings = ConcurrentHashMap.newKeySet();
@@ -41,7 +50,7 @@ public class LiveMetrics {
                 .register(registry);
         Gauge.builder("live.recordings.queued", recorderRegistry, LiveRecorderRegistry::queuedCount)
                 .register(registry);
-        Gauge.builder("live.recordings.failed", failedRecordings, Set::size)
+        Gauge.builder("live.recordings.failed", failedCount, AtomicLong::doubleValue)
                 .register(registry);
     }
 
@@ -50,18 +59,55 @@ public class LiveMetrics {
         activeSources.set(Math.max(0, count));
     }
 
-    // 录制进入失败状态时计入失败仪表，重复进入不重复计数
+    // 录制进入失败状态时写入共享集合，重复进入由集合去重
     public void recordingFailed(String recordingName) {
-        if (recordingName != null && !recordingName.isBlank()) {
-            failedRecordings.add(recordingName);
+        if (recordingName == null || recordingName.isBlank()) {
+            return;
         }
+        failedRecordings.add(recordingName);
+        redisTemplate
+                .opsForSet()
+                .add(FAILED_KEY, recordingName)
+                .onErrorResume(error -> {
+                    log.warn("直播失败录制写入共享集合失败 [{}]：{}", recordingName, error.getMessage());
+                    return Mono.empty();
+                })
+                .subscribe();
     }
 
-    // 录制记录彻底删除后不再计入失败仪表
+    // 录制记录彻底删除后同步移出共享集合
     public void recordingRemoved(String recordingName) {
-        if (recordingName != null) {
-            failedRecordings.remove(recordingName);
+        if (recordingName == null) {
+            return;
         }
+        failedRecordings.remove(recordingName);
+        redisTemplate
+                .opsForSet()
+                .remove(FAILED_KEY, recordingName)
+                .onErrorResume(error -> {
+                    log.warn("直播失败录制移出共享集合失败 [{}]：{}", recordingName, error.getMessage());
+                    return Mono.empty();
+                })
+                .subscribe();
+    }
+
+    // leader 从共享集合读取全局失败数，非 leader 上报零
+    public Mono<Void> refreshFailedCount(boolean leader) {
+        if (!leader) {
+            failedCount.set(0);
+            return Mono.empty();
+        }
+        return redisTemplate
+                .opsForSet()
+                .size(FAILED_KEY)
+                .switchIfEmpty(Mono.just(0L))
+                .doOnNext(failedCount::set)
+                .onErrorResume(error -> {
+                    log.warn("直播失败录制共享集合读取失败，回退本实例计数：{}", error.getMessage());
+                    failedCount.set(failedRecordings.size());
+                    return Mono.empty();
+                })
+                .then();
     }
 
     // 统计一次成功的直播源解析

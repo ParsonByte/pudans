@@ -76,7 +76,9 @@ public class LiveMonitorWorker {
         var started = Instant.now();
         return Mono.defer(() -> lease
                         .renew()
-                        .flatMap(leader -> leader ? runDue() : Mono.empty())
+                        .flatMap(leader -> metrics
+                                .refreshFailedCount(leader)
+                                .then(leader ? runDue() : Mono.<Void>empty()))
                         .doFinally(signal -> metrics.monitorTick(Duration.between(started, Instant.now())))
                         .onErrorResume(error -> {
                             log.warn("开播监控 tick 异常：{}", error.getMessage());

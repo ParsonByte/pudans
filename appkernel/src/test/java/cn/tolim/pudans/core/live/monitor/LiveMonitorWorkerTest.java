@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.live.monitor;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,6 +24,7 @@ import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -56,6 +58,11 @@ class LiveMonitorWorkerTest {
 
     @Mock
     LiveLeaderLease lease;
+
+    @BeforeEach
+    void setUpMetrics() {
+        when(metrics.refreshFailedCount(anyBoolean())).thenReturn(Mono.empty());
+    }
 
     private LiveMonitorWorker worker() {
         return new LiveMonitorWorker(
@@ -112,6 +119,7 @@ class LiveMonitorWorkerTest {
 
         StepVerifier.create(worker().tick()).verifyComplete();
 
+        verify(metrics).refreshFailedCount(false);
         verify(registry, never()).snapshotDue(any(), anyInt());
         verifyNoInteractions(roomResolver, recordings, liveAlerts);
     }
@@ -137,6 +145,7 @@ class LiveMonitorWorkerTest {
         verify(sourceStatus).applyLive("douyin-123456789", info);
         verify(recordings).start(liveSource, info, true, "monitor");
         verify(sourceStatus).markRecording("douyin-123456789", "recording-1");
+        verify(metrics).refreshFailedCount(true);
         verify(metrics).monitorTick(any(Duration.class));
     }
 
