@@ -3,8 +3,8 @@ import { useState } from "react";
 import { CheckIcon, ChevronRightIcon } from "tdesign-icons-react";
 import { Button } from "tdesign-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import { COMPOSER_AUDIO_ACTION_TAGS, COMPOSER_AUDIO_EMOTION_TAGS } from "./composer-types";
-import styles from "./floating-chat-composer.module.css";
 
 const AUDIO_TAG_CATEGORIES = [
     { key: "emotion", label: "情绪语气", tags: COMPOSER_AUDIO_EMOTION_TAGS },

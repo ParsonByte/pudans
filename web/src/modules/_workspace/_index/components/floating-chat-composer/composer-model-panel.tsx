@@ -1,8 +1,8 @@
 import { AiImageIcon, AiVideoIcon, AudioIcon, CheckIcon } from "tdesign-icons-react";
 import { Button } from "tdesign-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import type { ComposerMediaMode } from "./composer-types";
-import styles from "./floating-chat-composer.module.css";
 
 const COMPOSER_MODEL_OPTIONS = [{ label: "DANS", value: "dans" }] as const;
 

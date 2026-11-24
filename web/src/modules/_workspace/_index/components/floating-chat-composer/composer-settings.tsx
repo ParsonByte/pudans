@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { HelpCircleIcon } from "tdesign-icons-react";
 import { Button, Slider, Switch, Tooltip } from "tdesign-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import {
     COMPOSER_BACKGROUND_OPTIONS,
     COMPOSER_IMAGE_RATIO_OPTIONS,
@@ -16,7 +17,6 @@ import {
     type ComposerSettingsValue,
     type ComposerToolMode,
 } from "./composer-types";
-import styles from "./floating-chat-composer.module.css";
 
 const DURATION_MARKS = {
     1: "1s",

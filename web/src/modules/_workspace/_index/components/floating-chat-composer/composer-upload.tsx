@@ -1,7 +1,7 @@
 import { AddIcon, ImageAddIcon, VideoIcon } from "tdesign-icons-react";
 import { Button, Tooltip } from "tdesign-react";
 
-import styles from "./floating-chat-composer.module.css";
+import styles from "../../styles/floating-chat-composer.module.css";
 
 type ComposerUploadProps = {
     imageCount: number;

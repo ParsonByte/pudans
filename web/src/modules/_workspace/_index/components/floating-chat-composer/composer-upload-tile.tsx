@@ -3,7 +3,7 @@ import { useEffect, useMemo } from "react";
 import { ImageAddIcon, VideoIcon } from "tdesign-icons-react";
 import { Button, Tooltip } from "tdesign-react";
 
-import styles from "./floating-chat-composer.module.css";
+import styles from "../../styles/floating-chat-composer.module.css";
 
 type ComposerUploadTileProps = {
     file: File | null;

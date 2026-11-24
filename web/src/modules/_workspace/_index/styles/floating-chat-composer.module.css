@@ -19,7 +19,7 @@
     --composer-option-hover: rgb(0 0 0 / 7%);
     --composer-panel-bg: rgb(250 250 251 / 97%);
     --composer-panel-border: rgb(0 0 0 / 8%);
-    --composer-shadow: 0 22px 72px rgb(24 28 40 / 14%), 0 4px 18px rgb(24 28 40 / 8%);
+    --composer-shadow: 0 2px 8px rgb(24 28 40 / 6%);
     --composer-shadow-strong:
         0 0 0 1px var(--composer-border), 0 22px 72px rgb(24 28 40 / 14%), 0 4px 18px rgb(24 28 40 / 8%);
     --composer-switch-off-bg: rgb(0 0 0 / 16%);
@@ -103,7 +103,7 @@
     --composer-option-hover: rgb(255 255 255 / 10%);
     --composer-panel-bg: rgb(63 63 65 / 94%);
     --composer-panel-border: rgb(255 255 255 / 12%);
-    --composer-shadow: 0 22px 72px rgb(0 0 0 / 34%), 0 4px 18px rgb(0 0 0 / 24%);
+    --composer-shadow: 0 2px 10px rgb(0 0 0 / 12%);
     --composer-shadow-strong:
         0 0 0 1px var(--composer-border), 0 22px 72px rgb(0 0 0 / 36%), 0 4px 18px rgb(0 0 0 / 24%);
     --composer-switch-off-bg: rgb(255 255 255 / 16%);
@@ -114,19 +114,6 @@
     --composer-track-hover: rgb(255 255 255 / 22%);
     --composer-text: #f5f5f5;
     color-scheme: dark;
-}
-
-.composer::before {
-    position: absolute;
-    right: 10%;
-    bottom: -16px;
-    left: 10%;
-    height: 72px;
-    border-radius: 50%;
-    background: var(--composer-ambient);
-    content: "";
-    filter: blur(44px);
-    pointer-events: none;
 }
 
 .sender {

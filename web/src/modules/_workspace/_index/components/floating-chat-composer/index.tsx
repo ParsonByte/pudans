@@ -1,19 +1,12 @@
 "use client";
 
-import {
-    type ChangeEvent,
-    type ComponentProps,
-    type ForwardRefExoticComponent,
-    type ReactNode,
-    type RefAttributes,
-    useEffect,
-    useRef,
-    useState,
-} from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 
-import { ChatSender, type TdChatSenderParams } from "@tdesign-react/chat";
+import { type TdChatSenderParams } from "@tdesign-react/chat";
 import { type Transition, motion } from "motion/react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
+import { ChatSenderWithSlots } from "../chat-sender-with-slots";
 import { ComposerCollapsedBar } from "./composer-collapsed-bar";
 import { ComposerFrameUpload } from "./composer-frame-upload";
 import { ComposerModeBar } from "./composer-mode-bar";
@@ -38,7 +31,6 @@ import {
     getDefaultComposerToolMode,
 } from "./composer-types";
 import { ComposerUpload } from "./composer-upload";
-import styles from "./floating-chat-composer.module.css";
 
 const IMAGE_MAX_PROMPT_LENGTH = 20000;
 const VIDEO_MAX_PROMPT_LENGTH = 5000;
@@ -56,19 +48,6 @@ const COMPOSER_MODE_BAR_HEIGHT = 48;
 const COMPOSER_HEIGHT_TRANSITION: Transition = { type: "spring", stiffness: 440, damping: 38, mass: 0.85 };
 
 type ChatAttachment = NonNullable<TdChatSenderParams["attachments"]>[number];
-
-type ChatSenderSlotProps = {
-    className?: string;
-    footerPrefix?: ReactNode;
-    innerHeader?: ReactNode;
-    inputPrefix?: ReactNode;
-};
-
-type ChatSenderProps = Omit<ComponentProps<typeof ChatSender>, "ref">;
-
-const ChatSenderWithSlots = ChatSender as unknown as ForwardRefExoticComponent<
-    ChatSenderProps & ChatSenderSlotProps & RefAttributes<HTMLElement>
->;
 
 type FloatingChatComposerProps = {
     onSend?: (params: TdChatSenderParams) => void;

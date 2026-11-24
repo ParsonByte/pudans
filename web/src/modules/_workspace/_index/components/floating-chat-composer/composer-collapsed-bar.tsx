@@ -1,7 +1,7 @@
 import { AddIcon, AudioIcon, ImageAddIcon, VideoIcon } from "tdesign-icons-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import type { ComposerMediaMode, ComposerToolMode } from "./composer-types";
-import styles from "./floating-chat-composer.module.css";
 
 type ComposerCollapsedBarProps = {
     characterCount: number;

@@ -1,7 +1,7 @@
 import { ChevronRightIcon } from "tdesign-icons-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import { ComposerUploadTile } from "./composer-upload-tile";
-import styles from "./floating-chat-composer.module.css";
 
 type ComposerMotionUploadProps = {
     image: File | null;
