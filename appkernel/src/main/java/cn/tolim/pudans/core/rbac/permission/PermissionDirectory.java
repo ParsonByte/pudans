@@ -43,6 +43,8 @@ public class PermissionDirectory {
 
     private volatile long loadedAt;
 
+    private volatile Set<String> publicWorkspaceIds = Set.of();
+
     public record PermissionCatalog(
             List<Workspace> workspaces, Map<String, String> resourceLabels) {}
 
@@ -109,6 +111,8 @@ public class PermissionDirectory {
             List<NavigationOperation> operations) {}
 
     public record NavigationOperation(String key, boolean allowed) {}
+
+    private record LoadedCatalog(PermissionCatalog catalog, Set<String> publicWorkspaceIds) {}
 
     // 监听角色与配置变化，使导航目录及时失效。
     @PostConstruct
@@ -234,7 +238,7 @@ public class PermissionDirectory {
                                                                 && granted.contains(operation.permission()))))
                                         .toList()))
                         .toList();
-                if (menus.isEmpty()) {
+                if (menus.isEmpty() && !publicWorkspaceIds.contains(workspace.id())) {
                     continue;
                 }
                 workspaces.add(new NavigationWorkspace(
@@ -281,14 +285,17 @@ public class PermissionDirectory {
         if (current != null && System.currentTimeMillis() - loadedAt < TTL.toMillis()) {
             return Mono.just(current);
         }
-        return load().doOnNext(catalog -> {
-            snapshot = catalog;
-            loadedAt = System.currentTimeMillis();
-        });
+        return load()
+                .doOnNext(catalog -> {
+                    publicWorkspaceIds = catalog.publicWorkspaceIds();
+                    snapshot = catalog.catalog();
+                    loadedAt = System.currentTimeMillis();
+                })
+                .map(LoadedCatalog::catalog);
     }
 
     // 加载角色模板与资源标签配置。
-    private Mono<PermissionCatalog> load() {
+    private Mono<LoadedCatalog> load() {
         var options = ListOptions.builder()
                 .labelSelector()
                 .eq(Role.TEMPLATE_LABEL_NAME, Boolean.TRUE.toString())
@@ -306,7 +313,7 @@ public class PermissionDirectory {
     }
 
     // 把角色模板注解装配成工作区、菜单与操作。
-    private PermissionCatalog buildCatalog(List<Role> roles, Map<String, String> resourceLabels) {
+    private LoadedCatalog buildCatalog(List<Role> roles, Map<String, String> resourceLabels) {
         var workspaces = new LinkedHashMap<String, WorkspaceBuilder>();
         var menus = new LinkedHashMap<String, MenuBuilder>();
         var operations = new ArrayList<OperationContext>();
@@ -332,6 +339,7 @@ public class PermissionDirectory {
                     workspace.plan = defaultValue(annotations.get(Role.UI_DESCRIPTION_ANNO), "");
                     workspace.icon = annotations.get(Role.UI_ICON_ANNO);
                     workspace.order = intValue(annotations.get(Role.UI_ORDER_ANNO));
+                    workspace.publicWorkspace = Boolean.parseBoolean(annotations.get(Role.UI_PUBLIC_ANNO));
                 }
                 case Role.UI_TYPE_MENU -> {
                     var menuKey = annotations.get(Role.UI_MENU_ANNO);
@@ -405,7 +413,11 @@ public class PermissionDirectory {
                                 .map(menu -> menu.build())
                                 .toList()))
                 .toList();
-        return new PermissionCatalog(catalogWorkspaces, resourceLabels);
+        var publicWorkspaceIds = Set.copyOf(workspaces.values().stream()
+                .filter(workspace -> workspace.publicWorkspace)
+                .map(workspace -> workspace.id)
+                .toList());
+        return new LoadedCatalog(new PermissionCatalog(catalogWorkspaces, resourceLabels), publicWorkspaceIds);
     }
 
     // 用注解覆盖菜单的可选展示字段。
@@ -505,6 +517,8 @@ public class PermissionDirectory {
         private String icon;
 
         private int order;
+
+        private boolean publicWorkspace;
 
         // 以工作区标识初始化构建器，缺省名称同标识。
         private WorkspaceBuilder(String id) {

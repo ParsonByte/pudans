@@ -70,6 +70,7 @@ src/routes/                  路由入口组件（(_auth)、(_setup)、(_workspa
 src/routes/(_auth)/route.tsx 唯一认证路由入口
 src/routes/(_setup)/route.tsx 初始化路由入口
 src/routes/(_workspace)/index.ts 工作区视图注册表
+src/routes/(_workspace)/(_index)/<group>/<menu>/route.tsx 首页快捷入口路由
 src/routes/(_workspace)/(_console)/<group>/<menu>/route.tsx 控制台各菜单路由入口
 src/routes/(_workspace)/(_uc)/<group>/<menu>/route.tsx 个人中心各菜单路由入口
 src/routes/_authenticated/route.tsx 会话认证检查
@@ -86,16 +87,19 @@ src/styles/_global.css       全局样式与布局
 
 - `/sign-in`：认证页，默认密码登录 / 通行密钥 / 外部登录；开启登录验证码时在提交后弹出图片验证码弹窗，启用两步验证的账号在密码或通行密钥校验后进入动态验证码步骤；`?routes=forgot-password` 切换找回密码，`?routes=legal&tab=terms|privacy|confidentiality` 打开法律协议弹层。
 - `/setup`：首次运行初始化页，创建超级管理员并设置站点名称与站点地址；管理员邮箱由飞书同步，初始化表单不填写邮箱。该页面也作为 `/` 在首次运行时展示，`/setup` 通过 rewrite 指向它。
-- `/`：首次运行时渲染初始化页；初始化完成后重定向到 `/sign-in`。
-- `/workspace/<workspace>?<group>=<menu>`：工作区统一入口，例如 `/workspace/console?overview=dashboard`、`/workspace/uc?account=profile`。工作区 `slug`、分组 `key`、菜单和顺序都由 `/navigation` 返回，前端不维护工作区或菜单路径；未带有效参数时使用导航首个可访问菜单。
+- `/`：首次运行时渲染初始化页；初始化完成后未登录跳转 `/sign-in`，已登录跳转首页工作区。
+- `/workspace/<workspace>`：工作区统一入口；`index` 首页直接使用该路径，控制台和个人中心通过查询参数选择菜单，例如 `/workspace/console?overview=dashboard`、`/workspace/uc?account=profile`。工作区 `slug`、分组 `key`、菜单和顺序都由 `/navigation` 返回，前端不维护工作区或菜单路径；未带有效参数时使用导航首个可访问菜单。
 
 `src/app/(auth)/sign-in/page.tsx` 对应 `/sign-in`，通过 `src/routes/(_auth)/route.tsx` 渲染，页面内容放在 `src/modules/_auth`。`src/app/(setup)/page.tsx` 对应 `/`，`/setup` 通过 Next rewrite 渲染该页面，通过 `src/routes/(_setup)/route.tsx` 进入视图，页面内容放在 `src/modules/_setup`。`src/app/(workspace)/[workspace]/layout.tsx` 使用 `WorkspaceLayout`；布局通过 `useDynamicMenu` 读取 `/navigation`，按 `ui-group` 与 `ui-group-key` 分组，按 `ui-parent` 组装二级菜单，并组合公共 `AppShell`。Next 路由组不产生 URL，`/workspace/:workspace` 由 `next.config.ts` rewrite 到 `/[workspace]`。
 
-工作区页面统一位于 `src/app/(workspace)/[workspace]/page.tsx`，页面从 `useDynamicMenu` 读取当前工作区、分组和菜单，再从 `src/routes/(_workspace)/index.ts` 的视图注册表选择入口。控制台菜单入口位于 `src/routes/(_workspace)/(_console)/<group>/<menu>/route.tsx`，视图放在 `src/modules/_workspace/_console/modules/<group>/<menu>`；个人中心菜单入口位于 `src/routes/(_workspace)/(_uc)/<group>/<menu>/route.tsx`，视图放在 `src/modules/_workspace/_uc/modules/<group>/<menu>`，每个菜单使用独立的 `index.tsx`。
+工作区页面统一位于 `src/app/(workspace)/[workspace]/page.tsx`，页面从 `useDynamicMenu` 读取当前工作区、分组和菜单，再从 `src/routes/(_workspace)/index.ts` 的视图注册表选择入口。`index` 首页直接渲染 `src/modules/_workspace/_index/index.tsx`，页面组件放在 `src/modules/_workspace/_index/components/`；控制台菜单入口位于 `src/routes/(_workspace)/(_console)/<group>/<menu>/route.tsx`，视图放在 `src/modules/_workspace/_console/modules/<group>/<menu>`；个人中心菜单入口位于 `src/routes/(_workspace)/(_uc)/<group>/<menu>/route.tsx`，视图放在 `src/modules/_workspace/_uc/modules/<group>/<menu>`，每个菜单使用独立的 `index.tsx`。
 
 新增工作区时，在后端 `extensions/workspace/<workspace>/` 声明工作区模板和菜单模板：工作区填写 `ui-slug`，菜单填写 `ui-group-key`；`ui-order` 同时控制分组与菜单顺序。前端无需新增 `app` 目录；实现菜单视图后，在 `WORKSPACE_VIEWS[workspaceSlug][groupKey][menuKey]` 注册对应路由入口即可。
 
 ## 控制台页面
+
+登录后的默认入口为公开的 `index` 首页工作区，首页不依赖菜单或额外权限。
+`index` 工作区使用专属双区侧栏：上区为 DANS 导航菜单（含“更多”子菜单），下区为 AI 对话管理；没有真实会话时展示空态，不填充模拟会话。
 
 | 菜单       | 查询参数（基路径 `/workspace/console`） | 当前实现                                                      |
 | ---------- | --------------------------------------- | ------------------------------------------------------------- |

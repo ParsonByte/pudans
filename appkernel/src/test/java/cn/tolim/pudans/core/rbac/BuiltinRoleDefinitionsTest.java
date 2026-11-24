@@ -114,7 +114,7 @@ class BuiltinRoleDefinitionsTest {
 
         assertThat(workspaces)
                 .extracting(role -> MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO))
-                .contains("console", "uc")
+                .contains("console", "index", "uc")
                 .doesNotContain("default");
         assertThat(personalCenter).singleElement().satisfies(role -> {
             var annotations = MetadataUtil.nullSafeAnnotations(role);
@@ -144,6 +144,31 @@ class BuiltinRoleDefinitionsTest {
         assertThat(allMenus)
                 .extracting(role -> MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO))
                 .doesNotContain("default");
+    }
+
+    @Test
+    void indexWorkspaceProvidesThePublicHomePage() {
+        var workspaces = definitions.allRoles().stream()
+                .filter(role -> Role.UI_TYPE_WORKSPACE.equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_TYPE_ANNO)))
+                .filter(role -> "index".equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO)))
+                .toList();
+        var menus = definitions.allRoles().stream()
+                .filter(role -> Role.UI_TYPE_MENU.equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_TYPE_ANNO)))
+                .filter(role -> "index".equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO)))
+                .toList();
+
+        assertThat(workspaces).singleElement().satisfies(role -> {
+            var annotations = MetadataUtil.nullSafeAnnotations(role);
+            assertThat(annotations.get(Role.UI_SLUG_ANNO)).isEqualTo("index");
+            assertThat(annotations.get(Role.UI_LABEL_ANNO)).isEqualTo("首页");
+            assertThat(annotations.get(Role.UI_ORDER_ANNO)).isEqualTo("1");
+            assertThat(annotations.get(Role.UI_PUBLIC_ANNO)).isEqualTo("true");
+        });
+        assertThat(menus).isEmpty();
     }
 
     @Test

@@ -66,6 +66,16 @@ class PermissionDirectoryTest {
     private static List<Role> catalogRoles() {
         return List.of(
                 template(
+                        "role-template-workspace-index",
+                        annotations(
+                                Role.UI_TYPE_ANNO, Role.UI_TYPE_WORKSPACE,
+                                Role.UI_WORKSPACE_ANNO, "index",
+                                Role.UI_SLUG_ANNO, "index",
+                                Role.UI_LABEL_ANNO, "首页",
+                                Role.UI_DESCRIPTION_ANNO, "Pudans 企业身份与权限管理平台",
+                                Role.UI_ORDER_ANNO, "1",
+                                Role.UI_PUBLIC_ANNO, "true")),
+                template(
                         "role-template-workspace-uc",
                         annotations(
                                 Role.UI_TYPE_ANNO, Role.UI_TYPE_WORKSPACE,
@@ -134,8 +144,15 @@ class PermissionDirectoryTest {
 
         StepVerifier.create(service.catalog())
                 .assertNext(catalog -> {
-                    assertThat(catalog.workspaces()).hasSize(2);
-                    var ucWorkspace = catalog.workspaces().get(0);
+                    assertThat(catalog.workspaces()).hasSize(3);
+                    var indexWorkspace = catalog.workspaces().get(0);
+                    assertThat(indexWorkspace.id()).isEqualTo("index");
+                    assertThat(indexWorkspace.slug()).isEqualTo("index");
+                    assertThat(indexWorkspace.name()).isEqualTo("首页");
+                    assertThat(indexWorkspace.plan()).isEqualTo("Pudans 企业身份与权限管理平台");
+                    assertThat(indexWorkspace.menus()).isEmpty();
+
+                    var ucWorkspace = catalog.workspaces().get(1);
                     assertThat(ucWorkspace.id()).isEqualTo("uc");
                     assertThat(ucWorkspace.slug()).isEqualTo("uc");
                     assertThat(ucWorkspace.name()).isEqualTo("个人中心");
@@ -143,7 +160,7 @@ class PermissionDirectoryTest {
                     assertThat(ucWorkspace.menus()).hasSize(1);
                     assertThat(ucWorkspace.menus().get(0).publicMenu()).isTrue();
 
-                    var consoleWorkspace = catalog.workspaces().get(1);
+                    var consoleWorkspace = catalog.workspaces().get(2);
                     assertThat(consoleWorkspace.id()).isEqualTo("console");
                     assertThat(consoleWorkspace.slug()).isEqualTo("console");
                     assertThat(consoleWorkspace.name()).isEqualTo("管理控制台");
@@ -187,13 +204,17 @@ class PermissionDirectoryTest {
 
         StepVerifier.create(service.navigation(List.of("users:view")))
                 .assertNext(navigation -> {
-                    assertThat(navigation.workspaces()).hasSize(2);
-                    var ucWorkspace = navigation.workspaces().get(0);
+                    assertThat(navigation.workspaces()).hasSize(3);
+                    var indexWorkspace = navigation.workspaces().get(0);
+                    assertThat(indexWorkspace.slug()).isEqualTo("index");
+                    assertThat(indexWorkspace.menus()).isEmpty();
+
+                    var ucWorkspace = navigation.workspaces().get(1);
                     assertThat(ucWorkspace.slug()).isEqualTo("uc");
                     assertThat(ucWorkspace.menus()).extracting(PermissionDirectory.NavigationMenu::key)
                             .containsExactly("uc.account.profile");
                     assertThat(ucWorkspace.menus().getFirst().groupKey()).isEqualTo("account");
-                    var consoleWorkspace = navigation.workspaces().get(1);
+                    var consoleWorkspace = navigation.workspaces().get(2);
                     assertThat(consoleWorkspace.slug()).isEqualTo("console");
                     assertThat(consoleWorkspace.menus()).extracting(PermissionDirectory.NavigationMenu::key)
                             .containsExactly("console.users");
@@ -217,7 +238,7 @@ class PermissionDirectoryTest {
 
         StepVerifier.create(service.navigation(List.of("users:view", "users:create")))
                 .assertNext(navigation -> {
-                    var consoleWorkspace = navigation.workspaces().get(1);
+                    var consoleWorkspace = navigation.workspaces().get(2);
                     assertThat(consoleWorkspace.menus().getFirst().operations().getFirst().allowed())
                             .isTrue();
                 })
@@ -225,13 +246,15 @@ class PermissionDirectoryTest {
     }
 
     @Test
-    void navigationAlwaysIncludesPublicMenus() {
+    void navigationAlwaysIncludesPublicWorkspacesAndMenus() {
         stubTemplates(catalogRoles().toArray(Role[]::new));
 
         StepVerifier.create(service.navigation(List.of()))
                 .assertNext(navigation -> {
-                    assertThat(navigation.workspaces()).hasSize(1);
-                    assertThat(navigation.workspaces().get(0).menus())
+                    assertThat(navigation.workspaces()).hasSize(2);
+                    assertThat(navigation.workspaces().get(0).slug()).isEqualTo("index");
+                    assertThat(navigation.workspaces().get(0).menus()).isEmpty();
+                    assertThat(navigation.workspaces().get(1).menus())
                             .extracting(PermissionDirectory.NavigationMenu::key)
                             .containsExactly("uc.account.profile");
                 })

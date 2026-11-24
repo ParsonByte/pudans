@@ -2,10 +2,11 @@ import type { NextRequest } from "next/server";
 
 import type { Navigation } from "@pudans-dev/api-client";
 
+import { HOME_WORKSPACE_KEY, workspaceBasePath, workspaceKey } from "@/composables/workspace-navigation";
+
 export const API_ORIGIN = process.env.PUDANS_API_ORIGIN ?? "http://localhost:8090";
 const SESSION_PATH = "/apis/api.pudans.tolim.cn/v1alpha1/login/session";
 const NAVIGATION_PATH = "/apis/api.pudans.tolim.cn/v1alpha1/navigation";
-const DEFAULT_WORKSPACE_KEY = "console";
 
 type SessionView = {
     authenticated?: boolean;
@@ -36,9 +37,7 @@ export async function requireAuthentication(request: NextRequest): Promise<boole
 export async function resolveDefaultWorkspacePath(request: NextRequest): Promise<string | undefined> {
     const navigation = await fetchApi<Navigation>(request, NAVIGATION_PATH);
     const workspaces = navigation?.workspaces ?? [];
-    const workspace =
-        workspaces.find((candidate) => (candidate.slug ?? candidate.id) === DEFAULT_WORKSPACE_KEY) ?? workspaces[0];
-    const workspaceKey = workspace?.slug ?? workspace?.id;
+    const workspace = workspaces.find((candidate) => workspaceKey(candidate) === HOME_WORKSPACE_KEY) ?? workspaces[0];
 
-    return workspaceKey ? `/workspace/${encodeURIComponent(workspaceKey)}` : undefined;
+    return workspace ? workspaceBasePath(workspace) : undefined;
 }
