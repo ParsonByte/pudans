@@ -171,13 +171,13 @@ class DashboardEndpointTest {
                 .thenReturn(Flux.just(webhook("webhook-1", Instant.now())));
         when(auditLog.countSince(any(Instant.class))).thenReturn(Mono.just(41L));
         when(auditLog.findRecent(5)).thenReturn(Flux.empty());
-        when(auditLog.countPerDay(any(Instant.class), eq("LOGIN"), eq("SUCCESS")))
+        when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), eq("LOGIN"), eq("SUCCESS")))
                 .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 7L)));
-        when(auditLog.countPerDay(any(Instant.class), isNull(), isNull()))
+        when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), isNull(), isNull()))
                 .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 12L)));
-        when(auditLog.countPerDay(any(Instant.class), isNull(), eq("FAILURE")))
+        when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), isNull(), eq("FAILURE")))
                 .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 2L)));
-        when(auditLog.countPerDay(any(Instant.class), isNull(), eq("DENIED")))
+        when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), isNull(), eq("DENIED")))
                 .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 1L)));
         when(auditLog.query(any(AuditStore.AuditQuery.class)))
                 .thenReturn(Flux.just(
@@ -258,6 +258,13 @@ class DashboardEndpointTest {
         assertThat(monthly).isNotNull();
         assertThat(monthly.rangeDays()).isEqualTo(30);
         assertThat(monthly.loginTrend()).hasSize(30);
+
+        var historical = endpoint.aggregate(7, Instant.parse("2026-11-20T12:00:00Z")).block();
+
+        assertThat(historical).isNotNull();
+        assertThat(historical.loginTrend()).hasSize(7);
+        assertThat(historical.loginTrend().getLast().date()).isEqualTo("2026-11-20");
+        assertThat(historical.operationTrend().getLast().date()).isEqualTo("2026-11-20");
     }
 
     @Test
@@ -272,13 +279,13 @@ class DashboardEndpointTest {
                 .thenReturn(Mono.error(new IllegalStateException("down")));
         when(auditLog.countSince(any(Instant.class))).thenReturn(Mono.error(new IllegalStateException("down")));
         when(auditLog.findRecent(5)).thenReturn(Flux.error(new IllegalStateException("down")));
-        when(auditLog.countPerDay(any(Instant.class), eq("LOGIN"), eq("SUCCESS")))
+        when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), eq("LOGIN"), eq("SUCCESS")))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
-        when(auditLog.countPerDay(any(Instant.class), isNull(), isNull()))
+        when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), isNull(), isNull()))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
-        when(auditLog.countPerDay(any(Instant.class), isNull(), eq("FAILURE")))
+        when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), isNull(), eq("FAILURE")))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
-        when(auditLog.countPerDay(any(Instant.class), isNull(), eq("DENIED")))
+        when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), isNull(), eq("DENIED")))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
         when(auditLog.query(any(AuditStore.AuditQuery.class)))
                 .thenReturn(Flux.error(new IllegalStateException("down")));

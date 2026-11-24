@@ -1814,6 +1814,25 @@
       "get": {
         "description": "Aggregated overview and security posture statistics for the console dashboard.",
         "operationId": "GetDashboardOverview",
+        "parameters": [
+          {
+            "description": "Trend and comparison range in days, between 1 and 90. Defaults to 7.",
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Inclusive range end as an ISO-8601 instant. Defaults to now.",
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "default": {
             "content": {
@@ -9005,6 +9024,9 @@
       "ListedUser": {
         "type": "object",
         "properties": {
+      "avatar": {
+        "type": "string"
+      },
           "disabled": {
             "type": "boolean"
           },

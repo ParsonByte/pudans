@@ -55,6 +55,15 @@ class UserViewEmailVisibilityTest {
     }
 
     @Test
+    void listedUsersExposeTheAvatar() {
+        var user = user();
+        user.getSpec().setAvatar("/apis/api.pudans.tolim.cn/v1alpha1/avatars/alice.png");
+
+        assertThat(UserEndpoint.ListedUser.from(user).avatar())
+                .isEqualTo("/apis/api.pudans.tolim.cn/v1alpha1/avatars/alice.png");
+    }
+
+    @Test
     void fallsBackToTheResourceNameWhenTheLoginNameIsBlank() {
         var user = user();
         user.getSpec().setLoginName(" ");

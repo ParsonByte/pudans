@@ -15,6 +15,7 @@
 
 
 export interface ListedUser {
+    'avatar'?: string;
     'disabled'?: boolean;
     'displayName'?: string;
     'email'?: string;

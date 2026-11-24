@@ -30,10 +30,12 @@ export const DashboardV1alpha1ApiAxiosParamCreator = function (configuration?: C
     return {
         /**
          * Aggregated overview and security posture statistics for the console dashboard.
+         * @param {number} [days] Trend and comparison range in days, between 1 and 90. Defaults to 7.
+         * @param {string} [to] Inclusive range end as an ISO-8601 instant. Defaults to now.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getDashboardOverview: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getDashboardOverview: async (days?: number, to?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/dashboard/overview`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -53,6 +55,14 @@ export const DashboardV1alpha1ApiAxiosParamCreator = function (configuration?: C
             // authentication bearerAuth required
             // http bearer authentication required
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (days !== undefined) {
+                localVarQueryParameter['days'] = days;
+            }
+
+            if (to !== undefined) {
+                localVarQueryParameter['to'] = to;
+            }
 
             localVarHeaderParameter['Accept'] = '*/*';
 
@@ -76,11 +86,13 @@ export const DashboardV1alpha1ApiFp = function(configuration?: Configuration) {
     return {
         /**
          * Aggregated overview and security posture statistics for the console dashboard.
+         * @param {number} [days] Trend and comparison range in days, between 1 and 90. Defaults to 7.
+         * @param {string} [to] Inclusive range end as an ISO-8601 instant. Defaults to now.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getDashboardOverview(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DashboardOverview>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getDashboardOverview(options);
+        async getDashboardOverview(days?: number, to?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DashboardOverview>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDashboardOverview(days, to, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['DashboardV1alpha1Api.getDashboardOverview']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -96,14 +108,30 @@ export const DashboardV1alpha1ApiFactory = function (configuration?: Configurati
     return {
         /**
          * Aggregated overview and security posture statistics for the console dashboard.
+         * @param {DashboardV1alpha1ApiGetDashboardOverviewRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getDashboardOverview(options?: RawAxiosRequestConfig): AxiosPromise<DashboardOverview> {
-            return localVarFp.getDashboardOverview(options).then((request) => request(axios, basePath));
+        getDashboardOverview(requestParameters: DashboardV1alpha1ApiGetDashboardOverviewRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<DashboardOverview> {
+            return localVarFp.getDashboardOverview(requestParameters.days, requestParameters.to, options).then((request) => request(axios, basePath));
         },
     };
 };
+
+/**
+ * Request parameters for getDashboardOverview operation in DashboardV1alpha1Api.
+ */
+export interface DashboardV1alpha1ApiGetDashboardOverviewRequest {
+    /**
+     * Trend and comparison range in days, between 1 and 90. Defaults to 7.
+     */
+    readonly days?: number
+
+    /**
+     * Inclusive range end as an ISO-8601 instant. Defaults to now.
+     */
+    readonly to?: string
+}
 
 /**
  * DashboardV1alpha1Api - object-oriented interface
@@ -111,10 +139,11 @@ export const DashboardV1alpha1ApiFactory = function (configuration?: Configurati
 export class DashboardV1alpha1Api extends BaseAPI {
     /**
      * Aggregated overview and security posture statistics for the console dashboard.
+     * @param {DashboardV1alpha1ApiGetDashboardOverviewRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public getDashboardOverview(options?: RawAxiosRequestConfig) {
-        return DashboardV1alpha1ApiFp(this.configuration).getDashboardOverview(options).then((request) => request(this.axios, this.basePath));
+    public getDashboardOverview(requestParameters: DashboardV1alpha1ApiGetDashboardOverviewRequest = {}, options?: RawAxiosRequestConfig) {
+        return DashboardV1alpha1ApiFp(this.configuration).getDashboardOverview(requestParameters.days, requestParameters.to, options).then((request) => request(this.axios, this.basePath));
     }
 }
