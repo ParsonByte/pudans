@@ -1,6 +1,7 @@
 "use client";
 
-import { ChatBubbleIcon, LinkIcon, UserCircleIcon } from "tdesign-icons-react";
+import { NewLark } from "@icon-park/react";
+import { KeyIcon, UserCircleIcon } from "tdesign-icons-react";
 import { Avatar } from "tdesign-react";
 
 import { useDesignTokens } from "@/components/ui";
@@ -13,26 +14,27 @@ type ProviderIconProps = {
     size?: number;
 };
 
-export function ProviderIcon({ kind, logo, size = 44 }: ProviderIconProps) {
+export function ProviderIcon({ kind, logo, size = 56 }: ProviderIconProps) {
     const tokens = useDesignTokens();
 
     if (logo) {
         return (
             <Avatar
+                className="shrink-0"
                 image={logo}
                 shape="round"
                 size={`${size}px`}
-                style={{ border: `1px solid ${tokens.colorBorderSecondary}`, flexShrink: 0 }}
+                style={{ border: `1px solid ${tokens.colorBorderSecondary}` }}
             />
         );
     }
 
     return (
         <span
-            className="flex shrink-0 items-center justify-center rounded-xl"
+            className="flex shrink-0 items-center justify-center rounded-2xl"
             style={{
-                background: tokens.colorFillTertiary,
-                color: kind === "feishu" ? tokens.colorPrimary : tokens.colorTextSecondary,
+                background: tokens.colorPrimaryBg,
+                color: tokens.colorPrimary,
                 height: size,
                 width: size,
             }}
@@ -46,11 +48,11 @@ export function ProviderKindIcon({ kind, size = 20 }: { kind: IdentityProviderKi
     const iconStyle = { height: size, width: size };
 
     if (kind === "feishu") {
-        return <ChatBubbleIcon style={iconStyle} />;
+        return <NewLark size={size} />;
     }
     if (kind === "oidc") {
         return <UserCircleIcon style={iconStyle} />;
     }
 
-    return <LinkIcon style={iconStyle} />;
+    return <KeyIcon style={iconStyle} />;
 }

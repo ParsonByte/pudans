@@ -38,23 +38,37 @@ export function ProviderCard({ canManage, onDelete, onEdit, onToggle, pending, p
     }
 
     return (
-        <Card className="h-full" hoverShadow>
-            <div className="flex h-full min-w-0 flex-col">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                        <ProviderIcon kind={provider.kind} logo={provider.logo} />
-                        <div className="min-w-0">
-                            <div className="truncate text-base font-semibold">{provider.displayName}</div>
-                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                {provider.kind !== "feishu" ? (
-                                    <Tag theme="default" variant="light">
-                                        {kindLabel}
-                                    </Tag>
-                                ) : null}
-                                <ProviderStatus provider={provider} />
-                            </div>
-                        </div>
-                    </div>
+        <Card
+            actions={<ProviderStatus provider={provider} />}
+            avatar={<ProviderIcon kind={provider.kind} logo={provider.logo} />}
+            bordered={false}
+            bodyClassName="!flex flex-1 flex-col"
+            className="!flex h-full min-w-0 flex-col"
+            footer={
+                <div className="flex w-full min-w-0 items-center justify-between gap-3">
+                    <Tooltip
+                        content={
+                            provider.environmentManaged
+                                ? "由运行环境配置"
+                                : !provider.configured
+                                  ? "请先补全认证配置"
+                                  : undefined
+                        }
+                    >
+                        <span className="flex min-w-0 items-center gap-2">
+                            <Switch
+                                aria-label={`${provider.enabled ? "停用" : "启用"}${provider.displayName}`}
+                                disabled={!canToggle || pending}
+                                loading={pending}
+                                onChange={onToggle}
+                                size="small"
+                                value={provider.enabled}
+                            />
+                            <span className="truncate text-xs" style={{ color: tokens.colorTextSecondary }}>
+                                登录入口
+                            </span>
+                        </span>
+                    </Tooltip>
                     {canManage && actions.length > 0 ? (
                         <Dropdown
                             disabled={pending}
@@ -79,49 +93,36 @@ export function ProviderCard({ canManage, onDelete, onEdit, onToggle, pending, p
                         </Dropdown>
                     ) : null}
                 </div>
-
-                <div
-                    className="mt-3 flex min-w-0 items-center gap-2 text-xs"
-                    style={{ color: tokens.colorTextTertiary }}
-                >
-                    <LinkIcon className="shrink-0" />
-                    {endpointLabel ? (
-                        <Tooltip content={provider.endpoint}>
-                            <span className="truncate">{endpointLabel}</span>
-                        </Tooltip>
-                    ) : (
-                        <span>{provider.environmentManaged ? "由运行环境配置" : "使用服务端默认回调地址"}</span>
-                    )}
+            }
+            headerClassName="!items-start"
+        >
+            <div className="min-w-0">
+                <div className="truncate text-base font-medium" title={provider.displayName}>
+                    {provider.displayName}
                 </div>
-
-                <div
-                    className="mt-auto flex items-center justify-between gap-3 border-t pt-4"
-                    style={{ borderColor: tokens.colorBorderSecondary }}
+                <p
+                    className="mt-2 line-clamp-2 min-h-10 text-xs leading-5"
+                    style={{ color: tokens.colorTextSecondary }}
                 >
-                    <span className="text-sm" style={{ color: tokens.colorTextSecondary }}>
-                        登录入口
-                    </span>
-                    <Tooltip
-                        content={
-                            provider.environmentManaged
-                                ? "由运行环境配置"
-                                : !provider.configured
-                                  ? "请先补全认证配置"
-                                  : undefined
-                        }
-                    >
-                        <span>
-                            <Switch
-                                aria-label={`${provider.enabled ? "停用" : "启用"}${provider.displayName}`}
-                                disabled={!canToggle || pending}
-                                loading={pending}
-                                onChange={onToggle}
-                                size="small"
-                                value={provider.enabled}
-                            />
-                        </span>
+                    {provider.description}
+                </p>
+            </div>
+            <div
+                className="mt-auto flex min-w-0 items-center gap-1.5 pt-4 text-xs"
+                style={{ color: tokens.colorTextTertiary }}
+            >
+                <span className="shrink-0">{kindLabel}</span>
+                <span aria-hidden="true">·</span>
+                <LinkIcon className="shrink-0" />
+                {endpointLabel ? (
+                    <Tooltip content={provider.endpoint}>
+                        <span className="truncate">{endpointLabel}</span>
                     </Tooltip>
-                </div>
+                ) : (
+                    <span className="truncate">
+                        {provider.environmentManaged ? "由运行环境配置" : "使用服务端默认回调地址"}
+                    </span>
+                )}
             </div>
         </Card>
     );
@@ -129,16 +130,8 @@ export function ProviderCard({ canManage, onDelete, onEdit, onToggle, pending, p
 
 function ProviderStatus({ provider }: { provider: IdentityProviderCard }) {
     if (!provider.configured) {
-        return (
-            <Tag theme="warning" variant="light">
-                待完善
-            </Tag>
-        );
+        return <Tag theme="warning">待完善</Tag>;
     }
 
-    return (
-        <Tag theme={provider.enabled ? "success" : "default"} variant="light">
-            {provider.enabled ? "已启用" : "已停用"}
-        </Tag>
-    );
+    return <Tag theme={provider.enabled ? "success" : "default"}>{provider.enabled ? "已启用" : "已停用"}</Tag>;
 }
