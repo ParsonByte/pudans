@@ -33,13 +33,13 @@ export function ProviderTypePicker({ feishuConfigured, onClose, onSelect, open }
                     const disabled = option.kind === "feishu" && feishuConfigured;
 
                     return (
-                        <Card key={option.kind} title={option.title}>
+                        <Card bordered={false} key={option.kind} title={option.title}>
                             <div className="flex items-end justify-between gap-3">
                                 <span
                                     className="flex size-11 items-center justify-center rounded-xl"
                                     style={{
-                                        background: tokens.colorFillTertiary,
-                                        color: tokens.colorTextSecondary,
+                                        background: tokens.colorPrimaryBg,
+                                        color: tokens.colorPrimary,
                                     }}
                                 >
                                     <ProviderKindIcon kind={option.kind} size={22} />

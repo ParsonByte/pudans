@@ -3,18 +3,15 @@
 import { useMemo, useState } from "react";
 
 import type { AuthProvider } from "@pudans-dev/api-client";
-import { AddIcon, LoginIcon, RefreshIcon } from "tdesign-icons-react";
-import { Button, Card, Empty, Skeleton } from "tdesign-react";
+import { AddIcon, RefreshIcon, SearchIcon } from "tdesign-icons-react";
+import { Breadcrumb, Button, Card, Empty, Input, Skeleton } from "tdesign-react";
 
 import { confirmGlobalDialog } from "@/components/ui";
 import { usePermission } from "@/hooks/utils/use-permission";
 
-import { ConsoleAddCard } from "../../../components/add-card";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatCountOrDash } from "../../../composables/_format";
 import { useConsoleSession } from "../../../composables/_session";
 import { IdentityLoadState } from "../components/identity-load-state";
-import { IdentityPageOverview } from "../components/identity-page-overview";
 import { LegacyProviderEditorModal } from "./components/legacy-provider-editor-modal";
 import { ProviderCard } from "./components/provider-card";
 import { ProviderEditorModal } from "./components/provider-editor-modal";
@@ -34,6 +31,8 @@ import {
     useUpdateAuthenticationSettings,
 } from "./composables/_auth-providers";
 
+const { BreadcrumbItem } = Breadcrumb;
+
 export function AuthProvidersView() {
     const sessionQuery = useConsoleSession();
     const authProvidersQuery = useAuthProviderRecordsQuery();
@@ -48,6 +47,7 @@ export function AuthProvidersView() {
     const [draftKind, setDraftKind] = useState<IdentityProviderKind>();
     const [editingProvider, setEditingProvider] = useState<IdentityProviderCard>();
     const [legacyProvider, setLegacyProvider] = useState<AuthProvider>();
+    const [searchText, setSearchText] = useState("");
 
     const authentication = useMemo(() => authenticationQuery.data ?? {}, [authenticationQuery.data]);
     const providers = useMemo(
@@ -57,21 +57,23 @@ export function AuthProvidersView() {
     );
     const pending = updateSettings.isPending || toggleAuthProvider.isPending || deleteAuthProvider.isPending;
     const hasFeishu = providers.some((provider) => provider.kind === "feishu");
-    const enabledCount = providers.filter((provider) => provider.configured && provider.enabled).length;
-    const configuredCount = providers.filter((provider) => provider.configured).length;
+    const filteredProviders = useMemo(() => {
+        const query = searchText.trim().toLocaleLowerCase();
+        if (!query) {
+            return providers;
+        }
+
+        return providers.filter((provider) =>
+            [provider.displayName, provider.name, provider.description, provider.endpoint, provider.kind].some(
+                (value) => value?.toLocaleLowerCase().includes(query),
+            ),
+        );
+    }, [providers, searchText]);
     const queryError = authProvidersQuery.error ?? listedProvidersQuery.error ?? authenticationQuery.error;
     const queryPending =
         authProvidersQuery.isPending || listedProvidersQuery.isPending || authenticationQuery.isPending;
     const queryFetching =
         authProvidersQuery.isFetching || listedProvidersQuery.isFetching || authenticationQuery.isFetching;
-    const overview = queryPending
-        ? undefined
-        : {
-              configured: configuredCount,
-              disabled: Math.max(0, configuredCount - enabledCount),
-              enabled: enabledCount,
-              total: providers.length,
-          };
 
     const refresh = () => {
         void authProvidersQuery.refetch();
@@ -173,37 +175,62 @@ export function AuthProvidersView() {
 
     return (
         <>
-            <div className="flex min-w-0 flex-col gap-4">
-                <IdentityPageOverview
-                    actions={
-                        <>
-                            {canManage ? (
-                                <Button icon={<AddIcon />} onClick={openCreatePicker} theme="primary">
-                                    添加身份提供商
-                                </Button>
-                            ) : null}
-                            <Button icon={<RefreshIcon />} loading={queryFetching || pending} onClick={refresh}>
-                                刷新
+            <div className="flex w-full min-w-0 flex-col gap-4">
+                <AuthProvidersBreadcrumb />
+
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-2">
+                        {canManage ? (
+                            <Button icon={<AddIcon />} onClick={openCreatePicker} theme="primary">
+                                添加身份提供商
                             </Button>
-                        </>
-                    }
-                    icon={<LoginIcon />}
-                    metrics={[
-                        { label: "登录方式", value: formatCountOrDash(overview?.total) },
-                        { label: "已启用", value: formatCountOrDash(overview?.enabled) },
-                        { label: "已配置", value: formatCountOrDash(overview?.configured) },
-                        { label: "已停用", value: formatCountOrDash(overview?.disabled) },
-                    ]}
-                    title="第三方登录"
-                />
+                        ) : null}
+                        <Button
+                            aria-label="刷新身份提供商"
+                            icon={<RefreshIcon />}
+                            loading={queryFetching || pending}
+                            onClick={refresh}
+                            title="刷新"
+                            variant="outline"
+                        />
+                    </div>
+                    <Input
+                        className="!w-full md:!w-[342px]"
+                        clearable
+                        onChange={(value) => setSearchText(String(value ?? ""))}
+                        placeholder="搜索身份提供商"
+                        suffixIcon={<SearchIcon />}
+                        value={searchText}
+                    />
+                </div>
 
                 {queryPending ? (
                     <ProviderGridSkeleton />
-                ) : providers.length === 0 && !canManage ? (
-                    <Empty description="尚未配置第三方登录方式" />
+                ) : filteredProviders.length === 0 ? (
+                    searchText.trim() ? (
+                        <Empty
+                            action={
+                                <Button onClick={() => setSearchText("")} variant="outline">
+                                    清除搜索
+                                </Button>
+                            }
+                            description="没有匹配的身份提供商"
+                        />
+                    ) : (
+                        <Empty
+                            action={
+                                canManage ? (
+                                    <Button icon={<AddIcon />} onClick={openCreatePicker} theme="primary">
+                                        添加身份提供商
+                                    </Button>
+                                ) : undefined
+                            }
+                            description="尚未配置第三方登录方式"
+                        />
+                    )
                 ) : (
-                    <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                        {providers.map((provider) => (
+                    <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {filteredProviders.map((provider) => (
                             <ProviderCard
                                 canManage={canManage}
                                 key={provider.key}
@@ -220,7 +247,6 @@ export function AuthProvidersView() {
                                 provider={provider}
                             />
                         ))}
-                        {canManage ? <ConsoleAddCard onClick={openCreatePicker} title="添加身份提供商" /> : null}
                     </div>
                 )}
             </div>
@@ -251,11 +277,20 @@ export function AuthProvidersView() {
     );
 }
 
+function AuthProvidersBreadcrumb() {
+    return (
+        <Breadcrumb>
+            <BreadcrumbItem>身份与权限</BreadcrumbItem>
+            <BreadcrumbItem>身份提供商</BreadcrumbItem>
+        </Breadcrumb>
+    );
+}
+
 function ProviderGridSkeleton() {
     return (
-        <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
-                <Card className="min-h-56" key={index}>
+                <Card bordered={false} className="min-h-64" key={index}>
                     <Skeleton theme="avatar-text" />
                 </Card>
             ))}

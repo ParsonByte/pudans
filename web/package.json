@@ -26,6 +26,7 @@
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource-variable/noto-sans": "^5.3.0",
     "@hookform/resolvers": "^7.0.8",
+    "@icon-park/react": "^1.4.2",
     "@pudans-dev/api-client": "*",
     "@tanstack/react-query": "^5.108.2",
     "@tanstack/react-query-devtools": "^5.108.2",
