@@ -28,7 +28,6 @@
 
 .auth-glass {
     border: 1px solid color-mix(in srgb, var(--td-component-stroke) 72%, transparent) !important;
-    border-radius: 1.5rem !important;
     background: color-mix(in srgb, var(--td-bg-color-container) 88%, transparent) !important;
     box-shadow: var(--td-shadow-3) !important;
 }
