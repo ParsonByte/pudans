@@ -18,6 +18,7 @@ import cn.tolim.pudans.contract.live.dto.LiveRecordingDownloadRequest;
 import cn.tolim.pudans.contract.live.dto.LiveRecordingPage;
 import cn.tolim.pudans.contract.live.dto.LiveRecordingQuery;
 import cn.tolim.pudans.contract.live.dto.LiveRecordingRetry;
+import cn.tolim.pudans.contract.live.dto.LiveRecordingSummary;
 import cn.tolim.pudans.contract.live.dto.LiveRecordingView;
 import cn.tolim.pudans.contract.live.dto.PartDownload;
 import cn.tolim.pudans.core.audit.AuditLog;
@@ -64,7 +65,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
 
     private final AuditLog auditLog;
 
-    // 注册录制查询、停止、下载、重试与批量删除路由
+    // 注册录制查询、汇总、停止、下载、重试与批量删除路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "LiveRecordingV1alpha1";
@@ -73,6 +74,10 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                         .description("Query live recordings by source, state and time range.")
                         .tag(tag)
                         .response(responseBuilder().implementation(LiveRecordingPage.class)))
+                .GET("/liverecordings/summary", this::summary, builder -> builder.operationId("getLiveRecordingSummary")
+                        .description("Get live recording counts and storage totals.")
+                        .tag(tag)
+                        .response(responseBuilder().implementation(LiveRecordingSummary.class)))
                 .GET("/liverecordings/active", this::active, builder -> builder.operationId("listActiveLiveRecordings")
                         .description("List queued, recording and finalizing recordings.")
                         .tag(tag)
@@ -106,6 +111,11 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                         result.getPage(),
                         result.getSize()))
                 .flatMap(page -> ServerResponse.ok().bodyValue(page));
+    }
+
+    // 返回录制状态计数与存储字节汇总
+    private Mono<ServerResponse> summary(ServerRequest request) {
+        return recordingService.summary().flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     // 列出排队、录制中与收尾中的录制
