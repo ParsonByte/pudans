@@ -1,22 +1,17 @@
 "use client";
 
 import type { User } from "@pudans-dev/api-client";
-import { DeleteIcon, EditIcon, KeyIcon, LockOffIcon, LockOnIcon, MoreIcon } from "tdesign-icons-react";
-import { Button, Dropdown, type DropdownOption, Typography } from "tdesign-react";
-
-import { SectionCard, useDesignTokens } from "@/components/ui";
+import { DeleteIcon, KeyIcon, MoreIcon, PlayCircleIcon, PoweroffIcon } from "tdesign-icons-react";
+import { Button, Card, Dropdown, type DropdownOption, Typography } from "tdesign-react";
 
 import { UserAvatar } from "./user-avatar";
-import { UserGroupTag, UserStatusTag } from "./user-tags";
 
 type UserDetailProfileProps = {
     canDelete: boolean;
-    canEdit: boolean;
     canPassword: boolean;
     canStatus: boolean;
     groupLabel: string;
     onDelete: () => void;
-    onEdit: () => void;
     onResetPassword: () => void;
     onToggleStatus: () => void;
     statusPending: boolean;
@@ -25,18 +20,15 @@ type UserDetailProfileProps = {
 
 export function UserDetailProfile({
     canDelete,
-    canEdit,
     canPassword,
     canStatus,
     groupLabel,
     onDelete,
-    onEdit,
     onResetPassword,
     onToggleStatus,
     statusPending,
     user,
 }: UserDetailProfileProps) {
-    const tokens = useDesignTokens();
     const displayName = user.spec.displayName || user.metadata.name;
     const loginName = user.spec.loginName || user.metadata.name;
     const actionItems: DropdownOption[] = [];
@@ -46,9 +38,9 @@ export function UserDetailProfile({
     }
     if (canStatus) {
         actionItems.push({
-            content: user.spec.disabled ? "启用账号" : "禁用账号",
+            content: user.spec.disabled ? "启用用户" : "禁用用户",
             disabled: statusPending,
-            prefixIcon: user.spec.disabled ? <LockOnIcon /> : <LockOffIcon />,
+            prefixIcon: user.spec.disabled ? <PlayCircleIcon /> : <PoweroffIcon />,
             value: "status",
         });
     }
@@ -69,44 +61,37 @@ export function UserDetailProfile({
     const actions =
         actionItems.length > 0 ? (
             <Dropdown onClick={handleAction} options={actionItems} placement="bottom-right" trigger="click">
-                <Button aria-label="更多账号操作" icon={<MoreIcon />} shape="square" variant="text" />
+                <Button
+                    aria-label="更多账号操作"
+                    className="!border-transparent !bg-transparent !text-white hover:!bg-white/10 focus:!bg-white/10 focus-visible:!bg-white/10 active:!bg-white/10"
+                    icon={<MoreIcon />}
+                    shape="square"
+                    variant="text"
+                />
             </Dropdown>
         ) : null;
 
     return (
-        <SectionCard className="!h-auto" extra={actions} title="个人资料">
-            <div className="relative">
-                <div className="flex items-center gap-[18px]">
-                    <div
-                        className="shrink-0 rounded-full border p-1"
-                        style={{
-                            backgroundColor: tokens.colorFillQuaternary,
-                            borderColor: tokens.colorBorderSecondary,
-                        }}
-                    >
-                        <UserAvatar name={displayName} size={68} src={user.spec.avatar} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <Typography.Title ellipsis level="h4">
-                            {displayName}
-                        </Typography.Title>
-                        <Typography.Text className="mt-0.5 block" ellipsis theme="secondary">
-                            @{loginName}
-                        </Typography.Text>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            <UserStatusTag disabled={user.spec.disabled} />
-                            <UserGroupTag displayName={groupLabel === "未分组" ? undefined : groupLabel} />
-                        </div>
-                    </div>
-                </div>
+        <Card
+            bordered={false}
+            bodyClassName="!p-6"
+            className="overflow-hidden"
+            shadow={false}
+            style={{ background: "var(--td-brand-color)" }}
+        >
+            <div className="flex items-start justify-between gap-3">
+                <UserAvatar name={displayName} size={90} src={user.spec.avatar} />
+                {actions}
             </div>
-            {canEdit ? (
-                <div className="mt-7 border-t pt-6" style={{ borderColor: tokens.colorBorderSecondary }}>
-                    <Button block icon={<EditIcon />} onClick={onEdit} size="large" theme="primary">
-                        编辑资料
-                    </Button>
-                </div>
-            ) : null}
-        </SectionCard>
+            <Typography.Title className="!mt-9" ellipsis level="h4" style={{ color: "var(--td-text-color-anti)" }}>
+                {displayName}
+            </Typography.Title>
+            <div className="mt-2 text-sm" style={{ color: "var(--td-text-color-anti)" }}>
+                @{loginName}
+            </div>
+            <div className="mt-1 text-sm opacity-80" style={{ color: "var(--td-text-color-anti)" }}>
+                {groupLabel}
+            </div>
+        </Card>
     );
 }
