@@ -433,9 +433,11 @@ public class AuditLog {
         return auditStore.flowDurationBuckets(from, to);
     }
 
-    // 返回最近的若干条审计记录。
-    public Flux<AuditRecord> findRecent(int limit) {
-        return auditStore.findRecent(limit);
+    // 返回时间区间内最近的若干条审计记录。
+    public Flux<AuditRecord> findRecent(Instant from, Instant to, int limit) {
+        return auditStore.query(new AuditStore.AuditQuery(
+                null, from, to, null, null, null, null, null,
+                Math.max(1, limit), false));
     }
 
     // 从请求属性或用户名解析操作者编号。

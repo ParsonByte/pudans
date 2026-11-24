@@ -155,7 +155,6 @@ export function DashboardView() {
         }
     }, [overviewQuery.error, overviewQuery.isError, prompt]);
 
-    const today = dashboardDateValue(new Date());
     const handleRangeChange = (value: Array<Date | number | string>) => {
         const [nextStart, nextEnd] = value;
         if (!nextStart || !nextEnd) {
@@ -165,14 +164,20 @@ export function DashboardView() {
         const start = dashboardDateValue(nextStart);
         const end = dashboardDateValue(nextEnd);
         const days = dashboardRangeDays(start, end);
-        if (days < 1 || days > 90) {
+        if (days < 1) {
+            prompt.warning({ content: "结束日期不能早于开始日期" });
+            setRange((current) => ({ ...current }));
+            return;
+        }
+        if (days > 90) {
             prompt.warning({ content: "统计范围最多支持 90 天" });
+            setRange((current) => ({ ...current }));
             return;
         }
 
         setRange({ days, end, start });
     };
-    const disableFutureDate = ({
+    const disableRangeDate = ({
         date,
         partial,
     }: {
@@ -189,10 +194,6 @@ export function DashboardView() {
         }
 
         const currentDay = dashboardDateValue(current);
-        if (currentDay > today) {
-            return true;
-        }
-
         const other = date[partial === "start" ? 1 : 0];
         if (!other) {
             return false;
@@ -214,7 +215,7 @@ export function DashboardView() {
                 aria-label="统计日期范围"
                 className="min-w-0 flex-1 sm:w-[280px] sm:flex-none"
                 clearable={false}
-                disableDate={disableFutureDate}
+                disableDate={disableRangeDate}
                 format="YYYY-MM-DD"
                 onChange={handleRangeChange}
                 placeholder={["开始日期", "结束日期"]}
@@ -281,6 +282,8 @@ export function DashboardView() {
     const resultTotal = (overview.resultDistribution ?? []).reduce((sum, item) => sum + (item.count ?? 0), 0);
     const operationTotal =
         metricMap.get("operations")?.value ?? topOperations.reduce((sum, item) => sum + item.count, 0);
+    const today = dashboardDateValue(new Date());
+    const rangeIncludesToday = range.start <= today && range.end >= today;
     const activeUserItems = activeUsers.map((user, index) => ({
         key: `${user.name ?? "anonymous"}-${index}`,
         label: userLabel(user.name),
@@ -302,7 +305,7 @@ export function DashboardView() {
                     return (
                         <Col key={key} sm={6} xl={3} xs={12}>
                             <BoardCard
-                                caption={metricCaption(key, overview, metricMap)}
+                                caption={metricCaption(key, overview, metricMap, rangeIncludesToday)}
                                 dark={index === 0}
                                 definition={definition}
                                 metric={metric}

@@ -6,11 +6,13 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.audit.AuditRecord;
 import cn.tolim.pudans.extension.contract.Metadata;
@@ -94,5 +96,22 @@ class AuditLogTest {
         verify(auditStore, timeout(2_000)).append(captor.capture());
         assertThat(captor.getValue().getTraceFlowId()).isNotBlank();
         assertThat(captor.getValue().isSyntheticFlow()).isTrue();
+    }
+
+    @Test
+    void rangedRecentRecordsUseBoundedQuery() {
+        var from = Instant.parse("2026-12-01T00:00:00Z");
+        var to = Instant.parse("2026-12-02T23:59:59Z");
+        when(auditStore.query(any())).thenReturn(Flux.empty());
+        var service = new AuditLog(auditStore, client, auditWal);
+
+        service.findRecent(from, to, 5).collectList().block();
+
+        var captor = ArgumentCaptor.forClass(AuditStore.AuditQuery.class);
+        verify(auditStore).query(captor.capture());
+        assertThat(captor.getValue().from()).isEqualTo(from);
+        assertThat(captor.getValue().to()).isEqualTo(to);
+        assertThat(captor.getValue().limit()).isEqualTo(5);
+        assertThat(captor.getValue().ascending()).isFalse();
     }
 }

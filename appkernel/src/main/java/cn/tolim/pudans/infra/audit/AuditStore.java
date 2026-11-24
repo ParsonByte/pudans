@@ -296,7 +296,7 @@ public class AuditStore {
                             WHERE occurred_at >= :since
                         """);
         if (to != null) {
-            sql.append(" AND occurred_at < :to");
+            sql.append("\n AND occurred_at < :to\n");
         }
         sql.append(NON_STATIC_REQUEST_SQL);
         var archiveSql = new StringBuilder("""
@@ -307,7 +307,7 @@ public class AuditStore {
                             WHERE occurred_at >= :since
                         """);
         if (to != null) {
-            archiveSql.append(" AND occurred_at < :to");
+            archiveSql.append("\n AND occurred_at < :to\n");
         }
         archiveSql.append(NON_STATIC_REQUEST_SQL);
         if (StringUtils.hasText(uid)) {
@@ -694,14 +694,6 @@ public class AuditStore {
                         Objects.requireNonNull(row.get("bucket", String.class)),
                         longValue(row.get("total"))))
                 .all());
-    }
-
-    // 按时间倒序返回最近的审计记录。
-    public Flux<AuditRecord> findRecent(int limit) {
-        var pageable = PageRequest.of(0, Math.max(1, limit), Sort.by(Sort.Direction.DESC, "id"));
-        return selectBoth(nonStaticRequests(), pageable)
-                .sort(recordOrder(false))
-                .take(Math.max(1, limit));
     }
 
     // 按步骤顺序返回同一追踪流的全部记录。

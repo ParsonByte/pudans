@@ -170,7 +170,13 @@ class DashboardEndpointTest {
         when(client.listAll(eq(Webhook.class), any(ListOptions.class), any()))
                 .thenReturn(Flux.just(webhook("webhook-1", Instant.now())));
         when(auditLog.countSince(any(Instant.class))).thenReturn(Mono.just(41L));
-        when(auditLog.findRecent(5)).thenReturn(Flux.empty());
+        when(auditLog.findRecent(any(Instant.class), any(Instant.class), eq(5)))
+                .thenAnswer(invocation -> ((Instant) invocation.getArgument(1)).isAfter(Instant.now())
+                        ? Flux.empty()
+                        : Flux.just(
+                                record("audit-1", "uid-1", "LOGIN", "SUCCESS"),
+                                record("audit-2", "uid-1", "LOGIN", "SUCCESS"),
+                                record("audit-3", "uid-2", "LOGIN", "SUCCESS")));
         when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), eq("LOGIN"), eq("SUCCESS")))
                 .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 7L)));
         when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), isNull(), isNull()))
@@ -265,6 +271,17 @@ class DashboardEndpointTest {
         assertThat(historical.loginTrend()).hasSize(7);
         assertThat(historical.loginTrend().getLast().date()).isEqualTo("2026-11-20");
         assertThat(historical.operationTrend().getLast().date()).isEqualTo("2026-11-20");
+
+        var future = endpoint.aggregate(2, Instant.parse("2026-12-02T15:59:59.999Z")).block();
+
+        assertThat(future).isNotNull();
+        assertThat(future.loginTrend())
+                .extracting(point -> point.date())
+                .containsExactly("2026-12-01", "2026-12-02");
+        assertThat(future.operationTrend())
+                .extracting(point -> point.count())
+                .containsOnly(0L);
+        assertThat(future.recentAuditLogs()).isEmpty();
     }
 
     @Test
@@ -278,7 +295,8 @@ class DashboardEndpointTest {
         when(client.countBy(any(Class.class), any(ListOptions.class)))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
         when(auditLog.countSince(any(Instant.class))).thenReturn(Mono.error(new IllegalStateException("down")));
-        when(auditLog.findRecent(5)).thenReturn(Flux.error(new IllegalStateException("down")));
+        when(auditLog.findRecent(any(Instant.class), any(Instant.class), eq(5)))
+                .thenReturn(Flux.error(new IllegalStateException("down")));
         when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), eq("LOGIN"), eq("SUCCESS")))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
         when(auditLog.countPerDay(any(Instant.class), any(Instant.class), isNull(), isNull(), isNull()))

@@ -36,13 +36,10 @@ class RangeDaysTest {
     }
 
     @Test
-    void resolveEndClampsFutureInstantToNow() {
-        var future = Instant.now().plusSeconds(3_600);
-        var before = Instant.now();
-        var end = RangeDays.resolveEnd(request("?to=" + future));
-        var after = Instant.now();
+    void resolveEndKeepsFutureInstant() {
+        var expected = Instant.parse("2026-12-02T15:59:59.999Z");
 
-        assertThat(end).isBefore(future).isBetween(before, after);
+        assertThat(RangeDays.resolveEnd(request("?to=" + expected))).isEqualTo(expected);
     }
 
     @Test
