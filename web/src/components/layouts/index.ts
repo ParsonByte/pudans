@@ -1,1 +1,2 @@
-export { AppShell, type AppShellGroup, type AppShellItem } from "./app-shell";
+export { AppShell } from "./app-shell";
+export type { AppShellGroup, AppShellItem } from "./app-shell-types";
