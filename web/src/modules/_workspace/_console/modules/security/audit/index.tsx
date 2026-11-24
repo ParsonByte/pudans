@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { type AuditRecord, apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { RefreshIcon } from "tdesign-icons-react";
-import { Button, Select } from "tdesign-react";
+import { Breadcrumb, Button, RadioGroup, Select } from "tdesign-react";
 import type { TableProps } from "tdesign-react";
 
 import { GlobalDialog, ResultTag, SectionCard } from "@/components/ui";
@@ -25,19 +25,31 @@ import { formatDateTime, formatDuration, operationLabel } from "../../../composa
 import { DASHBOARD_RANGES, type DashboardRange } from "../../../composables/_range";
 import { RESULT_OPTIONS } from "../../../composables/_results";
 import { useConsoleTableState } from "../../../composables/_table";
+import { dashboardRangeBounds, dashboardRangeForDays } from "../../overview/dashboard/composables/_dashboard";
 import { useDashboardTheme } from "../../overview/dashboard/composables/_theme";
 import { SecuritySearchInput } from "../components/security-search-input";
 import { AuditMetricGrid } from "./components/audit-metric-grid";
+
+const { BreadcrumbItem } = Breadcrumb;
+
+type AuditTab = "logs" | "overview";
+
+const AUDIT_TAB_OPTIONS: Array<{ label: string; value: AuditTab }> = [
+    { label: "审计概览", value: "overview" },
+    { label: "审计日志", value: "logs" },
+];
 
 export function AuditView() {
     const table = useConsoleTableState();
     const prompt = useMessagePrompt();
     const { token } = useDashboardTheme();
     const [range, setRange] = useState<DashboardRange>(7);
+    const [activeTab, setActiveTab] = useState<AuditTab>("overview");
     const [selected, setSelected] = useState<AuditRecord>();
     const uid = table.filters.uid ?? "";
     const operation = table.filters.operation ?? "";
     const result = table.filters.result ?? "";
+    const rangeBounds = useMemo(() => dashboardRangeBounds(dashboardRangeForDays(range)), [range]);
     const overviewQuery = useQuery({
         placeholderData: keepPreviousData,
         queryFn: async () => (await apiClient.auditLog.getAuditOverview({ days: range })).data,
@@ -50,14 +62,26 @@ export function AuditView() {
         queryFn: async () =>
             (
                 await apiClient.auditLog.listAuditLogs({
+                    from: rangeBounds.from,
                     operation: operation || undefined,
                     page: table.page,
                     result: result || undefined,
                     size: table.pageSize,
+                    to: rangeBounds.to,
                     uid: uid || undefined,
                 })
             ).data,
-        queryKey: ["console", "audit", table.page, table.pageSize, uid, operation, result],
+        queryKey: [
+            "console",
+            "audit",
+            table.page,
+            table.pageSize,
+            uid,
+            operation,
+            result,
+            rangeBounds.from,
+            rangeBounds.to,
+        ],
     });
     const columns: TableProps<AuditRecord>["columns"] = [
         {
@@ -129,20 +153,39 @@ export function AuditView() {
     }, [overviewQuery.error, prompt]);
 
     return (
-        <div className="flex min-w-0 flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-                <Select
-                    onChange={(value) => setRange(value as DashboardRange)}
-                    options={DASHBOARD_RANGES}
-                    style={{ width: 132 }}
-                    value={range}
-                />
-                <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
-                    刷新
-                </Button>
+        <div className="flex w-full min-w-0 flex-col gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <Breadcrumb>
+                    <BreadcrumbItem>安全与审计</BreadcrumbItem>
+                    <BreadcrumbItem>审计</BreadcrumbItem>
+                </Breadcrumb>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                        aria-label="审计统计范围"
+                        onChange={(value) => {
+                            setRange(value as DashboardRange);
+                            table.setPage(1);
+                        }}
+                        options={DASHBOARD_RANGES}
+                        style={{ width: 132 }}
+                        value={range}
+                    />
+                    <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
+                        刷新
+                    </Button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+            <RadioGroup
+                className="w-fit"
+                onChange={(value) => setActiveTab(value as AuditTab)}
+                options={AUDIT_TAB_OPTIONS}
+                theme="button"
+                value={activeTab}
+                variant="default-filled"
+            />
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12" hidden={activeTab !== "overview"}>
                 <AuditMetricGrid loading={overviewQuery.isPending} summary={summary} />
 
                 <div className="md:col-span-2 xl:col-span-7">
@@ -189,50 +232,53 @@ export function AuditView() {
                 </div>
             </div>
 
-            <ConsoleTable
-                columns={columns}
-                data={logsQuery.data?.items}
-                error={logsQuery.error}
-                extra={
-                    <Button loading={logsQuery.isFetching} onClick={() => void logsQuery.refetch()} size="small">
-                        刷新
-                    </Button>
-                }
-                loading={logsQuery.isPending}
-                onRetry={() => void logsQuery.refetch()}
-                pagination={{ ...table.pagination, total: logsQuery.data?.total ?? 0 }}
-                rowKey="metadata.name"
-                title="审计日志"
-                toolbar={
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <div className="min-w-0 flex-1 sm:max-w-[220px]">
-                            <SecuritySearchInput
-                                onChange={() => undefined}
-                                onSearch={(value) => table.setFilter("uid", value || null)}
-                                placeholder="用户 UID"
-                                value={uid}
-                            />
-                        </div>
-                        <div className="min-w-0 flex-1 sm:max-w-[220px]">
-                            <SecuritySearchInput
-                                onChange={() => undefined}
-                                onSearch={(value) => table.setFilter("operation", value || null)}
-                                placeholder="操作名称"
-                                value={operation}
-                            />
-                        </div>
-                        <Select
-                            clearable
-                            onChange={(value) => table.setFilter("result", (value as string | undefined) ?? null)}
-                            options={RESULT_OPTIONS}
-                            placeholder="结果"
-                            style={{ width: 144 }}
-                            value={result || undefined}
-                        />
-                        <Button onClick={() => table.reset()}>重置</Button>
-                    </div>
-                }
-            />
+            <div hidden={activeTab !== "logs"}>
+                <SectionCard title="审计日志">
+                    <ConsoleTable
+                        cardless
+                        columns={columns}
+                        data={logsQuery.data?.items}
+                        error={logsQuery.error}
+                        loading={logsQuery.isPending}
+                        onRetry={logsQuery.error ? () => void logsQuery.refetch() : undefined}
+                        pagination={{ ...table.pagination, total: logsQuery.data?.total ?? 0 }}
+                        rowKey="metadata.name"
+                        toolbar={
+                            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                                <div className="min-w-0 sm:max-w-[220px] sm:flex-1">
+                                    <SecuritySearchInput
+                                        onChange={() => undefined}
+                                        onSearch={(value) => table.setFilter("uid", value || null)}
+                                        placeholder="用户 UID"
+                                        value={uid}
+                                    />
+                                </div>
+                                <div className="min-w-0 sm:max-w-[220px] sm:flex-1">
+                                    <SecuritySearchInput
+                                        onChange={() => undefined}
+                                        onSearch={(value) => table.setFilter("operation", value || null)}
+                                        placeholder="操作名称"
+                                        value={operation}
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Select
+                                        clearable
+                                        onChange={(value) =>
+                                            table.setFilter("result", (value as string | undefined) ?? null)
+                                        }
+                                        options={RESULT_OPTIONS}
+                                        placeholder="结果"
+                                        style={{ width: 144 }}
+                                        value={result || undefined}
+                                    />
+                                    <Button onClick={() => table.reset()}>重置</Button>
+                                </div>
+                            </div>
+                        }
+                    />
+                </SectionCard>
+            </div>
 
             <GlobalDialog
                 footer={false}
