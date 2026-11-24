@@ -6,7 +6,7 @@ import "tdesign-react/es/style/index.css";
 
 import { NavigationProgress } from "@/components/ui";
 import { Providers } from "@/context/providers";
-import "@/styles/theme.css";
+import "@/styles/_global.css";
 
 export const metadata: Metadata = {
     title: "Pudans 控制台",
