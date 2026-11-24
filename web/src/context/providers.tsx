@@ -1,11 +1,21 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider, useTheme } from "next-themes";
-import { ConfigProvider } from "tdesign-react";
+import { ConfigProvider, MessagePlugin, NotificationPlugin } from "tdesign-react";
+import "tdesign-react/es/_util/react-19-adapter";
+
+function PromptPluginConfig() {
+    useEffect(() => {
+        MessagePlugin.config({ attach: "body", placement: "top" });
+        NotificationPlugin.config({ attach: "body", placement: "top-right" });
+    }, []);
+
+    return null;
+}
 
 function TDesignTheme({ children }: { children: ReactNode }) {
     const { resolvedTheme } = useTheme();
@@ -35,6 +45,7 @@ function TDesignTheme({ children }: { children: ReactNode }) {
                 isContextEffectPlugin: true,
             }}
         >
+            <PromptPluginConfig />
             {children}
         </ConfigProvider>
     );

@@ -33,6 +33,11 @@ const NOTIFICATION_CLOSE_BUTTON = createElement(Button, {
     variant: "text",
 });
 
+const NOTIFICATION_TITLES = {
+    error: "操作失败",
+    warning: "提示",
+} as const;
+
 function resolveDuration(duration: number | undefined, fallback: number): number {
     return duration ?? fallback;
 }
@@ -41,7 +46,6 @@ function showMessage(theme: "info" | "success", { content, duration }: PromptOpt
     void MessagePlugin[theme]({
         content,
         duration: resolveDuration(duration, 3000),
-        placement: "top",
     });
 }
 
@@ -51,8 +55,7 @@ function showNotification(theme: "error" | "warning", { content, duration, foote
         content,
         duration: resolveDuration(duration, 4500),
         footer,
-        placement: "top-right",
-        title,
+        title: title ?? NOTIFICATION_TITLES[theme],
     });
 }
 
