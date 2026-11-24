@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -124,6 +125,42 @@ class RecordingsTest {
                 .assertNext(result -> {
                     assertThat(result.recording()).isEqualTo("rec-1");
                     assertThat(result.mode()).isEqualTo("UPLOAD");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void summaryAggregatesStatesAndBytes() {
+        var queued = recording(LiveRecordingState.QUEUED);
+        queued.getStatus().setTotalBytes(0L);
+        queued.getStatus().setLocalBytes(0L);
+        var active = recording(LiveRecordingState.RECORDING);
+        active.getStatus().setTotalBytes(1024L);
+        active.getStatus().setLocalBytes(512L);
+        var finalizing = recording(LiveRecordingState.FINALIZING);
+        finalizing.getStatus().setTotalBytes(512L);
+        finalizing.getStatus().setLocalBytes(0L);
+        var completed = recording(LiveRecordingState.COMPLETED);
+        completed.getStatus().setTotalBytes(2048L);
+        completed.getStatus().setLocalBytes(0L);
+        var failed = recording(LiveRecordingState.FAILED);
+        failed.getStatus().setTotalBytes(4096L);
+        failed.getStatus().setLocalBytes(1024L);
+        var canceled = recording(LiveRecordingState.CANCELED);
+        canceled.getStatus().setTotalBytes(256L);
+        canceled.getStatus().setLocalBytes(0L);
+        when(client.listAll(eq(LiveRecording.class), any(), any()))
+                .thenReturn(Flux.just(queued, active, finalizing, completed, failed, canceled));
+
+        StepVerifier.create(service.summary())
+                .assertNext(summary -> {
+                    assertThat(summary.total()).isEqualTo(6L);
+                    assertThat(summary.active()).isEqualTo(3L);
+                    assertThat(summary.completed()).isEqualTo(1L);
+                    assertThat(summary.failed()).isEqualTo(1L);
+                    assertThat(summary.canceled()).isEqualTo(1L);
+                    assertThat(summary.totalBytes()).isEqualTo(7936L);
+                    assertThat(summary.localBytes()).isEqualTo(1536L);
                 })
                 .verifyComplete();
     }

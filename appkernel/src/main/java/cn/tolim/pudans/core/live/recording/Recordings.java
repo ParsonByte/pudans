@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.live.recording;
 
 import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
 import static cn.tolim.pudans.extension.contract.index.query.Queries.in;
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_INVALID_ARGUMENT;
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_INVALID_SPEC;
@@ -20,6 +21,7 @@ import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.contract.live.dto.LiveRecordingRetry;
+import cn.tolim.pudans.contract.live.dto.LiveRecordingSummary;
 import cn.tolim.pudans.core.live.recorder.LiveRecorderRegistry;
 import cn.tolim.pudans.core.live.recorder.LiveRecorder;
 import cn.tolim.pudans.core.live.recorder.LiveStoragePolicyResolver;
@@ -34,13 +36,14 @@ import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-// 录制记录的对外服务：创建、停止、失败重试、查询与活动列表
+// 录制记录的对外服务：创建、停止、失败重试、查询、活动列表与汇总
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -149,6 +152,14 @@ public class Recordings {
                 .andQuery(in("status.state", ACTIVE_STATES))
                 .build();
         return client.listAll(LiveRecording.class, options, defaultSort());
+    }
+
+    // 汇总全部未删除录制的状态计数与存储字节
+    public Mono<LiveRecordingSummary> summary() {
+        var options = ListOptions.builder().andQuery(notDeleting()).build();
+        return client.listAll(LiveRecording.class, options, Sort.unsorted())
+                .reduce(SummaryTotals.EMPTY, SummaryTotals::plus)
+                .map(SummaryTotals::toSummary);
     }
 
     // 按失败状态与本地数据选择续传或重新拉流
@@ -296,6 +307,37 @@ public class Recordings {
         recording.setSpec(spec);
         recording.setStatus(new LiveRecording.Status());
         return recording;
+    }
+
+    private record SummaryTotals(
+            long total, long active, long completed, long failed, long canceled,
+            long totalBytes, long localBytes) {
+
+        private static final SummaryTotals EMPTY = new SummaryTotals(0L, 0L, 0L, 0L, 0L, 0L, 0L);
+
+        // 累加一条录制的状态计数与字节
+        private SummaryTotals plus(LiveRecording recording) {
+            var status = recording.getStatus();
+            if (status == null) {
+                return new SummaryTotals(
+                        total + 1, active, completed, failed, canceled, totalBytes, localBytes);
+            }
+            var state = status.getState();
+            return new SummaryTotals(
+                    total + 1,
+                    active + (state != null && state.isActive() ? 1 : 0),
+                    completed + (state == LiveRecordingState.COMPLETED ? 1 : 0),
+                    failed + (state == LiveRecordingState.FAILED ? 1 : 0),
+                    canceled + (state == LiveRecordingState.CANCELED ? 1 : 0),
+                    totalBytes + status.getTotalBytes(),
+                    localBytes + status.getLocalBytes());
+        }
+
+        // 转为对外汇总视图
+        private LiveRecordingSummary toSummary() {
+            return new LiveRecordingSummary(
+                    total, active, completed, failed, canceled, totalBytes, localBytes);
+        }
     }
 
     // 录制名带源名、UTC 时间与随机后缀避免冲突
