@@ -6,7 +6,7 @@ import type { SecretCatalogItem } from "@pudans-dev/api-client";
 import { apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AddIcon, RefreshIcon } from "tdesign-icons-react";
-import { Button, Empty, Select, Skeleton, Tag, Tooltip } from "tdesign-react";
+import { Breadcrumb, Button, Empty, RadioGroup, Select, Skeleton, Tag, Tooltip } from "tdesign-react";
 import type { TableProps } from "tdesign-react";
 
 import { SectionCard, confirmGlobalDialog } from "@/components/ui";
@@ -35,6 +35,15 @@ import {
     secretTypeLabel,
 } from "./composables/_secrets";
 
+const { BreadcrumbItem } = Breadcrumb;
+
+type SecretTab = "catalog" | "overview";
+
+const SECRET_TAB_OPTIONS: Array<{ label: string; value: SecretTab }> = [
+    { label: "密钥概览", value: "overview" },
+    { label: "密钥目录", value: "catalog" },
+];
+
 type SecretEditorState = {
     item?: SecretCatalogItem;
     mode: "create" | "edit";
@@ -60,6 +69,7 @@ export function SecretsView() {
     const { token } = useDashboardTheme();
     const keyword = table.keyword;
     const typeFilter = table.filters.type ?? "";
+    const [activeTab, setActiveTab] = useState<SecretTab>("overview");
     const [selected, setSelected] = useState<SecretCatalogItem>();
     const [editor, setEditor] = useState<SecretEditorState>();
     const catalogQuery = useQuery({
@@ -242,25 +252,41 @@ export function SecretsView() {
                 </div>
             ),
             colKey: "actions",
+            fixed: "right",
             title: "操作",
             width: canUpdate && canDelete ? 180 : 150,
         },
     ];
 
     return (
-        <div className="flex min-w-0 flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-                {canCreate ? (
-                    <Button icon={<AddIcon />} onClick={openCreate} theme="primary">
-                        新建密钥
+        <div className="flex w-full min-w-0 flex-col gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <Breadcrumb>
+                    <BreadcrumbItem>安全与审计</BreadcrumbItem>
+                    <BreadcrumbItem>密钥管理</BreadcrumbItem>
+                </Breadcrumb>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
+                        刷新
                     </Button>
-                ) : null}
-                <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
-                    刷新
-                </Button>
+                    {canCreate ? (
+                        <Button icon={<AddIcon />} onClick={openCreate} theme="primary">
+                            新建密钥
+                        </Button>
+                    ) : null}
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+            <RadioGroup
+                className="w-fit"
+                onChange={(value) => setActiveTab(value as SecretTab)}
+                options={SECRET_TAB_OPTIONS}
+                theme="button"
+                value={activeTab}
+                variant="default-filled"
+            />
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12" hidden={activeTab !== "overview"}>
                 <SecretMetricGrid loading={catalogQuery.isPending} summary={summary} />
                 <div className="md:col-span-2 xl:col-span-7">
                     <SectionCard title="密钥规模排行">
@@ -274,34 +300,53 @@ export function SecretsView() {
                 </div>
             </div>
 
-            <ConsoleTable
-                columns={columns}
-                data={rows}
-                loading={catalogQuery.isPending}
-                pagination={{ ...table.pagination, total: catalog?.total ?? 0 }}
-                rowKey="rowId"
-                title="密钥目录"
-                toolbar={
-                    <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center">
-                        <div className="w-full min-w-0 lg:max-w-sm">
-                            <SecuritySearchInput
-                                onChange={() => undefined}
-                                onSearch={(value) => table.setKeyword(value)}
-                                placeholder="搜索密钥名称或键名"
-                                value={keyword}
-                            />
-                        </div>
-                        <Select
-                            clearable
-                            onChange={(value) => table.setFilter("type", (value as string | undefined) ?? null)}
-                            options={typeOptions}
-                            placeholder="全部类型"
-                            style={{ width: 224 }}
-                            value={typeFilter || undefined}
-                        />
-                    </div>
-                }
-            />
+            <div hidden={activeTab !== "catalog"}>
+                <SectionCard title="密钥目录">
+                    <ConsoleTable
+                        cardless
+                        columns={columns}
+                        data={rows}
+                        error={catalogQuery.error}
+                        loading={catalogQuery.isPending}
+                        onRetry={catalogQuery.error ? () => void catalogQuery.refetch() : undefined}
+                        pagination={{ ...table.pagination, total: catalog?.total ?? 0 }}
+                        rowKey="rowId"
+                        toolbar={
+                            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                                <div className="min-w-0 sm:max-w-[320px] sm:flex-1">
+                                    <SecuritySearchInput
+                                        onChange={() => undefined}
+                                        onSearch={(value) => table.setKeyword(value)}
+                                        placeholder="搜索密钥名称或键名"
+                                        value={keyword}
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="min-w-0 flex-1 sm:w-[220px] sm:flex-none">
+                                        <Select
+                                            clearable
+                                            onChange={(value) =>
+                                                table.setFilter("type", (value as string | undefined) ?? null)
+                                            }
+                                            options={typeOptions}
+                                            placeholder="全部类型"
+                                            style={{ width: "100%" }}
+                                            value={typeFilter || undefined}
+                                        />
+                                    </div>
+                                    <Button
+                                        disabled={!keyword && !typeFilter}
+                                        onClick={() => table.reset()}
+                                        variant="outline"
+                                    >
+                                        重置
+                                    </Button>
+                                </div>
+                            </div>
+                        }
+                    />
+                </SectionCard>
+            </div>
 
             <SecretDetailModal item={selected} onClose={() => setSelected(undefined)} />
             {editor ? (
