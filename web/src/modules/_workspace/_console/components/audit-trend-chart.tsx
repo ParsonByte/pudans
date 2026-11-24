@@ -11,7 +11,7 @@ type AuditTrendChartProps = {
 };
 
 export function AuditTrendChart({ points }: AuditTrendChartProps) {
-    const { token, tone } = useDashboardTheme();
+    const { tone } = useDashboardTheme();
     const data = (points ?? []).map((point) => ({
         date: point.date,
         denied: point.denied ?? 0,
@@ -26,7 +26,7 @@ export function AuditTrendChart({ points }: AuditTrendChartProps) {
             data={data}
             emptyText="暂无审计趋势数据"
             series={[
-                { color: token.colorPrimary, key: "records", label: "记录总量", type: "area" },
+                { color: tone("blue").base, key: "records", label: "记录总量", type: "area" },
                 { color: tone("green").base, key: "success", label: "成功", type: "line" },
                 { color: tone("red").base, key: "failure", label: "失败", type: "line" },
                 { color: tone("warning").base, key: "denied", label: "拒绝", type: "line" },

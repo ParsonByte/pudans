@@ -1,177 +1,143 @@
 "use client";
 
-import { type ComponentType, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
-import { type AuditJourney, type AuditJourneyPage, type RecentOperation, apiClient } from "@pudans-dev/api-client";
+import { type AuditSessionSummary, apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import {
-    CheckCircleIcon,
-    ErrorCircleIcon,
-    ErrorTriangleIcon,
-    InfoCircleIcon,
-    RefreshIcon,
-    ShieldErrorIcon,
-} from "tdesign-icons-react";
-import type { IconProps } from "tdesign-icons-react";
-import {
-    Button,
-    Card,
-    Col,
-    Empty,
-    Link,
-    type PrimaryTableCol,
-    Progress,
-    Row,
-    Select,
-    Skeleton,
-    Table,
-    Tooltip,
-} from "tdesign-react";
+import { RefreshIcon } from "tdesign-icons-react";
+import { Breadcrumb, Button, Card, Col, DateRangePicker, Empty, Row, Skeleton } from "tdesign-react";
 
-import { ResultTag, SectionCard, StatTile } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
+import { RankedBarList } from "../../../components/ranked-bar-list";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatDateTime } from "../../../composables/_format";
+import { formatCount } from "../../../composables/_format";
 import { ActivityTrendChart } from "./components/activity-trend-chart";
-import { MetricCard } from "./components/metric-card";
+import { AuditResultDistribution } from "./components/audit-result-distribution";
+import { BoardCard } from "./components/board-card";
+import { MetricSnapshot } from "./components/metric-snapshot";
+import { OperationRankingTable } from "./components/operation-ranking-table";
+import { RecentOperationsTable } from "./components/recent-operations-table";
 import { RecentUserJourneys } from "./components/recent-user-journeys";
 import { RoleDistributionChart } from "./components/role-distribution-chart";
+import { SecurityInsights } from "./components/security-insights";
+import { SecurityTrendChart } from "./components/security-trend-chart";
+import { SiteInfoGrid } from "./components/site-info-grid";
 import {
     DASHBOARD_METRICS,
-    DASHBOARD_METRIC_ORDER,
-    DASHBOARD_RANGES,
     type DashboardData,
-    type DashboardInsight,
-    type DashboardRange,
-    formatCount,
-    formatUptime,
+    type DashboardDateRange,
+    PRIMARY_METRIC_KEYS,
+    dashboardDateValue,
+    dashboardRangeBounds,
+    dashboardRangeDays,
+    dashboardRangeForDays,
     mergeActivityTrend,
-    operationLabel,
-    resultTone,
+    metricCaption,
     userLabel,
 } from "./composables/_dashboard";
-import { type DashboardTone, useDashboardTheme } from "./composables/_theme";
 
-type InsightTone = {
-    icon: ComponentType<IconProps>;
-    label: string;
-    tone: DashboardTone;
-};
+const { BreadcrumbItem } = Breadcrumb;
 
-type RecentOperationRow = RecentOperation & {
-    rowKey: string;
-};
-
-const INSIGHT_TONES: Record<string, InsightTone> = {
-    CRITICAL: {
-        icon: ShieldErrorIcon,
-        label: "高危",
-        tone: "red",
-    },
-    INFO: {
-        icon: InfoCircleIcon,
-        label: "提示",
-        tone: "blue",
-    },
-    SUCCESS: {
-        icon: CheckCircleIcon,
-        label: "正常",
-        tone: "green",
-    },
-    WARNING: {
-        icon: ErrorTriangleIcon,
-        label: "预警",
-        tone: "warning",
-    },
-};
-
-const RESULT_ICONS: Record<string, ComponentType<IconProps>> = {
-    DENIED: ErrorCircleIcon,
-    FAILURE: ErrorTriangleIcon,
-    SUCCESS: CheckCircleIcon,
-};
-
-const JOURNEY_PAGE_SIZE = 100;
-
-async function loadJourneySummaries(from: string): Promise<AuditJourneyPage> {
-    const items: AuditJourney[] = [];
+async function loadJourneySessions(
+    from: string,
+    to: string,
+): Promise<{ items: AuditSessionSummary[]; truncated: boolean }> {
+    const items: AuditSessionSummary[] = [];
     let page = 1;
-    let result: AuditJourneyPage;
+    let truncated = false;
 
-    do {
-        result = (
-            await apiClient.auditLog.listAuditJourneys({
-                from,
-                page,
-                size: JOURNEY_PAGE_SIZE,
-                summary: true,
-            })
-        ).data;
-        items.push(...(result.items ?? []));
-        page++;
-    } while (items.length < (result.total ?? 0) && (result.items?.length ?? 0) > 0);
+    while (true) {
+        const response = await apiClient.auditLog.listAuditSessions({
+            from,
+            page,
+            size: 100,
+            to,
+        });
+        const batch = response.data.items ?? [];
+        items.push(...batch);
+        truncated = truncated || Boolean(response.data.truncated);
+        if (batch.length === 0 || items.length >= (response.data.total ?? items.length)) {
+            break;
+        }
+        page += 1;
+    }
 
-    return { ...result, items };
+    return { items, truncated };
 }
 
-function InsightCard({ insight }: { insight: DashboardInsight }) {
-    const { token, tone } = useDashboardTheme();
-    const config = INSIGHT_TONES[insight.severity] ?? INSIGHT_TONES.INFO;
-    const Icon = config.icon;
-    const colors = tone(config.tone);
+type DashboardPageFrameProps = {
+    actions?: ReactNode;
+    children: ReactNode;
+};
 
+function DashboardPageFrame({ actions, children }: DashboardPageFrameProps) {
     return (
-        <div className="flex gap-3 rounded-2xl p-4" style={{ background: token.colorFillQuaternary }}>
-            <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
-                style={{ backgroundColor: colors.soft, color: colors.base }}
-            >
-                <Icon size={19} />
-            </span>
-            <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold" style={{ color: token.colorText }}>
-                        {insight.title}
-                    </span>
-                    <span className="text-[11px] font-medium" style={{ color: colors.base }}>
-                        {config.label}
-                    </span>
-                </div>
-                <p className="mt-1 text-xs leading-5" style={{ color: token.colorTextSecondary }}>
-                    {insight.description}
-                </p>
+        <div className="overflow-x-hidden">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <Breadcrumb>
+                    <BreadcrumbItem>概览</BreadcrumbItem>
+                    <BreadcrumbItem>面板首页</BreadcrumbItem>
+                </Breadcrumb>
+                {actions}
             </div>
+            {children}
         </div>
+    );
+}
+
+function DashboardSkeleton() {
+    return (
+        <>
+            <Row align="stretch" gutter={[16, 16]}>
+                {PRIMARY_METRIC_KEYS.map((key) => (
+                    <Col key={key} sm={6} xl={3} xs={12}>
+                        <Card bordered={false} bodyStyle={{ minHeight: 142 }}>
+                            <Skeleton theme="paragraph" />
+                        </Card>
+                    </Col>
+                ))}
+            </Row>
+            <div className="mt-4">
+                <Row align="stretch" gutter={[16, 16]}>
+                    <Col xl={9} xs={12}>
+                        <Card bordered={false} bodyStyle={{ minHeight: 408 }}>
+                            <Skeleton theme="paragraph" />
+                        </Card>
+                    </Col>
+                    <Col xl={3} xs={12}>
+                        <Card bordered={false} bodyStyle={{ minHeight: 408 }}>
+                            <Skeleton theme="paragraph" />
+                        </Card>
+                    </Col>
+                </Row>
+            </div>
+        </>
     );
 }
 
 export function DashboardView() {
     const prompt = useMessagePrompt();
-    const { token, tone } = useDashboardTheme();
-    const [range, setRange] = useState<DashboardRange>(7);
-    const [journeyAnchor, setJourneyAnchor] = useState(() => Date.now());
+    const [range, setRange] = useState<DashboardDateRange>(() => dashboardRangeForDays(7));
     const reportedOverviewError = useRef(false);
-    const warnedTruncated = useRef(false);
-    const reportedJourneyError = useRef(false);
-    const journeyFrom = useMemo(
-        () => new Date(journeyAnchor - range * 86_400_000).toISOString(),
-        [journeyAnchor, range],
-    );
+    const rangeBounds = useMemo(() => dashboardRangeBounds(range), [range]);
     const overviewQuery = useQuery({
         placeholderData: keepPreviousData,
         queryFn: async () => {
-            const response = await apiClient.dashboard.getDashboardOverview({ params: { days: range } });
+            const response = await apiClient.dashboard.getDashboardOverview({
+                days: range.days,
+                to: rangeBounds.to,
+            });
 
             return response.data as unknown as DashboardData;
         },
-        queryKey: ["console", "dashboard", range],
+        queryKey: ["console", "dashboard", range.days, range.end, range.start, rangeBounds.to],
         refetchInterval: 60_000,
         staleTime: 30_000,
     });
-    const journeysQuery = useQuery({
-        queryFn: () => loadJourneySummaries(journeyFrom),
-        queryKey: ["console", "dashboard", "journeys", range, journeyFrom],
+    const sessionsQuery = useQuery({
+        queryFn: () => loadJourneySessions(rangeBounds.from, rangeBounds.to),
+        queryKey: ["console", "dashboard", "sessions", range.end, range.start, rangeBounds.from, rangeBounds.to],
         refetchInterval: 120_000,
         staleTime: 30_000,
     });
@@ -189,170 +155,143 @@ export function DashboardView() {
         }
     }, [overviewQuery.error, overviewQuery.isError, prompt]);
 
-    useEffect(() => {
-        if (journeysQuery.data?.truncated) {
-            if (!warnedTruncated.current) {
-                warnedTruncated.current = true;
-                prompt.warning({ content: "链路数据达到扫描上限，请缩小时间范围。" });
-            }
-
+    const today = dashboardDateValue(new Date());
+    const handleRangeChange = (value: Array<Date | number | string>) => {
+        const [nextStart, nextEnd] = value;
+        if (!nextStart || !nextEnd) {
             return;
         }
 
-        if (journeysQuery.data) {
-            warnedTruncated.current = false;
-        }
-    }, [journeysQuery.data, prompt]);
-
-    useEffect(() => {
-        if (journeysQuery.isError && !reportedJourneyError.current) {
-            reportedJourneyError.current = true;
-            prompt.error({ content: consoleErrorMessage(journeysQuery.error) });
+        const start = dashboardDateValue(nextStart);
+        const end = dashboardDateValue(nextEnd);
+        const days = dashboardRangeDays(start, end);
+        if (days < 1 || days > 90) {
+            prompt.warning({ content: "统计范围最多支持 90 天" });
+            return;
         }
 
-        if (!journeysQuery.isError) {
-            reportedJourneyError.current = false;
+        setRange({ days, end, start });
+    };
+    const disableFutureDate = ({
+        date,
+        partial,
+    }: {
+        date?: Array<Date | number | string>;
+        partial?: "end" | "start";
+    }) => {
+        if (!Array.isArray(date) || !partial) {
+            return false;
         }
-    }, [journeysQuery.error, journeysQuery.isError, prompt]);
+
+        const current = date[partial === "start" ? 0 : 1];
+        if (!current) {
+            return false;
+        }
+
+        const currentDay = dashboardDateValue(current);
+        if (currentDay > today) {
+            return true;
+        }
+
+        const other = date[partial === "start" ? 1 : 0];
+        if (!other) {
+            return false;
+        }
+
+        const otherDay = dashboardDateValue(other);
+        const start = partial === "start" ? currentDay : otherDay;
+        const end = partial === "start" ? otherDay : currentDay;
+
+        return end < start || dashboardRangeDays(start, end) > 90;
+    };
+    const refresh = () => {
+        void overviewQuery.refetch();
+        void sessionsQuery.refetch();
+    };
+    const headerActions = (
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+            <DateRangePicker
+                aria-label="统计日期范围"
+                className="min-w-0 flex-1 sm:w-[280px] sm:flex-none"
+                clearable={false}
+                disableDate={disableFutureDate}
+                format="YYYY-MM-DD"
+                onChange={handleRangeChange}
+                placeholder={["开始日期", "结束日期"]}
+                separator="–"
+                value={[range.start, range.end]}
+                valueType="YYYY-MM-DD"
+            />
+            <Button
+                aria-label="刷新数据"
+                icon={<RefreshIcon />}
+                loading={overviewQuery.isFetching}
+                onClick={refresh}
+                shape="square"
+                variant="text"
+            />
+        </div>
+    );
 
     if (overviewQuery.isPending) {
         return (
-            <div className="space-y-4">
-                <Skeleton theme="paragraph" />
-                <Skeleton theme="paragraph" />
-                <Skeleton theme="paragraph" />
-            </div>
+            <DashboardPageFrame actions={headerActions}>
+                <DashboardSkeleton />
+            </DashboardPageFrame>
         );
     }
 
     if (overviewQuery.isError && !overview) {
         return (
-            <Card bodyStyle={{ padding: 48 }}>
-                <Empty
-                    action={
-                        <Button
-                            icon={<RefreshIcon />}
-                            onClick={() => {
-                                void overviewQuery.refetch();
-                            }}
-                        >
-                            重新加载
-                        </Button>
-                    }
-                    description="概览数据加载失败"
-                />
-            </Card>
+            <DashboardPageFrame actions={headerActions}>
+                <Card bordered={false} bodyStyle={{ padding: 48 }}>
+                    <Empty
+                        action={
+                            <Button
+                                icon={<RefreshIcon />}
+                                onClick={() => {
+                                    void overviewQuery.refetch();
+                                }}
+                            >
+                                重新加载
+                            </Button>
+                        }
+                        description="概览数据加载失败"
+                    />
+                </Card>
+            </DashboardPageFrame>
         );
     }
 
     if (!overview) {
-        return <Empty description="暂无概览数据" />;
+        return (
+            <DashboardPageFrame actions={headerActions}>
+                <Card bordered={false} bodyStyle={{ padding: 48 }}>
+                    <Empty description="暂无概览数据" />
+                </Card>
+            </DashboardPageFrame>
+        );
     }
 
     const metricMap = new Map((overview.metrics ?? []).map((metric) => [metric.key, metric]));
-    const activeUsers = overview.activeUsers ?? [];
-    const maxActiveOperations = Math.max(1, ...activeUsers.map((user) => user.operations ?? 0));
-    const topOperations = overview.topOperations ?? [];
-    const maxOperationCount = Math.max(1, ...topOperations.map((operation) => operation.count));
-    const results = overview.resultDistribution ?? [];
-    const resultTotal = results.reduce((sum, item) => sum + item.count, 0);
-    const insights = overview.insights ?? [];
-    const recentRows: RecentOperationRow[] = (overview.recentAuditLogs ?? []).map((record, index) => ({
-        ...record,
-        rowKey: record.auditId ?? `recent-${index}`,
+    const activeUsers = (overview.activeUsers ?? []).slice(0, 5);
+    const topOperations = (overview.topOperations ?? []).slice(0, 5);
+    const recentOperations = (overview.recentAuditLogs ?? []).slice(0, 5);
+    const insightCount = (overview.insights ?? []).length;
+    const resultTotal = (overview.resultDistribution ?? []).reduce((sum, item) => sum + (item.count ?? 0), 0);
+    const operationTotal =
+        metricMap.get("operations")?.value ?? topOperations.reduce((sum, item) => sum + item.count, 0);
+    const activeUserItems = activeUsers.map((user, index) => ({
+        key: `${user.name ?? "anonymous"}-${index}`,
+        label: userLabel(user.name),
+        value: user.operations ?? 0,
+        valueLabel: "次操作",
     }));
-    const recentColumns: PrimaryTableCol<RecentOperationRow>[] = [
-        {
-            cell: ({ row }) => (
-                <span className="text-xs whitespace-nowrap tabular-nums" style={{ color: token.colorTextSecondary }}>
-                    {formatDateTime(row.timestamp)}
-                </span>
-            ),
-            colKey: "timestamp",
-            title: "时间",
-            width: 168,
-        },
-        {
-            cell: ({ row }) => <span className="font-medium">{userLabel(row.operator)}</span>,
-            colKey: "operator",
-            title: "操作人",
-            width: 140,
-        },
-        {
-            cell: ({ row }) => operationLabel(row.operation),
-            colKey: "operation",
-            title: "操作",
-            width: 120,
-        },
-        {
-            cell: ({ row }) => row.resourceName ?? row.resourceType ?? "—",
-            colKey: "resource",
-            title: "资源",
-        },
-        {
-            cell: ({ row }) => <ResultTag result={row.result} />,
-            colKey: "result",
-            title: "结果",
-            width: 92,
-        },
-    ];
-    const siteInfo = [
-        { label: "站点名称", value: overview.globalInfo?.siteTitle ?? "—" },
-        { label: "版本", value: overview.globalInfo?.version ?? "—" },
-        {
-            label: "站点地址",
-            value: overview.globalInfo?.externalUrl ? (
-                <Link className="break-all" href={overview.globalInfo.externalUrl} target="_blank">
-                    {overview.globalInfo.externalUrl}
-                </Link>
-            ) : (
-                "—"
-            ),
-        },
-        { label: "时区", value: overview.globalInfo?.timezone ?? "—" },
-        { label: "运行时长", value: formatUptime(overview.globalInfo?.uptimeSeconds) },
-        { label: "用户组总数", value: formatCount(overview.totalUserGroups) },
-        { label: "Webhook 总数", value: formatCount(overview.totalWebhooks) },
-        { label: "数据时间", value: formatDateTime(overview.generatedAt) },
-    ];
 
     return (
-        <div className="space-y-4">
-            <Card bodyStyle={{ padding: 16 }}>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0 truncate text-lg font-semibold" style={{ color: token.colorText }}>
-                        {overview.globalInfo?.siteTitle ?? "Pudans"}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Select
-                            aria-label="统计范围"
-                            className="w-full sm:w-36"
-                            onChange={(value) => {
-                                setRange(Number(value) as DashboardRange);
-                                setJourneyAnchor(Date.now());
-                            }}
-                            options={DASHBOARD_RANGES}
-                            value={range}
-                        />
-                        <Tooltip content="刷新数据">
-                            <Button
-                                aria-label="刷新数据"
-                                icon={<RefreshIcon />}
-                                loading={overviewQuery.isFetching}
-                                onClick={() => {
-                                    setJourneyAnchor(Date.now());
-                                    void overviewQuery.refetch();
-                                }}
-                                shape="square"
-                                variant="outline"
-                            />
-                        </Tooltip>
-                    </div>
-                </div>
-            </Card>
-
-            <Row gutter={[16, 16]}>
-                {DASHBOARD_METRIC_ORDER.map((key) => {
+        <DashboardPageFrame actions={headerActions}>
+            <Row align="stretch" gutter={[16, 16]}>
+                {PRIMARY_METRIC_KEYS.map((key, index) => {
                     const definition = DASHBOARD_METRICS[key];
                     const metric = metricMap.get(key);
 
@@ -361,227 +300,142 @@ export function DashboardView() {
                     }
 
                     return (
-                        <Col key={key} md={6} sm={12} span={24} xl={3}>
-                            <MetricCard definition={definition} metric={metric} />
+                        <Col key={key} sm={6} xl={3} xs={12}>
+                            <BoardCard
+                                caption={metricCaption(key, overview, metricMap)}
+                                dark={index === 0}
+                                definition={definition}
+                                metric={metric}
+                            />
                         </Col>
                     );
                 })}
-
-                <Col span={24} xl={14}>
-                    <SectionCard title="身份活动趋势">
-                        <ActivityTrendChart data={trend} />
-                    </SectionCard>
-                </Col>
-                <Col span={24} xl={10}>
-                    <SectionCard title="角色成员分布">
-                        <RoleDistributionChart roles={overview.roleDistribution} />
-                    </SectionCard>
-                </Col>
-
-                <Col md={12} span={24} xl={8}>
-                    <SectionCard title="活跃用户排行">
-                        {activeUsers.length === 0 ? (
-                            <Empty description="暂无活跃用户" />
-                        ) : (
-                            <div className="space-y-4">
-                                {activeUsers.map((user, index) => {
-                                    const operations = user.operations ?? 0;
-                                    const rankColor =
-                                        [
-                                            tone("gold").base,
-                                            tone("geekblue").base,
-                                            tone("volcano").base,
-                                            tone("blue").base,
-                                        ][index] ?? token.colorPrimary;
-
-                                    return (
-                                        <div key={`${user.name ?? "anonymous"}-${index}`}>
-                                            <div className="mb-2 flex items-center gap-3">
-                                                <span
-                                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-xs font-semibold text-[var(--td-text-color-anti)]"
-                                                    style={{ backgroundColor: rankColor }}
-                                                >
-                                                    {index + 1}
-                                                </span>
-                                                <span
-                                                    className="min-w-0 flex-1 truncate text-sm font-medium"
-                                                    style={{ color: token.colorText }}
-                                                >
-                                                    {userLabel(user.name)}
-                                                </span>
-                                                <span
-                                                    className="text-xs tabular-nums"
-                                                    style={{ color: token.colorTextSecondary }}
-                                                >
-                                                    {formatCount(operations)}
-                                                </span>
-                                            </div>
-                                            <Progress
-                                                color={index < 3 ? token.colorPrimary : token.colorPrimaryBorder}
-                                                label={false}
-                                                percentage={Math.max(4, (operations / maxActiveOperations) * 100)}
-                                                size="small"
-                                                trackColor={token.colorFillSecondary}
-                                            />
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </SectionCard>
-                </Col>
-                <Col md={12} span={24} xl={8}>
-                    <SectionCard title="高频操作">
-                        {topOperations.length === 0 ? (
-                            <Empty description="暂无操作数据" />
-                        ) : (
-                            <div className="space-y-4">
-                                {topOperations.map((operation, index) => (
-                                    <div key={operation.operation}>
-                                        <div className="mb-2 flex items-center gap-3">
-                                            <span
-                                                className="w-4 text-xs font-semibold tabular-nums"
-                                                style={{ color: token.colorTextTertiary }}
-                                            >
-                                                {index + 1}
-                                            </span>
-                                            <span
-                                                className="min-w-0 flex-1 truncate text-sm font-medium"
-                                                style={{ color: token.colorText }}
-                                            >
-                                                {operationLabel(operation.operation)}
-                                            </span>
-                                            <span
-                                                className="text-xs tabular-nums"
-                                                style={{ color: token.colorTextSecondary }}
-                                            >
-                                                {formatCount(operation.count)}
-                                            </span>
-                                        </div>
-                                        <Progress
-                                            color={
-                                                [tone("gold").base, tone("orange").base, tone("volcano").base][index] ??
-                                                token.colorPrimaryBorder
-                                            }
-                                            label={false}
-                                            percentage={Math.max(4, (operation.count / maxOperationCount) * 100)}
-                                            size="small"
-                                            trackColor={token.colorFillSecondary}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </SectionCard>
-                </Col>
-                <Col md={24} span={24} xl={8}>
-                    <SectionCard title="审计结果分布">
-                        {results.length === 0 ? (
-                            <Empty description="暂无审计结果" />
-                        ) : (
-                            <div className="space-y-5">
-                                {results.map((item) => {
-                                    const result = resultTone(item.result);
-                                    const colors = tone(result.tone);
-                                    const Icon = RESULT_ICONS[item.result] ?? ErrorTriangleIcon;
-                                    const percent = resultTotal === 0 ? 0 : (item.count / resultTotal) * 100;
-
-                                    return (
-                                        <div key={item.result}>
-                                            <div className="mb-2 flex items-center gap-3">
-                                                <span
-                                                    className="flex h-8 w-8 items-center justify-center rounded-xl"
-                                                    style={{
-                                                        backgroundColor: colors.soft,
-                                                        color: colors.base,
-                                                    }}
-                                                >
-                                                    <Icon size={16} />
-                                                </span>
-                                                <span
-                                                    className="flex-1 text-sm"
-                                                    style={{ color: token.colorTextSecondary }}
-                                                >
-                                                    {result.label}
-                                                </span>
-                                                <span
-                                                    className="text-xs font-semibold tabular-nums"
-                                                    style={{ color: token.colorText }}
-                                                >
-                                                    {formatCount(item.count)}
-                                                </span>
-                                                <span
-                                                    className="w-12 text-right text-xs tabular-nums"
-                                                    style={{ color: token.colorTextTertiary }}
-                                                >
-                                                    {percent.toFixed(1)}%
-                                                </span>
-                                            </div>
-                                            <Progress
-                                                color={colors.base}
-                                                label={false}
-                                                percentage={percent}
-                                                size="small"
-                                                trackColor={token.colorFillSecondary}
-                                            />
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </SectionCard>
-                </Col>
-
-                <Col span={24}>
-                    <SectionCard title="用户链路">
-                        <RecentUserJourneys
-                            error={journeysQuery.isError}
-                            from={journeyFrom}
-                            isPending={journeysQuery.isPending}
-                            journeys={journeysQuery.data?.items ?? []}
-                            onRetry={() => {
-                                void journeysQuery.refetch();
-                            }}
-                        />
-                    </SectionCard>
-                </Col>
-
-                <Col span={24} xl={16}>
-                    <SectionCard title="最近操作">
-                        <Table
-                            columns={recentColumns}
-                            data={recentRows}
-                            hover
-                            rowKey="rowKey"
-                            size="small"
-                            tableLayout="auto"
-                        />
-                    </SectionCard>
-                </Col>
-                <Col span={24} xl={8}>
-                    <SectionCard title="安全诊断">
-                        {insights.length === 0 ? (
-                            <Empty description="暂无诊断项" />
-                        ) : (
-                            <div className="space-y-3">
-                                {insights.map((insight) => (
-                                    <InsightCard insight={insight} key={insight.title} />
-                                ))}
-                            </div>
-                        )}
-                    </SectionCard>
-                </Col>
-
-                <Col span={24}>
-                    <SectionCard title="站点信息">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
-                            {siteInfo.map((item) => (
-                                <StatTile key={item.label} label={item.label} value={item.value} />
-                            ))}
-                        </div>
-                    </SectionCard>
-                </Col>
             </Row>
-        </div>
+
+            <div className="mt-4">
+                <Row align="stretch" gutter={[16, 16]}>
+                    <Col xl={9} xs={12}>
+                        <Card
+                            bordered={false}
+                            className="h-full"
+                            subtitle={`操作、登录与异常 · 近 ${formatCount(overview.rangeDays ?? range.days)} 天`}
+                            title="身份活动趋势"
+                        >
+                            <ActivityTrendChart data={trend} />
+                        </Card>
+                    </Col>
+                    <Col xl={3} xs={12}>
+                        <Card
+                            bordered={false}
+                            className="h-full"
+                            subtitle={`共 ${formatCount(overview.totalRoles)} 个角色`}
+                            title="角色成员分布"
+                        >
+                            <RoleDistributionChart roles={overview.roleDistribution} />
+                        </Card>
+                    </Col>
+                </Row>
+            </div>
+
+            <div className="mt-4">
+                <Row align="stretch" gutter={[16, 16]}>
+                    <Col lg={4} xs={12}>
+                        <Card
+                            bordered={false}
+                            className="h-full"
+                            subtitle={`前 ${formatCount(activeUsers.length)} 位`}
+                            title="活跃用户排行"
+                        >
+                            <RankedBarList emptyText="暂无活跃用户" items={activeUserItems} />
+                        </Card>
+                    </Col>
+                    <Col lg={4} xs={12}>
+                        <Card
+                            bordered={false}
+                            className="h-full"
+                            subtitle={`共 ${formatCount(resultTotal)} 次操作`}
+                            title="审计结果分布"
+                        >
+                            <AuditResultDistribution results={overview.resultDistribution} />
+                        </Card>
+                    </Col>
+                    <Col lg={4} xs={12}>
+                        <Card
+                            bordered={false}
+                            className="h-full"
+                            subtitle={`${formatCount(insightCount)} 项诊断`}
+                            title="安全诊断"
+                        >
+                            <SecurityInsights insights={overview.insights} />
+                        </Card>
+                    </Col>
+                </Row>
+            </div>
+
+            <div className="mt-4">
+                <Row align="stretch" gutter={[16, 16]}>
+                    <Col lg={6} xs={12}>
+                        <Card
+                            bordered={false}
+                            className="h-full"
+                            subtitle={`前 ${formatCount(topOperations.length)} 项`}
+                            title="高频操作"
+                        >
+                            <OperationRankingTable items={topOperations} total={operationTotal} />
+                        </Card>
+                    </Col>
+                    <Col lg={6} xs={12}>
+                        <Card
+                            bordered={false}
+                            className="h-full"
+                            subtitle={`最近 ${formatCount(recentOperations.length)} 条`}
+                            title="最近操作"
+                        >
+                            <RecentOperationsTable items={recentOperations} />
+                        </Card>
+                    </Col>
+                </Row>
+            </div>
+
+            <div className="mt-4">
+                <Row align="stretch" gutter={[16, 16]}>
+                    <Col xl={8} xs={12}>
+                        <Card
+                            bordered={false}
+                            className="h-full"
+                            subtitle={`风险规则 ${formatCount(overview.totalRiskRules)} 条 · Webhook ${formatCount(overview.totalWebhooks)} 个`}
+                            title="风险与集成趋势"
+                        >
+                            <SecurityTrendChart overview={overview} />
+                        </Card>
+                    </Col>
+                    <Col xl={4} xs={12}>
+                        <Card bordered={false} className="h-full" subtitle="与上一周期对比" title="本期指标">
+                            <MetricSnapshot metrics={metricMap} />
+                        </Card>
+                    </Col>
+                </Row>
+            </div>
+
+            <div className="mt-4">
+                <Card bordered={false} subtitle="运行环境与数据快照" title="站点信息">
+                    <SiteInfoGrid overview={overview} />
+                </Card>
+            </div>
+
+            <div className="mt-4">
+                <Card bordered={false} title="最近用户追溯" subtitle="最近用户的页面路径与会话摘要">
+                    <RecentUserJourneys
+                        error={sessionsQuery.isError}
+                        isPending={sessionsQuery.isPending}
+                        onRetry={() => {
+                            void sessionsQuery.refetch();
+                        }}
+                        sessions={sessionsQuery.data?.items ?? []}
+                        truncated={sessionsQuery.data?.truncated ?? false}
+                    />
+                </Card>
+            </div>
+        </DashboardPageFrame>
     );
 }
