@@ -6,7 +6,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Actuator"
-    rbac.authorization.pudans.tolim.cn/display-name: "Actuator Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "系统监控管理"
 rules:
   - nonResourceURLs:
       - "/actuator/*"
@@ -22,6 +22,8 @@ metadata:
   labels:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "注解设置查看"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -39,7 +41,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Cache"
-    rbac.authorization.pudans.tolim.cn/display-name: "Cache Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "缓存管理"
 rules:
   - nonResourceURLs:
       - "/actuator/caches"
@@ -54,7 +56,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Live"
-    rbac.authorization.pudans.tolim.cn/display-name: "Live Recording View"
+    rbac.authorization.pudans.tolim.cn/display-name: "直播录制查看"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -74,7 +76,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-live-recordings" ]
     rbac.authorization.pudans.tolim.cn/module: "Live"
-    rbac.authorization.pudans.tolim.cn/display-name: "Live Recording Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "直播录制管理"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -101,7 +103,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Live"
-    rbac.authorization.pudans.tolim.cn/display-name: "Live Source View"
+    rbac.authorization.pudans.tolim.cn/display-name: "直播源查看"
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-live-recordings" ]
 rules:
@@ -127,7 +129,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Live"
-    rbac.authorization.pudans.tolim.cn/display-name: "Live Source Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "直播源管理"
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-live-sources", "role-template-manage-live-recordings" ]
 rules:
@@ -163,6 +165,8 @@ metadata:
   labels:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "配置字典管理"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -185,7 +189,7 @@ metadata:
     pudans.tolim.cn/hidden: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Secrets"
-    rbac.authorization.pudans.tolim.cn/display-name: "Secret View"
+    rbac.authorization.pudans.tolim.cn/display-name: "密钥查看"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -206,7 +210,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-secrets" ]
     rbac.authorization.pudans.tolim.cn/module: "Secrets"
-    rbac.authorization.pudans.tolim.cn/display-name: "Secret Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "密钥管理"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -228,7 +232,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-storage-files" ]
     rbac.authorization.pudans.tolim.cn/module: "Storage"
-    rbac.authorization.pudans.tolim.cn/display-name: "Storage File Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "存储文件管理"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -254,7 +258,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Webhook"
-    rbac.authorization.pudans.tolim.cn/display-name: "Webhook View"
+    rbac.authorization.pudans.tolim.cn/display-name: "回调配置查看"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -274,7 +278,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-webhooks" ]
     rbac.authorization.pudans.tolim.cn/module: "Webhook"
-    rbac.authorization.pudans.tolim.cn/display-name: "Webhook Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "回调配置管理"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"

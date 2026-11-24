@@ -6,7 +6,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Settings Management"
-    rbac.authorization.pudans.tolim.cn/display-name: "Setting View"
+    rbac.authorization.pudans.tolim.cn/display-name: "参数配置查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.settings"
@@ -70,7 +70,7 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-settings" ]'
     rbac.authorization.pudans.tolim.cn/module: "Settings Management"
-    rbac.authorization.pudans.tolim.cn/display-name: "Setting Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "参数配置管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.settings"
@@ -142,7 +142,7 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-webhooks" ]'
     rbac.authorization.pudans.tolim.cn/module: "Webhook"
-    rbac.authorization.pudans.tolim.cn/display-name: "Webhook View"
+    rbac.authorization.pudans.tolim.cn/display-name: "回调配置查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.webhooks"
@@ -167,7 +167,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-console-webhooks", "role-template-manage-webhooks" ]
     rbac.authorization.pudans.tolim.cn/module: "Webhook"
-    rbac.authorization.pudans.tolim.cn/display-name: "Webhook Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "回调配置管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.webhooks"
@@ -182,7 +182,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Config Maps"
-    rbac.authorization.pudans.tolim.cn/display-name: "Config Map View"
+    rbac.authorization.pudans.tolim.cn/display-name: "配置字典查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.config-maps"
@@ -214,7 +214,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-console-config-maps", "role-template-manage-configmaps" ]
     rbac.authorization.pudans.tolim.cn/module: "Config Maps"
-    rbac.authorization.pudans.tolim.cn/display-name: "Config Map Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "配置字典管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.config-maps"
@@ -230,7 +230,7 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-annotation-setting" ]'
     rbac.authorization.pudans.tolim.cn/module: "Annotations"
-    rbac.authorization.pudans.tolim.cn/display-name: "Annotation Setting View"
+    rbac.authorization.pudans.tolim.cn/display-name: "注解设置查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.annotations"

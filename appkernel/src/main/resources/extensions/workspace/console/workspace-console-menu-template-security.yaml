@@ -6,7 +6,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Risk Control"
-    rbac.authorization.pudans.tolim.cn/display-name: "Risk Rule View"
+    rbac.authorization.pudans.tolim.cn/display-name: "风险规则查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.risk"
@@ -45,7 +45,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-riskrules", "role-template-update-riskrules", "role-template-unban-risk" ]
     rbac.authorization.pudans.tolim.cn/module: "Risk Control"
-    rbac.authorization.pudans.tolim.cn/display-name: "Risk Rule Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "风险规则管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.risk"
@@ -69,7 +69,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Audit Logs"
-    rbac.authorization.pudans.tolim.cn/display-name: "Audit Log View"
+    rbac.authorization.pudans.tolim.cn/display-name: "审计日志查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.audit"
@@ -154,7 +154,7 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-secrets" ]'
     rbac.authorization.pudans.tolim.cn/module: "Secrets"
-    rbac.authorization.pudans.tolim.cn/display-name: "Secret View"
+    rbac.authorization.pudans.tolim.cn/display-name: "密钥查看"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "view"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.secrets"
@@ -179,7 +179,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-console-secrets", "role-template-manage-secrets" ]
     rbac.authorization.pudans.tolim.cn/module: "Secrets"
-    rbac.authorization.pudans.tolim.cn/display-name: "Secret Manage"
+    rbac.authorization.pudans.tolim.cn/display-name: "密钥管理"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"
     rbac.authorization.pudans.tolim.cn/ui-action: "manage"
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.secrets"

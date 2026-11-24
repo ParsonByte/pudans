@@ -15,8 +15,6 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:link-2"
     rbac.authorization.pudans.tolim.cn/ui-group: "其他"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "other"
-    rbac.authorization.pudans.tolim.cn/ui-parent: "设置"
-    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:settings"
     rbac.authorization.pudans.tolim.cn/ui-order: "120"
     rbac.authorization.pudans.tolim.cn/ui-public: "true"
 rules: []
@@ -38,8 +36,6 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:user-round"
     rbac.authorization.pudans.tolim.cn/ui-group: "其他"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "other"
-    rbac.authorization.pudans.tolim.cn/ui-parent: "设置"
-    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:settings"
     rbac.authorization.pudans.tolim.cn/ui-order: "100"
     rbac.authorization.pudans.tolim.cn/ui-public: "true"
 rules: []
@@ -61,8 +57,6 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-check"
     rbac.authorization.pudans.tolim.cn/ui-group: "其他"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "other"
-    rbac.authorization.pudans.tolim.cn/ui-parent: "设置"
-    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:settings"
     rbac.authorization.pudans.tolim.cn/ui-order: "110"
     rbac.authorization.pudans.tolim.cn/ui-public: "true"
 rules: []

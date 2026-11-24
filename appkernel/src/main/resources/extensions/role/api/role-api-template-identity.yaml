@@ -6,6 +6,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
   annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "匿名用户"
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-public-apis" ]
 rules: []
@@ -18,6 +19,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
   annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "已登录用户"
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [
         "role-template-own-user-info",
@@ -65,6 +67,8 @@ metadata:
   labels:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "修改本人密码"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -90,6 +94,8 @@ metadata:
   labels:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "管理本人认证方式"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -115,6 +121,8 @@ metadata:
   labels:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "管理本人访问令牌"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -131,6 +139,8 @@ metadata:
   labels:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "本人身份连接"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -168,6 +178,8 @@ metadata:
   labels:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "本人通行密钥"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -187,6 +199,8 @@ metadata:
   labels:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "本人权限"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -214,6 +228,8 @@ metadata:
   labels:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "本人用户资料"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -260,7 +276,7 @@ metadata:
     pudans.tolim.cn/hidden: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Just-In-Time Access"
-    rbac.authorization.pudans.tolim.cn/display-name: "Temporary Role View"
+    rbac.authorization.pudans.tolim.cn/display-name: "临时角色查看"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -281,7 +297,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-temproles" ]
     rbac.authorization.pudans.tolim.cn/module: "Just-In-Time Access"
-    rbac.authorization.pudans.tolim.cn/display-name: "Temporary Role Apply"
+    rbac.authorization.pudans.tolim.cn/display-name: "临时角色申请"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -306,7 +322,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-view-temproles" ]
     rbac.authorization.pudans.tolim.cn/module: "Just-In-Time Access"
-    rbac.authorization.pudans.tolim.cn/display-name: "Temporary Role Approve"
+    rbac.authorization.pudans.tolim.cn/display-name: "临时角色审批"
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
