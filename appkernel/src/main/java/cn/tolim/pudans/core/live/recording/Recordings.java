@@ -236,18 +236,14 @@ public class Recordings {
                 : Math.max(0L, Duration.between(firstStartedAt, lastEndedAt).toMillis());
         var totalBytes = parts.stream().mapToLong(LiveRecording.Part::getSize).sum();
         var segmentCount = parts.stream().mapToInt(LiveRecording.Part::getSegmentCount).sum();
-        return recordingStatus
-                .mutate(name, status -> {
-                    status.setEndedAt(lastEndedAt);
-                    status.setDurationMillis(durationMillis);
-                    status.setTotalBytes(totalBytes);
-                    status.setSegmentCount(segmentCount);
-                    status.setPartCount(parts.size());
-                    status.setLocalBytes(0L);
-                    status.setErrorCode(null);
-                    status.setMessage(null);
-                })
-                .flatMap(updated -> recordingStatus.transition(name, LiveRecordingState.COMPLETED, "续传完成"));
+        return recordingStatus.completeAfterResume(name, status -> {
+            status.setEndedAt(lastEndedAt);
+            status.setDurationMillis(durationMillis);
+            status.setTotalBytes(totalBytes);
+            status.setSegmentCount(segmentCount);
+            status.setPartCount(parts.size());
+            status.setLocalBytes(0L);
+        });
     }
 
     // 回写源当前录制，冲突重试后失败只告警

@@ -148,4 +148,41 @@ class RecordingStatusTest {
         part.setFilename(cn.tolim.pudans.core.live.recorder.LiveRecordingWorkspace.partFilename(index));
         return part;
     }
+
+    @Test
+    void completeAfterResumeMovesFailedRecordingToCompleted() {
+        recording.getStatus().setState(LiveRecordingState.FAILED);
+        recording.getStatus().setErrorCode(LiveErrorCode.LIVE_STREAM_FAILED.name());
+
+        var updated = service.completeAfterResume("rec-a", status -> status.setTotalBytes(1024L)).block();
+
+        assertThat(updated).isNotNull();
+        assertThat(updated.getStatus().getState()).isEqualTo(LiveRecordingState.COMPLETED);
+        assertThat(updated.getStatus().getTotalBytes()).isEqualTo(1024L);
+        assertThat(updated.getStatus().getErrorCode()).isNull();
+        assertThat(updated.getStatus().getMessage()).isEqualTo("续传完成");
+        assertThat(updated.getStatus().getEndedAt()).isNotNull();
+        verify(metrics).recordingRemoved("rec-a");
+    }
+
+    @Test
+    void completeAfterResumeRejectsRecordingThatIsNotFailed() {
+        recording.getStatus().setState(LiveRecordingState.COMPLETED);
+
+        assertThatThrownBy(() -> service.completeAfterResume("rec-a", status -> { }).block())
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo(LiveErrorCode.LIVE_RECORDING_NOT_READY.name()));
+        verify(metrics, times(0)).recordingRemoved("rec-a");
+    }
+
+    @Test
+    void transitionStillRejectsFailedToCompleted() {
+        recording.getStatus().setState(LiveRecordingState.FAILED);
+
+        assertThatThrownBy(() -> service.transition("rec-a", LiveRecordingState.COMPLETED, "续传完成").block())
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo(LiveErrorCode.LIVE_RECORDING_NOT_ACTIVE.name()));
+    }
 }

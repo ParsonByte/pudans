@@ -7,6 +7,8 @@ import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_SOURCE_NOT_FO
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.live.LiveRecording;
@@ -23,6 +25,8 @@ import cn.tolim.pudans.core.live.resolve.RoomResolver;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -114,9 +118,7 @@ class RecordingsTest {
         when(recordingStatus.findRequired("rec-1")).thenReturn(Mono.just(recording));
         when(liveRecorder.hasLocalData(recording)).thenReturn(true);
         when(liveRecorder.resumeUpload(recording)).thenReturn(Mono.just(recording));
-        when(recordingStatus.mutate(eq("rec-1"), any())).thenReturn(Mono.just(recording));
-        when(recordingStatus.transition("rec-1", LiveRecordingState.COMPLETED, "续传完成"))
-                .thenReturn(Mono.just(recording));
+        when(recordingStatus.completeAfterResume(eq("rec-1"), any())).thenReturn(Mono.just(recording));
 
         StepVerifier.create(service.retry("rec-1", "upload", "tester"))
                 .assertNext(result -> {
@@ -154,5 +156,58 @@ class RecordingsTest {
         status.setState(state);
         recording.setStatus(status);
         return recording;
+    }
+
+    @Test
+    void retryUploadPassesAggregatedStatsToCompletion() {
+        var recording = recording(LiveRecordingState.FAILED);
+        var part = new LiveRecording.Part();
+        part.setIndex(0);
+        part.setState(PartState.UPLOADED);
+        part.setStartedAt(Instant.parse("2026-11-20T10:00:00Z"));
+        part.setEndedAt(Instant.parse("2026-11-20T10:10:00Z"));
+        part.setSize(1024L);
+        part.setSegmentCount(60);
+        recording.getStatus().setParts(new ArrayList<>(List.of(part)));
+        var captured = new AtomicReference<Consumer<LiveRecording.Status>>();
+        when(recordingStatus.findRequired("rec-1")).thenReturn(Mono.just(recording));
+        when(liveRecorder.hasLocalData(recording)).thenReturn(true);
+        when(liveRecorder.resumeUpload(recording)).thenReturn(Mono.just(recording));
+        when(recordingStatus.completeAfterResume(eq("rec-1"), any())).thenAnswer(invocation -> {
+            captured.set(invocation.getArgument(1));
+            return Mono.just(recording);
+        });
+
+        StepVerifier.create(service.retry("rec-1", "upload", "tester")).expectNextCount(1).verifyComplete();
+
+        var status = new LiveRecording.Status();
+        captured.get().accept(status);
+        assertThat(status.getEndedAt()).isEqualTo(Instant.parse("2026-11-20T10:10:00Z"));
+        assertThat(status.getDurationMillis()).isEqualTo(600_000L);
+        assertThat(status.getTotalBytes()).isEqualTo(1024L);
+        assertThat(status.getSegmentCount()).isEqualTo(60);
+        assertThat(status.getPartCount()).isEqualTo(1);
+        assertThat(status.getLocalBytes()).isZero();
+    }
+
+    @Test
+    void retryUploadKeepsFailedWhenAnyPartIsNotUploaded() {
+        var recording = recording(LiveRecordingState.FAILED);
+        var uploaded = new LiveRecording.Part();
+        uploaded.setIndex(0);
+        uploaded.setState(PartState.UPLOADED);
+        var pending = new LiveRecording.Part();
+        pending.setIndex(1);
+        pending.setState(PartState.FAILED);
+        recording.getStatus().setParts(new ArrayList<>(List.of(uploaded, pending)));
+        when(recordingStatus.findRequired("rec-1")).thenReturn(Mono.just(recording));
+        when(liveRecorder.hasLocalData(recording)).thenReturn(true);
+        when(liveRecorder.resumeUpload(recording)).thenReturn(Mono.just(recording));
+
+        StepVerifier.create(service.retry("rec-1", "upload", "tester"))
+                .assertNext(result -> assertThat(result.mode()).isEqualTo("UPLOAD"))
+                .verifyComplete();
+
+        verify(recordingStatus, never()).completeAfterResume(any(), any());
     }
 }
