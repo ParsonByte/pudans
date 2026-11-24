@@ -5,6 +5,7 @@ export const ROLE_DEPENDENCIES_ANNOTATION = "rbac.authorization.pudans.tolim.cn/
 export const ROLE_DESCRIPTION_ANNOTATION = "rbac.authorization.pudans.tolim.cn/description";
 export const ROLE_DISPLAY_NAME_ANNOTATION = "rbac.authorization.pudans.tolim.cn/display-name";
 export const ROLE_TEMPLATE_LABEL = "pudans.tolim.cn/role-template";
+const ROLE_UI_LABEL_ANNOTATION = "rbac.authorization.pudans.tolim.cn/ui-label";
 export const ROLE_UI_PERMISSIONS_ANNOTATION = "rbac.authorization.pudans.tolim.cn/ui-permissions";
 
 export const ROLE_PERMISSIONS = {
@@ -15,7 +16,17 @@ export const ROLE_PERMISSIONS = {
 } as const;
 
 export function roleDisplayName(role: Role): string {
-    return role.metadata.annotations?.[ROLE_DISPLAY_NAME_ANNOTATION] ?? role.metadata.name;
+    const displayName = role.metadata.annotations?.[ROLE_DISPLAY_NAME_ANNOTATION];
+    if (displayName) {
+        return displayName;
+    }
+
+    const uiLabel = role.metadata.annotations?.[ROLE_UI_LABEL_ANNOTATION];
+    if (uiLabel) {
+        return uiLabel;
+    }
+
+    return role.metadata.labels?.[ROLE_TEMPLATE_LABEL] === "true" ? "系统内置角色" : role.metadata.name;
 }
 
 export function roleDescription(role: Role): string {

@@ -63,21 +63,25 @@ export function RolePermissionBrowser({
     return (
         <div className="flex flex-col gap-4">
             <Card className="bg-[var(--td-bg-color-page)]">
-                <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-                    <Select
-                        className="w-full xl:w-48"
-                        onChange={(value) => setWorkspaceId(value ? String(value) : "all")}
-                        options={[{ label: "全部工作区", value: "all" }, ...workspaceOptions]}
-                        value={workspaceId}
-                    />
-                    <Input
-                        className="min-w-0 flex-1"
-                        clearable
-                        onChange={(value) => setKeyword(String(value))}
-                        placeholder={toolbarPlaceholder}
-                        prefixIcon={<SearchIcon />}
-                        value={keyword}
-                    />
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <div className="w-full shrink-0 lg:w-48">
+                        <Select
+                            className="w-full"
+                            onChange={(value) => setWorkspaceId(value ? String(value) : "all")}
+                            options={[{ label: "全部工作区", value: "all" }, ...workspaceOptions]}
+                            value={workspaceId}
+                        />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <Input
+                            className="w-full"
+                            clearable
+                            onChange={(value) => setKeyword(String(value))}
+                            placeholder={toolbarPlaceholder}
+                            prefixIcon={<SearchIcon />}
+                            value={keyword}
+                        />
+                    </div>
                 </div>
             </Card>
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { Role } from "@pudans-dev/api-client";
-import { Button, Card, Empty, Skeleton, Tabs } from "tdesign-react";
+import { Button, Empty, Skeleton, Tabs } from "tdesign-react";
 import type { TabValue } from "tdesign-react";
 
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
@@ -267,9 +267,8 @@ export function RoleDetailPanel({
     ];
 
     return (
-        <Card
-            className="min-w-0 overflow-hidden"
-            header={
+        <div className="min-w-0">
+            <div className="border-b border-[var(--td-component-border)] px-4 py-5 lg:px-6">
                 <RoleSummary
                     canDelete={canDelete}
                     canEdit={canUpdate}
@@ -291,18 +290,16 @@ export function RoleDetailPanel({
                     workspaceCount={workspaceCount}
                     workspaceTotal={workspaceAccess.length}
                 />
-            }
-            headerBordered
-        >
-            <div className="px-4 pt-5 pb-6 sm:px-6 sm:pt-6">
+            </div>
+            <div className="px-4 pt-5 pb-6 lg:px-6">
                 <Tabs list={items} onChange={setActiveTab} value={activeTab} />
             </div>
-        </Card>
+        </div>
     );
 }
 
 function TabBody({ children }: { children: React.ReactNode }) {
-    return <div className="flex min-h-[320px] flex-col gap-5">{children}</div>;
+    return <div className="flex min-h-[320px] flex-col gap-5 pt-2">{children}</div>;
 }
 
 function TabSkeleton() {

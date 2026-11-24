@@ -77,6 +77,7 @@ const VERB_LABELS: Record<string, string> = {
     get: "查看",
     list: "列表",
     patch: "局部更新",
+    post: "提交",
     update: "更新",
     watch: "监听",
 };
@@ -324,7 +325,17 @@ export function resourceLabel(index: RoleCatalogIndex, resource: string): string
     if (resource === "*") {
         return "全部资源";
     }
-    return index.resourceLabels[resource] ?? resource;
+    if (resource === "-") {
+        return "本人";
+    }
+    return index.resourceLabels[resource] ?? "未收录资源";
+}
+
+export function scopeLabel(index: RoleCatalogIndex, value: string): string {
+    if (value === "-") {
+        return "本人";
+    }
+    return index.resourceLabels[value] ?? "未收录范围";
 }
 
 export function verbLabel(verb: string): string {
