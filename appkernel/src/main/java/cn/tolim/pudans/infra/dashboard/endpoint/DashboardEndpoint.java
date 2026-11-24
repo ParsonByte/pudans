@@ -138,9 +138,8 @@ public class DashboardEndpoint implements CustomEndpoint {
     }
 
     // 并行汇总用户、角色、审计与趋势数据。
-    Mono<DashboardOverview> aggregate(int days, Instant end) {
+    Mono<DashboardOverview> aggregate(int days, Instant rangeEnd) {
         var generatedAt = Instant.now();
-        var rangeEnd = end.isAfter(generatedAt) ? generatedAt : end;
         var dayStart = PudansTime.startOfDay(rangeEnd);
         var rangeFrom = dayStart.minus(Duration.ofDays(days - 1L));
         var previousFrom = rangeFrom.minus(Duration.ofDays(days));
@@ -163,7 +162,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .countSince(PudansTime.startOfDay(generatedAt))
                 .onErrorReturn(0L);
         var recentRecords = auditLog
-                .findRecent(RECENT_AUDIT_LOG_LIMIT)
+                .findRecent(rangeFrom, rangeEnd, RECENT_AUDIT_LOG_LIMIT)
                 .collectList()
                 .defaultIfEmpty(List.of())
                 .onErrorReturn(List.of())

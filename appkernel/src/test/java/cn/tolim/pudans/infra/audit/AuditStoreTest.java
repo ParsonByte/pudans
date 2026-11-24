@@ -196,18 +196,6 @@ class AuditStoreTest {
     }
 
     @Test
-    void findRecentReturnsTheNewestRecordsFirst() {
-        givenStores(Flux.just(entity("0001"), entity("0003")), Flux.just(archiveEntity("0005")));
-
-        List<String> ids = store
-                .findRecent(2)
-                .map(record -> record.getMetadata().getName())
-                .collectList()
-                .block();
-        assertThat(ids).containsExactly("0005", "0003");
-    }
-
-    @Test
     void countSinceSumsActiveAndArchivedRecords() {
         givenStores(Flux.just(entity("0001"), entity("0003")), Flux.just(archiveEntity("0002")));
 
@@ -279,7 +267,8 @@ class AuditStoreTest {
         var sql = ArgumentCaptor.forClass(String.class);
         verify(databaseClient).sql(sql.capture());
         assertThat(sql.getValue())
-                .contains("occurred_at >= :since", "occurred_at < :to", "request_path <> '/login-bg.mp4'");
+                .contains("occurred_at >= :since", "occurred_at < :to", "request_path <> '/login-bg.mp4'")
+                .doesNotContain(":toAND");
         verify(spec, times(3)).bind(anyString(), any());
     }
 

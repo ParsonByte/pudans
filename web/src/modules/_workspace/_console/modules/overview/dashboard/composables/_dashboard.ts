@@ -232,7 +232,12 @@ export function mergeCreationTrend(overview: DashboardData): CreationTrendPoint[
     }));
 }
 
-export function metricCaption(key: string, overview: DashboardData, metrics: Map<string, DashboardMetric>): string {
+export function metricCaption(
+    key: string,
+    overview: DashboardData,
+    metrics: Map<string, DashboardMetric>,
+    includesToday: boolean,
+): string {
     const metricValue = (metricKey: string) => formatCount(metrics.get(metricKey)?.value ?? 0);
 
     if (key === "users") {
@@ -244,7 +249,9 @@ export function metricCaption(key: string, overview: DashboardData, metrics: Map
     }
 
     if (key === "operations") {
-        return `今日 ${formatCount(overview.todayOperations)} 次 · 异常 ${metricValue("abnormalOperations")} 次`;
+        return includesToday
+            ? `今日 ${formatCount(overview.todayOperations)} 次 · 异常 ${metricValue("abnormalOperations")} 次`
+            : `异常 ${metricValue("abnormalOperations")} 次`;
     }
 
     if (key === "loginSuccessRate") {

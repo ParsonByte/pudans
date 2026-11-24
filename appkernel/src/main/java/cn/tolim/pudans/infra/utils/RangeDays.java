@@ -40,9 +40,7 @@ public final class RangeDays {
             return Instant.now();
         }
         try {
-            var end = Instant.parse(value);
-            var now = Instant.now();
-            return end.isAfter(now) ? now : end;
+            return Instant.parse(value);
         } catch (DateTimeParseException e) {
             throw new ServerWebInputException("查询参数 'to' 必须是 ISO-8601 时间。");
         }
