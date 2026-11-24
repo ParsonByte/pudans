@@ -4,14 +4,26 @@ import { useEffect, useMemo, useState } from "react";
 
 import { type RiskBan, type RiskEventView, type RiskRule, apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshIcon } from "tdesign-icons-react";
-import { Button, Form, Input, InputNumber, Select, Switch, Table, Tag, Textarea, Tooltip } from "tdesign-react";
+import { AddIcon, RefreshIcon } from "tdesign-icons-react";
+import {
+    Breadcrumb,
+    Button,
+    Form,
+    Input,
+    InputNumber,
+    RadioGroup,
+    Select,
+    Switch,
+    Table,
+    Tag,
+    Textarea,
+    Tooltip,
+} from "tdesign-react";
 import type { TableProps } from "tdesign-react";
 
 import { GlobalDialog, ResultTag, SectionCard, confirmGlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
-import { ConsoleTable } from "../../../components/console-table";
 import { CopyableIdentifier } from "../../../components/copyable-identifier";
 import { ObjectDetails } from "../../../components/object-details";
 import { WeekHourHeatmap } from "../../../components/week-hour-heatmap";
@@ -23,17 +35,13 @@ import { useDashboardTheme } from "../../overview/dashboard/composables/_theme";
 import { RiskActionChart } from "./components/risk-action-chart";
 import { RiskMetricGrid } from "./components/risk-metric-grid";
 import { RiskRelationGraph } from "./components/risk-relation-graph";
+import { RiskRuleGrid } from "./components/risk-rule-grid";
 import { RiskSceneDistribution } from "./components/risk-scene-distribution";
 import { RiskSubjectRanking } from "./components/risk-subject-ranking";
 import { RiskTrendChart } from "./components/risk-trend-chart";
-import {
-    RISK_ACTION_OPTIONS,
-    type RiskFormValues,
-    readRiskSpec,
-    riskActionLabel,
-    ruleThreshold,
-    sceneLabel,
-} from "./composables/_risk";
+import { RISK_ACTION_OPTIONS, type RiskFormValues, readRiskSpec, sceneLabel } from "./composables/_risk";
+
+const { BreadcrumbItem } = Breadcrumb;
 
 type RiskEventRow = RiskEventView & {
     rowId: string;
@@ -42,6 +50,14 @@ type RiskEventRow = RiskEventView & {
 type RiskBanRow = RiskBan & {
     rowId: string;
 };
+
+type RiskTab = "events" | "overview" | "rules";
+
+const RISK_TAB_OPTIONS: Array<{ label: string; value: RiskTab }> = [
+    { label: "风险概览", value: "overview" },
+    { label: "事件与封禁", value: "events" },
+    { label: "规则管理", value: "rules" },
+];
 
 const EMPTY_RISK_FORM: RiskFormValues = {
     action: "BLOCK",
@@ -61,6 +77,7 @@ export function RiskView() {
     const { token } = useDashboardTheme();
     const [form] = Form.useForm();
     const [range, setRange] = useState<DashboardRange>(7);
+    const [activeTab, setActiveTab] = useState<RiskTab>("overview");
     const [open, setOpen] = useState(false);
     const [editing, setEditing] = useState<RiskRule>();
     const [selected, setSelected] = useState<RiskRule>();
@@ -113,6 +130,7 @@ export function RiskView() {
         onSuccess: () => {
             prompt.success({ content: "风险规则已保存。" });
             setOpen(false);
+            setActiveTab("rules");
             void queryClient.invalidateQueries({ queryKey: ["console", "risk"] });
         },
     });
@@ -169,6 +187,12 @@ export function RiskView() {
     }, [bansQuery.error, prompt]);
 
     useEffect(() => {
+        if (rulesQuery.error) {
+            prompt.error({ content: consoleErrorMessage(rulesQuery.error) });
+        }
+    }, [prompt, rulesQuery.error]);
+
+    useEffect(() => {
         if (overview?.truncated) {
             prompt.warning({ content: "风险事件达到扫描上限，请缩小时间范围后重新查看。" });
         }
@@ -217,88 +241,6 @@ export function RiskView() {
             title: "删除风险规则",
         });
     };
-
-    const columns: TableProps<RiskRule>["columns"] = [
-        {
-            cell: ({ row }) => {
-                const scene = readRiskSpec(row).scene;
-
-                return (
-                    <Tooltip content={scene}>
-                        <span>{sceneLabel(scene, overview?.scenes)}</span>
-                    </Tooltip>
-                );
-            },
-            colKey: "scene",
-            title: "场景",
-            width: 180,
-        },
-        {
-            cell: ({ row }) => readRiskSpec(row).description ?? "—",
-            colKey: "description",
-            title: "描述",
-        },
-        {
-            cell: ({ row }) =>
-                readRiskSpec(row).enabled === false ? (
-                    <Tag>停用</Tag>
-                ) : (
-                    <Tag theme="success" variant="light">
-                        启用
-                    </Tag>
-                ),
-            colKey: "enabled",
-            title: "状态",
-            width: 90,
-        },
-        {
-            cell: ({ row }) => ruleThreshold(row),
-            colKey: "threshold",
-            title: "阈值 / 窗口",
-            width: 140,
-        },
-        {
-            cell: ({ row }) => {
-                const action = readRiskSpec(row).action;
-
-                return (
-                    <Tag
-                        theme={action === "BLOCK" ? "danger" : action === "ALERT" ? "warning" : "default"}
-                        variant="light"
-                    >
-                        {riskActionLabel(action)}
-                    </Tag>
-                );
-            },
-            colKey: "action",
-            title: "动作",
-            width: 90,
-        },
-        {
-            cell: ({ row }) => formatDateTime(row.metadata.creationTimestamp),
-            colKey: "creationTimestamp",
-            title: "创建时间",
-            width: 172,
-        },
-        {
-            cell: ({ row }) => (
-                <div className="flex items-center gap-1">
-                    <Button onClick={() => openEdit(row)} size="small" theme="primary" variant="text">
-                        编辑
-                    </Button>
-                    <Button onClick={() => setSelected(row)} size="small" theme="primary" variant="text">
-                        详情
-                    </Button>
-                    <Button onClick={() => confirmDelete(row)} size="small" theme="danger" variant="text">
-                        删除
-                    </Button>
-                </div>
-            ),
-            colKey: "actions",
-            title: "操作",
-            width: 180,
-        },
-    ];
 
     const eventColumns: TableProps<RiskEventRow>["columns"] = [
         {
@@ -397,20 +339,39 @@ export function RiskView() {
     ];
 
     return (
-        <div className="flex min-w-0 flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-                <Select
-                    onChange={(value) => setRange(value as DashboardRange)}
-                    options={DASHBOARD_RANGES}
-                    style={{ width: 132 }}
-                    value={range}
-                />
-                <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
-                    刷新
-                </Button>
+        <div className="flex w-full min-w-0 flex-col gap-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <Breadcrumb>
+                    <BreadcrumbItem>安全与审计</BreadcrumbItem>
+                    <BreadcrumbItem>风险控制</BreadcrumbItem>
+                </Breadcrumb>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                        aria-label="风险统计范围"
+                        onChange={(value) => setRange(value as DashboardRange)}
+                        options={DASHBOARD_RANGES}
+                        style={{ width: 132 }}
+                        value={range}
+                    />
+                    <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
+                        刷新
+                    </Button>
+                    <Button icon={<AddIcon />} onClick={openCreate} theme="primary">
+                        新建规则
+                    </Button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+            <RadioGroup
+                className="w-fit"
+                onChange={(value) => setActiveTab(value as RiskTab)}
+                options={RISK_TAB_OPTIONS}
+                theme="button"
+                value={activeTab}
+                variant="default-filled"
+            />
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12" hidden={activeTab !== "overview"}>
                 <RiskMetricGrid loading={overviewQuery.isPending} summary={summary} />
 
                 <div className="md:col-span-2 xl:col-span-7">
@@ -452,7 +413,7 @@ export function RiskView() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-12" hidden={activeTab !== "events"}>
                 <div className="xl:col-span-7">
                     <SectionCard title="最近风险事件">
                         <Table
@@ -465,18 +426,7 @@ export function RiskView() {
                     </SectionCard>
                 </div>
                 <div className="xl:col-span-5">
-                    <SectionCard
-                        extra={
-                            <Button
-                                loading={bansQuery.isFetching}
-                                onClick={() => void bansQuery.refetch()}
-                                size="small"
-                            >
-                                刷新
-                            </Button>
-                        }
-                        title="实时封禁"
-                    >
+                    <SectionCard title="实时封禁">
                         <Table
                             columns={banColumns}
                             data={banRows}
@@ -488,26 +438,22 @@ export function RiskView() {
                 </div>
             </div>
 
-            <ConsoleTable
-                columns={columns}
-                data={rulesQuery.data?.items}
-                error={rulesQuery.error}
-                extra={
-                    <div className="flex items-center gap-2">
-                        <Button onClick={openCreate} size="small" theme="primary">
-                            新建规则
-                        </Button>
-                        <Button loading={rulesQuery.isFetching} onClick={() => void rulesQuery.refetch()} size="small">
-                            刷新
-                        </Button>
-                    </div>
-                }
-                loading={rulesQuery.isPending}
-                onRetry={() => void rulesQuery.refetch()}
-                pagination={{ ...table.pagination, total: rulesQuery.data?.total ?? 0 }}
-                rowKey="metadata.name"
-                title="风险规则"
-            />
+            <div hidden={activeTab !== "rules"}>
+                <RiskRuleGrid
+                    error={rulesQuery.error}
+                    loading={rulesQuery.isPending}
+                    onCreate={openCreate}
+                    onDelete={confirmDelete}
+                    onDetails={setSelected}
+                    onEdit={openEdit}
+                    onRetry={() => void rulesQuery.refetch()}
+                    pagination={table.pagination}
+                    pending={deleteRule.isPending}
+                    rules={rulesQuery.data?.items}
+                    scenes={overview?.scenes}
+                    total={rulesQuery.data?.total ?? 0}
+                />
+            </div>
 
             <GlobalDialog
                 confirmLoading={saveRule.isPending}

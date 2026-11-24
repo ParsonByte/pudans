@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 import type { RiskSceneStat } from "@pudans-dev/api-client";
 
 import { DonutBreakdown } from "../../../../components/donut-breakdown";
@@ -14,19 +16,21 @@ const ACTION_ORDER = ["BLOCK", "ALERT"];
 
 export function RiskActionChart({ scenes }: RiskActionChartProps) {
     const { tone } = useDashboardTheme();
-    const counts = new Map<string, number>();
-    for (const scene of scenes ?? []) {
-        if (scene.action) {
-            counts.set(scene.action, (counts.get(scene.action) ?? 0) + 1);
+    const slices = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const scene of scenes ?? []) {
+            if (scene.action) {
+                counts.set(scene.action, (counts.get(scene.action) ?? 0) + 1);
+            }
         }
-    }
 
-    const slices = ACTION_ORDER.filter((action) => (counts.get(action) ?? 0) > 0).map((action) => ({
-        color: tone(action === "BLOCK" ? "red" : "warning").base,
-        key: action,
-        label: RISK_ACTION_LABELS[action] ?? action,
-        value: counts.get(action) ?? 0,
-    }));
+        return ACTION_ORDER.filter((action) => (counts.get(action) ?? 0) > 0).map((action) => ({
+            color: tone(action === "BLOCK" ? "red" : "warning").base,
+            key: action,
+            label: RISK_ACTION_LABELS[action] ?? action,
+            value: counts.get(action) ?? 0,
+        }));
+    }, [scenes, tone]);
 
     return (
         <DonutBreakdown
