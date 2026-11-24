@@ -14,6 +14,7 @@ import cn.tolim.pudans.core.live.source.SourceHealth;
 import cn.tolim.pudans.core.live.source.Sources;
 import cn.tolim.pudans.core.live.source.SourceSummaries;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
@@ -40,7 +41,7 @@ public class LiveSourceEndpoint implements CustomEndpoint {
 
     private final AuditLog auditLog;
 
-    // 注册创建、解析、录制、汇总与健康路由
+    // 注册创建、解析、录制、删除、汇总与健康路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         return SpringdocRouteBuilder.route()
@@ -72,6 +73,13 @@ public class LiveSourceEndpoint implements CustomEndpoint {
                                 .description("立即录制指定直播源")
                                 .tag(TAG)
                                 .response(responseBuilder().implementation(LiveRecording.class)))
+                .DELETE(
+                        "/livesources/{name}",
+                        this::delete,
+                        builder -> builder.operationId("deleteLiveSource")
+                                .description("删除指定直播源并记录审计")
+                                .tag(TAG)
+                                .response(responseBuilder().responseCode("204").description("直播源已删除")))
                 .GET(
                         "/livesources/summary",
                         this::summary,
@@ -130,6 +138,15 @@ public class LiveSourceEndpoint implements CustomEndpoint {
                 .flatMap(recording -> ServerResponse.ok().bodyValue(recording));
     }
 
+    // 删除指定直播源并记录审计
+    private Mono<ServerResponse> delete(ServerRequest request) {
+        var name = request.pathVariable("name");
+        return sources
+                .delete(name)
+                .flatMap(source -> recordDeleteAudit(request, source).thenReturn(source))
+                .then(ServerResponse.noContent().build());
+    }
+
     // 返回直播源状态与内存计数汇总
     private Mono<ServerResponse> summary(ServerRequest request) {
         return sourceSummaries
@@ -147,23 +164,42 @@ public class LiveSourceEndpoint implements CustomEndpoint {
 
     // 记录直播源创建审计，失败不影响创建结果
     private Mono<Void> recordCreateAudit(ServerRequest request, LiveSource source) {
-        var snapshot = new LinkedHashMap<String, Object>();
-        snapshot.put("roomId", source.getSpec().getRoomId());
-        snapshot.put("alias", source.getSpec().getAlias());
-        snapshot.put("autoRecord", source.getSpec().isAutoRecord());
+        return recordAudit(request, "CREATE_LIVE_SOURCE", source, sourceSnapshot(source));
+    }
+
+    // 记录直播源删除审计，失败不影响删除结果
+    private Mono<Void> recordDeleteAudit(ServerRequest request, LiveSource source) {
+        var snapshot = sourceSnapshot(source);
+        var status = source.getStatus();
+        snapshot.put("state", status == null || status.getState() == null ? null : status.getState().name());
+        return recordAudit(request, "DELETE_LIVE_SOURCE", source, snapshot);
+    }
+
+    // 提交一条直播源子步骤审计，失败仅告警
+    private Mono<Void> recordAudit(
+            ServerRequest request, String operation, LiveSource source, Map<String, Object> snapshot) {
         return auditLog
                 .recordChild(
                         request.exchange(),
                         null,
-                        "CREATE_LIVE_SOURCE",
+                        operation,
                         "LiveSource",
                         source.getMetadata().getName(),
                         "SUCCESS",
                         snapshot,
                         null)
                 .onErrorResume(error -> {
-                    log.warn("记录直播源创建审计失败：{}", error.getMessage());
+                    log.warn("记录直播源审计失败：{}", error.getMessage());
                     return Mono.empty();
                 });
+    }
+
+    // 组装创建与删除共用的直播源快照
+    private static Map<String, Object> sourceSnapshot(LiveSource source) {
+        var snapshot = new LinkedHashMap<String, Object>();
+        snapshot.put("roomId", source.getSpec().getRoomId());
+        snapshot.put("alias", source.getSpec().getAlias());
+        snapshot.put("autoRecord", source.getSpec().isAutoRecord());
+        return snapshot;
     }
 }
