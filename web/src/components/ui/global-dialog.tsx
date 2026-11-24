@@ -28,11 +28,14 @@ function DialogCloseButton({ disabled = false, onClick }: { disabled?: boolean; 
     return (
         <Button
             aria-label="关闭对话框"
-            className="global-dialog__close"
+            className="global-dialog__close transition-opacity hover:opacity-70"
             disabled={disabled}
+            ghost
             icon={<CloseIcon />}
             onClick={onClick}
             shape="square"
+            size="small"
+            style={{ borderColor: "transparent", color: "var(--td-text-color-secondary)" }}
             type="button"
             variant="text"
         />
