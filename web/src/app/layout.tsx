@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import "@fontsource-variable/jetbrains-mono";
 import "@fontsource-variable/noto-sans";
+import "@fortawesome/fontawesome-svg-core/styles.css";
+import "@tdesign-react/chat/es/style/index.js";
 import "tdesign-react/es/style/index.css";
 
 import { NavigationProgress } from "@/components/ui";
