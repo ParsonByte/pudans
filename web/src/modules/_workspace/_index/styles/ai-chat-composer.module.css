@@ -1,0 +1,826 @@
+.theme {
+    --chat-input-bg: var(--td-bg-color-container);
+    --chat-input-border: color-mix(in srgb, var(--td-brand-color) 30%, white);
+    --chat-input-focus-border: color-mix(in srgb, var(--td-brand-color) 42%, white);
+    --chat-input-muted: var(--td-text-color-secondary);
+    --chat-input-faint: var(--td-text-color-placeholder);
+    --chat-input-option: var(--td-bg-color-container-hover);
+    --chat-input-option-strong: var(--td-bg-color-secondarycontainer);
+    --chat-input-shadow: 0 16px 42px rgb(31 73 140 / 8%);
+    --chat-input-focus-shadow: 0 0 0 3px rgb(0 82 217 / 8%);
+    --chat-input-panel-shadow: 0 20px 64px rgb(24 28 40 / 16%);
+    color-scheme: light;
+}
+
+.composer {
+    position: relative;
+    width: 100%;
+}
+
+.surface {
+    overflow: hidden;
+    border: 1px solid var(--chat-input-border);
+    border-radius: 20px;
+    background: var(--chat-input-bg);
+    box-shadow: var(--chat-input-shadow);
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.surface:focus-within {
+    border-color: var(--chat-input-focus-border);
+    box-shadow: var(--chat-input-shadow), var(--chat-input-focus-shadow);
+}
+
+.surfaceActive {
+    border-color: var(--chat-input-focus-border);
+    box-shadow: var(--chat-input-shadow), var(--chat-input-focus-shadow);
+}
+
+.sender {
+    --td-bg-color-container-hover: var(--chat-input-option);
+    --td-bg-color-secondarycontainer: var(--chat-input-option-strong);
+    --td-chat-input-actions-item-wh: 34px;
+    --td-chat-input-background: transparent;
+    --td-chat-input-box-shadow: none;
+    --td-chat-input-content-default-border: transparent;
+    --td-chat-input-font-size: 15px;
+    --td-chat-input-hover-border: transparent;
+    --td-chat-input-padding: 18px 18px 10px;
+    --td-chat-input-radius: 20px;
+    --td-chat-input-shadow: none;
+    --td-chat-input-textarea-max-height: 180px;
+    --td-text-color-placeholder: var(--chat-input-faint);
+    --td-text-color-primary: var(--td-text-color-primary);
+    --td-text-color-secondary: var(--chat-input-muted);
+    display: block;
+}
+
+.senderWork {
+    --td-chat-input-padding: 17px 18px 10px;
+}
+
+.sender::part(t-chat__input__content) {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sender::part(t-chat__input__footer) {
+    align-items: stretch;
+}
+
+.sender::part(t-chat__input__footer__left) {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.sender::part(t-chat__input__footer__right) {
+    display: none;
+}
+
+.sender::part(t-chat__input__textarea__wrapper) {
+    padding-top: 2px;
+}
+
+.toolbar {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbarMain {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.workToolbarMain {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.toolbarMain::-webkit-scrollbar {
+    display: none;
+}
+
+.workToolbarMain::-webkit-scrollbar {
+    display: none;
+}
+
+.addButton:global(.t-button) {
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--td-text-color-primary);
+    background: transparent;
+}
+
+.addButton:global(.t-button):hover {
+    background: var(--chat-input-option);
+}
+
+.addButtonActive:global(.t-button) {
+    background: var(--chat-input-option);
+}
+
+.addButton:global(.t-button) :global(.t-button__text),
+.toolButton:global(.t-button) :global(.t-button__text),
+.moreButton:global(.t-button) :global(.t-button__text),
+.modeButton:global(.t-button) :global(.t-button__text),
+.modelButton:global(.t-button) :global(.t-button__text),
+.actionButton:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.toolbarDivider {
+    width: 1px;
+    height: 20px;
+    flex: 0 0 1px;
+    margin-inline: 5px;
+    background: var(--td-component-stroke);
+}
+
+.toolButton:global(.t-button),
+.moreButton:global(.t-button) {
+    height: 34px;
+    flex: 0 0 auto;
+    padding-inline: 8px;
+    border-radius: 999px;
+    color: var(--chat-input-muted);
+    background: transparent;
+    font-size: 14px;
+}
+
+.toolButton:global(.t-button):hover,
+.moreButton:global(.t-button):hover {
+    color: var(--td-text-color-primary);
+    background: var(--chat-input-option);
+}
+
+.toolButtonActive:global(.t-button) {
+    color: var(--td-text-color-primary);
+    background: transparent;
+    font-weight: 600;
+}
+
+.moreButtonActive:global(.t-button) {
+    color: var(--td-text-color-primary);
+    background: var(--chat-input-option-strong);
+    font-weight: 600;
+}
+
+.toolChevron {
+    color: var(--chat-input-faint);
+}
+
+.workToolButton:global(.t-button) {
+    height: 34px;
+    flex: 0 0 auto;
+    padding-inline: 9px;
+    border-radius: 8px;
+    color: var(--chat-input-muted);
+    background: transparent;
+    font-size: 14px;
+}
+
+.workToolButton:global(.t-button):hover {
+    color: var(--td-text-color-primary);
+    background: var(--chat-input-option);
+}
+
+.workToolButton:global(.t-button) :global(.t-button__text) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+.workToolButtonActive:global(.t-button) {
+    color: #2f6bff;
+    background: rgb(47 107 255 / 8%);
+}
+
+.workToolButtonActive:global(.t-button):hover {
+    color: #245ce5;
+    background: rgb(47 107 255 / 12%);
+}
+
+.workToolButtonOpen:global(.t-button) {
+    color: var(--td-text-color-primary);
+    background: var(--chat-input-option-strong);
+}
+
+.toolbarEnd {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+}
+
+.modeButton:global(.t-button) {
+    height: 32px;
+    padding-inline: 8px;
+    border-radius: 999px;
+    color: var(--chat-input-muted);
+    background: transparent;
+    font-size: 12px;
+}
+
+.modeButton:global(.t-button):hover {
+    color: var(--td-text-color-primary);
+    background: var(--chat-input-option);
+}
+
+.modeArrow {
+    color: var(--chat-input-faint);
+}
+
+.modelButton:global(.t-button) {
+    height: 34px;
+    padding-inline: 6px;
+    border-radius: 8px;
+    color: var(--td-text-color-primary);
+    background: transparent;
+    font-size: 14px;
+}
+
+.modelButton:global(.t-button):hover {
+    background: var(--chat-input-option);
+}
+
+.modelButtonReasoning {
+    color: var(--chat-input-faint);
+    font-size: 13px;
+}
+
+.actionButton:global(.t-button) {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    color: var(--td-text-color-primary);
+    background: var(--chat-input-option-strong);
+}
+
+.actionButton:global(.t-button):hover {
+    background: var(--chat-input-option);
+}
+
+.panelPopup :global(.t-popup__content) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.modelPopup :global(.t-popup__content) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.modelMenu {
+    width: 304px;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 16px;
+    background: var(--td-bg-color-container);
+    box-shadow: 0 18px 52px rgb(24 28 40 / 14%);
+}
+
+.modelList {
+    max-height: 484px;
+    padding: 10px 8px 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.modelOption:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: 36px;
+    justify-content: flex-start;
+    padding: 0 10px;
+    border-radius: 8px;
+    color: var(--td-text-color-primary);
+    background: transparent;
+    text-align: left;
+}
+
+.modelOption:global(.t-button):hover {
+    background: var(--chat-input-option);
+}
+
+.modelOption:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+}
+
+.modelIcon {
+    flex: 0 0 16px;
+    color: var(--td-text-color-secondary);
+}
+
+.modelName {
+    font-size: 14px;
+}
+
+.modelBadge {
+    color: #2f6bff;
+    font-size: 12px;
+}
+
+.modelPrice {
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--chat-input-faint);
+    background: var(--chat-input-option-strong);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.modelPriceAuto {
+    color: #2f6bff;
+    background: rgb(47 107 255 / 8%);
+}
+
+.modelCheck {
+    flex: 0 0 18px;
+    margin-left: auto;
+    color: var(--td-text-color-primary);
+}
+
+.modelDivider {
+    height: 1px;
+    background: var(--td-component-stroke);
+}
+
+.reasoningWrap {
+    position: relative;
+    padding: 4px 8px 8px;
+}
+
+.reasoningButton:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: 40px;
+    justify-content: flex-start;
+    padding: 0 10px;
+    border-radius: 8px;
+    color: var(--td-text-color-primary);
+    background: transparent;
+    text-align: left;
+}
+
+.reasoningButton:global(.t-button):hover {
+    background: var(--chat-input-option);
+}
+
+.reasoningButton:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+}
+
+.reasoningLabel {
+    flex: 1 1 auto;
+}
+
+.reasoningValue {
+    color: var(--chat-input-faint);
+    font-size: 13px;
+}
+
+.reasoningArrow {
+    color: var(--chat-input-faint);
+}
+
+.reasoningMenu {
+    position: absolute;
+    right: calc(100% + 2px);
+    bottom: 8px;
+    z-index: 2;
+    width: 176px;
+    padding: 8px;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 16px;
+    background: var(--td-bg-color-container);
+    box-shadow: 0 16px 44px rgb(24 28 40 / 14%);
+}
+
+.reasoningOption:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: 40px;
+    justify-content: space-between;
+    padding: 0 12px;
+    border-radius: 8px;
+    color: var(--td-text-color-primary);
+    background: transparent;
+}
+
+.reasoningOption:global(.t-button):hover,
+.reasoningOptionActive:global(.t-button) {
+    background: var(--chat-input-option);
+}
+
+.reasoningOption:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.panel {
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 18px;
+    background: var(--td-bg-color-container);
+    box-shadow: var(--chat-input-panel-shadow);
+}
+
+.addPanel {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+}
+
+.addScroll {
+    padding: 4px 8px 10px;
+}
+
+.sectionLabel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px 6px;
+    color: var(--chat-input-faint);
+    font-size: 13px;
+    line-height: 20px;
+}
+
+.panelDivider {
+    height: 1px;
+    margin: 5px 10px;
+    background: var(--td-component-stroke);
+}
+
+.panelItem:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: auto;
+    min-height: 42px;
+    justify-content: flex-start;
+    padding: 7px 10px;
+    border-radius: 9px;
+    color: var(--td-text-color-primary);
+    background: transparent;
+    text-align: left;
+}
+
+.panelItem:global(.t-button):hover {
+    background: var(--chat-input-option);
+}
+
+.panelItem:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    gap: 10px;
+    white-space: normal;
+}
+
+.itemIcon {
+    display: inline-flex;
+    width: 20px;
+    height: 22px;
+    flex: 0 0 20px;
+    align-items: center;
+    justify-content: center;
+    color: var(--td-text-color-primary);
+}
+
+.itemCopy {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.itemTitle {
+    color: var(--td-text-color-primary);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+}
+
+.itemDescription {
+    overflow: hidden;
+    color: var(--chat-input-faint);
+    font-size: 14px;
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.statusDot {
+    width: 6px;
+    height: 6px;
+    margin-top: 7px;
+    border-radius: 50%;
+    background: var(--td-brand-color);
+}
+
+.skillPanel {
+    display: flex;
+    width: 100%;
+    max-height: min(520px, calc(100dvh - 240px));
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panelOverlay {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 30;
+    overflow: hidden;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 20px;
+    background: var(--td-bg-color-container);
+    box-shadow: var(--chat-input-panel-shadow);
+}
+
+.skillScroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 6px 8px 10px;
+    overscroll-behavior: contain;
+}
+
+.skillRow:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: auto;
+    min-height: 40px;
+    justify-content: flex-start;
+    padding: 7px 10px;
+    border-radius: 9px;
+    color: var(--td-text-color-primary);
+    background: transparent;
+    text-align: left;
+}
+
+.skillRow:global(.t-button):hover {
+    background: var(--chat-input-option);
+}
+
+.skillRow:global(.t-button) :global(.t-button__text) {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 20px auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    white-space: normal;
+}
+
+.skillIcon {
+    display: inline-flex;
+    width: 20px;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    color: var(--td-text-color-primary);
+}
+
+.skillIconQuick {
+    color: var(--td-text-color-primary);
+}
+
+.skillIcon[data-tone="amber"] {
+    color: #d97706;
+}
+
+.skillIcon[data-tone="blue"] {
+    color: #2563eb;
+}
+
+.skillIcon[data-tone="cyan"] {
+    color: #0891b2;
+}
+
+.skillIcon[data-tone="green"] {
+    color: #059669;
+}
+
+.skillIcon[data-tone="orange"] {
+    color: #ea580c;
+}
+
+.skillIcon[data-tone="purple"] {
+    color: #7c3aed;
+}
+
+.skillIcon[data-tone="red"] {
+    color: #dc2626;
+}
+
+.skillIcon[data-tone="teal"] {
+    color: #0d9488;
+}
+
+.skillTitle {
+    color: var(--td-text-color-primary);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 22px;
+    white-space: nowrap;
+}
+
+.skillDescription {
+    overflow: hidden;
+    color: var(--chat-input-faint);
+    font-size: 14px;
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.skillShortcut {
+    justify-self: end;
+    color: var(--chat-input-faint);
+    font-size: 13px;
+    line-height: 20px;
+    white-space: nowrap;
+}
+
+.skillEmpty {
+    padding: 28px 12px;
+}
+
+.skillSearch {
+    flex: 0 0 auto;
+    padding: 10px 18px 12px;
+    border-top: 1px solid var(--td-component-stroke);
+}
+
+.skillSearch :global(.t-input) {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.skillSearch :global(.t-input:hover) {
+    border: 0;
+    background: transparent;
+}
+
+.skillSearch :global(.t-input__inner) {
+    padding: 0;
+    font-size: 14px;
+}
+
+.modeMenu {
+    width: 160px;
+    padding: 6px;
+}
+
+.modeOption:global(.t-button) {
+    display: flex;
+    width: 100%;
+    height: 38px;
+    justify-content: space-between;
+    padding-inline: 10px;
+    border-radius: 9px;
+    color: var(--td-text-color-primary);
+    background: transparent;
+}
+
+.modeOption:global(.t-button):hover,
+.modeOptionActive:global(.t-button) {
+    background: var(--chat-input-option);
+}
+
+.modeOption:global(.t-button) :global(.t-button__text) {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+:global(.dark) .theme {
+    --chat-input-shadow: 0 18px 50px rgb(0 0 0 / 28%);
+    --chat-input-focus-shadow: 0 0 0 3px rgb(64 128 255 / 16%);
+    --chat-input-panel-shadow: 0 20px 64px rgb(0 0 0 / 42%);
+    color-scheme: dark;
+}
+
+@media (max-width: 760px) {
+    .surface {
+        border-radius: 18px;
+    }
+
+    .sender {
+        --td-chat-input-padding: 14px 12px 8px;
+        --td-chat-input-radius: 18px;
+    }
+
+    .toolbar {
+        gap: 4px;
+    }
+
+    .toolbarDivider {
+        margin-inline: 2px;
+    }
+
+    .toolButton:global(.t-button),
+    .moreButton:global(.t-button),
+    .workToolButton:global(.t-button) {
+        padding-inline: 6px;
+        font-size: 12px;
+    }
+
+    .modeButton:global(.t-button) {
+        padding-inline: 6px;
+    }
+
+    .modelButton:global(.t-button) {
+        padding-inline: 4px;
+        font-size: 12px;
+    }
+
+    .modelMenu {
+        width: min(304px, calc(100vw - 24px));
+    }
+
+    .modelList {
+        max-height: min(484px, 60dvh);
+    }
+
+    .addPanel {
+        width: 100%;
+    }
+
+    .skillPanel {
+        max-height: min(520px, calc(100dvh - 180px));
+    }
+
+    .skillRow:global(.t-button) :global(.t-button__text) {
+        grid-template-columns: 20px minmax(0, 1fr) auto;
+    }
+
+    .skillDescription {
+        grid-column: 2;
+    }
+
+    .skillShortcut {
+        grid-column: 3;
+        grid-row: 1 / span 2;
+    }
+
+    .itemCopy {
+        flex-direction: column;
+        gap: 2px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .surface {
+        transition: none;
+    }
+}
