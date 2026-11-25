@@ -49,4 +49,49 @@ class MessagesProtocolTest {
         assertThat(options.getExecutionConfig().getTimeout())
                 .isEqualTo(Duration.ofMillis(45_000));
     }
+
+    @Test
+    void appliesProviderProfileToHeadersBodyAndTokenLimit() {
+        var request = new AiChatProtocolRequest(
+                "custom",
+                "custom-model",
+                "secret",
+                "https://api.example.com",
+                "/v1/messages",
+                Map.of(
+                        "x-api-key", "secret",
+                        "anthropic-version", "2023-06-01",
+                        "anthropic-beta", "files-api-2025-04-14"),
+                45_000,
+                131_072,
+                8_192,
+                true,
+                false,
+                Map.of());
+        var profile = new MessagesProfile() {
+
+            @Override
+            public Map<String, String> additionalHeaders(Map<String, String> headers) {
+                return Map.of("x-profile", "enabled");
+            }
+
+            @Override
+            public Map<String, Object> additionalBodyParams(Map<String, Object> bodyParams) {
+                return Map.of("profile_flag", true);
+            }
+
+            @Override
+            public Integer maxOutputTokens(Integer requested) {
+                return 1_024;
+            }
+        };
+
+        var model = new MessagesProtocol().create(request, profile);
+
+        var options = (GenerateOptions) ReflectionTestUtils.getField(model, "defaultOptions");
+        assertThat(options).isNotNull();
+        assertThat(options.getAdditionalHeaders()).containsEntry("x-profile", "enabled");
+        assertThat(options.getAdditionalBodyParams()).containsEntry("profile_flag", true);
+        assertThat(options.getMaxTokens()).isEqualTo(1_024);
+    }
 }

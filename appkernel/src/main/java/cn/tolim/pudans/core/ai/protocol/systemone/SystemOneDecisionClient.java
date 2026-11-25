@@ -1,5 +1,7 @@
 package cn.tolim.pudans.core.ai.protocol.systemone;
 
+import cn.tolim.pudans.core.ai.protocol.AiProtocolProfile;
+import cn.tolim.pudans.core.ai.protocol.AiProtocolProfiles;
 import cn.tolim.pudans.core.ai.protocol.AiProtocolUrl;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttp;
 import cn.tolim.pudans.core.ai.provider.AiProviders;
@@ -23,6 +25,8 @@ public class SystemOneDecisionClient {
 
     private static final int MAX_SCORE_LEVELS = 10;
 
+    private static final SystemOneProfile STANDARD = new StandardSystemOneProfile();
+
     private final AiProviderHttp http;
 
     private final AiProviders providers;
@@ -32,18 +36,22 @@ public class SystemOneDecisionClient {
             Map<String, String> credentials,
             String model,
             Map<String, Object> state,
-            Map<String, Question> questions) {
+            Map<String, Question> questions,
+            AiProtocolProfile profile) {
+        var resolved = AiProtocolProfiles.resolve(profile, SystemOneProfile.class, STANDARD);
         var provider = providers.require(channel.getProvider());
         var endpoint = URI.create(AiProtocolUrl.join(
-                provider.systemOneBaseUrl(channel.getBaseUrl()), provider.systemOnePath()));
+                provider.systemOneBaseUrl(channel.getBaseUrl()),
+                resolved.requestPath(provider.systemOnePath())));
         var body = new LinkedHashMap<String, Object>();
         body.put("model", model);
         body.put("state", state == null ? Map.of() : state);
         body.put("questions", encodeQuestions(questions));
+        resolved.customizeBody(body);
         return http.postJson(
                         endpoint,
                         credentials,
-                        provider.systemOneHeaders(),
+                        resolved.headers(provider.systemOneHeaders()),
                         Map.copyOf(body),
                         timeout(channel))
                 .map(SystemOneDecisionClient::decode);

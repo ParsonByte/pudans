@@ -56,13 +56,15 @@ Registered subdomains for `ai`, `agent` and `creation`:
 - `core/agent/`: `memory`, `runtime`, `sandbox`, `tool`
 - `core/creation/`: `archive`, `content`, `provider`, `task`
 
-`core/ai/protocol` owns wire-protocol descriptors only: `chatcompletions`,
-`messages`, `responses` and `systemone`. Protocol packages must not contain a
-second provider registry.
+`core/ai/protocol` owns wire-protocol descriptors, provider-neutral protocol
+profile contracts and their standard default implementations:
+`chatcompletions`, `messages`, `responses` and `systemone`. Protocol packages
+must not contain a second provider registry or any dispatch keyed by provider
+id.
 
-`core/ai/provider` owns provider identity, endpoint resolution and model
-discovery. Each built-in provider has an independent directory:
-`deepseek`, `minimax` and `dashscope`.
+`core/ai/provider` owns provider identity, endpoint resolution, model discovery
+and provider-specific protocol profiles. Each built-in provider has an
+independent directory: `deepseek`, `minimax` and `dashscope`.
 
 `core/ai/usage` owns protocol-neutral token usage values. It must not persist
 records or calculate credits; persistence stays in `infra/r2dbc/ai` and credit

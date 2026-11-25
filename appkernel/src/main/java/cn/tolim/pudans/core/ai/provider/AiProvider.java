@@ -1,6 +1,8 @@
 package cn.tolim.pudans.core.ai.provider;
 
 import cn.tolim.pudans.contract.ai.dto.AiProviderDescriptor;
+import cn.tolim.pudans.core.ai.protocol.AiProtocol;
+import cn.tolim.pudans.core.ai.protocol.AiProtocolProfile;
 import cn.tolim.pudans.infra.r2dbc.ai.AiChannelEntity;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +18,10 @@ public interface AiProvider {
 
     Mono<List<AiProviderModel>> discover(
             AiChannelEntity channel, Map<String, String> credentials);
+
+    default AiProtocolProfile protocolProfile(AiProtocol protocol) {
+        return null;
+    }
 
     default boolean acceptsModel(String modelId) {
         return true;
