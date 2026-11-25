@@ -18,14 +18,14 @@ import { AuditTrendChart } from "../../../components/audit-trend-chart";
 import { ConsoleTable } from "../../../components/console-table";
 import { CopyableIdentifier } from "../../../components/copyable-identifier";
 import { DurationBucketChart } from "../../../components/duration-bucket-chart";
-import { ObjectDetails } from "../../../components/object-details";
+import { AUDIT_IDENTIFIER_KEYS, ObjectDetails } from "../../../components/object-details";
 import { OperationRanking } from "../../../components/operation-ranking";
 import { ResultBreakdown } from "../../../components/result-breakdown";
 import { SessionMetricGrid } from "../../../components/session-metric-grid";
 import { TraceWaterfall } from "../../../components/trace-waterfall";
 import { WeekHourHeatmap } from "../../../components/week-hour-heatmap";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatDateTime, formatDuration, operationLabel } from "../../../composables/_format";
+import { formatDateTime, formatDuration, maskIdentifier, operationLabel } from "../../../composables/_format";
 import { DASHBOARD_RANGES, type DashboardRange } from "../../../composables/_range";
 import { RESULT_OPTIONS } from "../../../composables/_results";
 import { useConsoleSession } from "../../../composables/_session";
@@ -314,7 +314,7 @@ export function ReplayView() {
             width: 168,
         },
         {
-            cell: ({ row }) => <CopyableIdentifier value={row.uid} />,
+            cell: ({ row }) => <CopyableIdentifier mask value={row.uid} />,
             colKey: "uid",
             title: "用户",
             width: 210,
@@ -344,7 +344,7 @@ export function ReplayView() {
             width: 112,
         },
         {
-            cell: ({ row }) => <CopyableIdentifier value={row.traceFlowId} />,
+            cell: ({ row }) => <CopyableIdentifier mask value={row.traceFlowId} />,
             colKey: "traceFlowId",
             title: "请求链路",
             width: 210,
@@ -595,10 +595,10 @@ export function ReplayView() {
                 footer={false}
                 onClose={() => setSelected(undefined)}
                 open={Boolean(selected)}
-                title={selected?.metadata.name}
+                title={maskIdentifier(selected?.metadata.name)}
                 width={720}
             >
-                {selected ? <ObjectDetails value={selected} /> : null}
+                {selected ? <ObjectDetails maskKeys={AUDIT_IDENTIFIER_KEYS} value={selected} /> : null}
             </GlobalDialog>
 
             {archiveOpen ? <ArchiveAuditModal onClose={() => setArchiveOpen(false)} /> : null}

@@ -2,7 +2,7 @@
 
 import type { AuditActorStat } from "@pudans-dev/api-client";
 
-import { formatCount, formatDuration } from "../composables/_format";
+import { formatCount, formatDuration, maskIdentifier } from "../composables/_format";
 import { RankedBarList } from "./ranked-bar-list";
 
 type ActorRankingProps = {
@@ -20,7 +20,7 @@ export function ActorRanking({ actors, emptyText = "暂无活跃用户", valueLa
 
                 return {
                     key: uid,
-                    label: <span className="font-mono">{uid}</span>,
+                    label: <span className="font-mono">{maskIdentifier(uid)}</span>,
                     labelTitle: uid,
                     meta: (
                         <>

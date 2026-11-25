@@ -59,7 +59,7 @@ export function ProfileView() {
                             <UserAvatar name={displayName} size={72} src={user.spec?.avatar} />
                             <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <Typography.Title className="!mb-0" ellipsis level="h4">
+                                    <Typography.Title className="!mb-0" level="h4">
                                         {displayName}
                                     </Typography.Title>
                                     <Tag theme={user.spec?.disabled ? "default" : "success"} variant="light">
@@ -103,6 +103,7 @@ export function ProfileView() {
                                             display={
                                                 <span className="font-mono text-xs break-all">{user.spec.uid}</span>
                                             }
+                                            quiet
                                             value={user.spec.uid}
                                         />
                                     ) : (

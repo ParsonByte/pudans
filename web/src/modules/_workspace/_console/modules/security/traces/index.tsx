@@ -24,7 +24,13 @@ import { SessionPath } from "../../../components/session-path";
 import { TraceWaterfall } from "../../../components/trace-waterfall";
 import { WeekHourHeatmap } from "../../../components/week-hour-heatmap";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatCount, formatDateTime, formatDuration, operationLabel } from "../../../composables/_format";
+import {
+    formatCount,
+    formatDateTime,
+    formatDuration,
+    maskIdentifier,
+    operationLabel,
+} from "../../../composables/_format";
 import { DASHBOARD_RANGES, type DashboardRange } from "../../../composables/_range";
 import { RESULT_OPTIONS } from "../../../composables/_results";
 import { useConsoleTableState } from "../../../composables/_table";
@@ -139,7 +145,7 @@ export function TracesView() {
             cell: ({ row }) => (
                 <div className="min-w-0">
                     <div className="truncate text-sm font-medium">{row.username ?? "未命名用户"}</div>
-                    <CopyableIdentifier className="mt-0.5 text-[11px]" value={row.uid} />
+                    <CopyableIdentifier className="mt-0.5 text-[11px]" mask value={row.uid} />
                 </div>
             ),
             colKey: "username",
@@ -392,7 +398,7 @@ export function TracesView() {
                 footer={false}
                 onClose={() => setSelectedSession(undefined)}
                 open={Boolean(selectedSession)}
-                title={`用户会话 · ${selectedSession?.username ?? selectedSession?.uid ?? ""}`}
+                title={`用户会话 · ${selectedSession?.username ?? maskIdentifier(selectedSession?.uid)}`}
                 width={1120}
             >
                 {detailQuery.isPending ? (
@@ -408,11 +414,13 @@ export function TracesView() {
                         type="network-error"
                     />
                 ) : (
-                    <TraceWaterfall
-                        key={detailQuery.data?.session?.sessionId}
-                        session={detailQuery.data?.session ?? selectedSession}
-                        steps={detailQuery.data?.steps}
-                    />
+                    <div className="pr-3">
+                        <TraceWaterfall
+                            key={detailQuery.data?.session?.sessionId}
+                            session={detailQuery.data?.session ?? selectedSession}
+                            steps={detailQuery.data?.steps}
+                        />
+                    </div>
                 )}
             </GlobalDialog>
         </div>
