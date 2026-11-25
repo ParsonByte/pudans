@@ -2,6 +2,9 @@ import { format } from "date-fns";
 
 const KILOBYTE = 1024;
 const BYTE_UNITS = ["KB", "MB", "GB", "TB"];
+const IDENTIFIER_MASK_HEAD_LENGTH = 10;
+const IDENTIFIER_MASK_TAIL_LENGTH = 5;
+const IDENTIFIER_MASK_MIN_LENGTH = IDENTIFIER_MASK_HEAD_LENGTH + IDENTIFIER_MASK_TAIL_LENGTH + 3;
 const MILLISECONDS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
 const SECONDS_PER_HOUR = 3600;
@@ -99,6 +102,15 @@ export function formatPath(value?: string | null): string {
     } catch {
         return path;
     }
+}
+
+// 过长的标识只显示首尾，复制时仍使用完整值。
+export function maskIdentifier(value?: string | null): string {
+    if (!value || value.length <= IDENTIFIER_MASK_MIN_LENGTH) {
+        return value ?? "";
+    }
+
+    return `${value.slice(0, IDENTIFIER_MASK_HEAD_LENGTH)}***${value.slice(-IDENTIFIER_MASK_TAIL_LENGTH)}`;
 }
 
 const OPERATION_LABELS: Record<string, string> = {

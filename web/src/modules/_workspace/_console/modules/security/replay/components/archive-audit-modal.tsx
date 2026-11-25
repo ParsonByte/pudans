@@ -10,6 +10,7 @@ import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
 import { consoleErrorMessage } from "../../../../composables/_errors";
 import { formatCount } from "../../../../composables/_format";
+import { IdentityDialogFooter } from "../../../identity/components/identity-dialog-footer";
 
 type ArchiveAuditModalProps = {
     onClose: () => void;
@@ -63,10 +64,15 @@ export function ArchiveAuditModal({ onClose }: ArchiveAuditModalProps) {
 
     return (
         <GlobalDialog
-            confirmLoading={archive.isPending}
-            confirmText="开始归档"
+            footer={
+                <IdentityDialogFooter
+                    onCancel={onClose}
+                    onSubmit={() => void submit()}
+                    pending={archive.isPending}
+                    submitLabel="开始归档"
+                />
+            }
             onClose={onClose}
-            onConfirm={() => void submit()}
             open
             title="归档审计"
             width={520}
