@@ -1,21 +1,8 @@
 import { axiosInstance } from "@pudans-dev/api-client";
 
+import type { ExtensionList, ExtensionMeta } from "./_extension";
+
 const API_ROOT = "/apis/api.pudans.tolim.cn/v1alpha1";
-
-type ExtensionMeta = {
-    annotations?: Record<string, string>;
-    creationTimestamp?: string;
-    labels?: Record<string, string>;
-    name: string;
-    version?: number;
-};
-
-export type ExtensionList<T> = {
-    items?: T[];
-    page?: number;
-    size?: number;
-    total?: number;
-};
 
 export type StoragePolicyType = "local" | "s3" | "ks3" | "oss" | "cos" | "obs" | "qiniu" | "upyun" | "onedrive";
 
