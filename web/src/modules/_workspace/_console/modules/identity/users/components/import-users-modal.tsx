@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { BatchCreateResponse, FeishuContactView } from "@pudans-dev/api-client";
 import { FileCsvIcon, SearchIcon, UploadIcon, UserBusinessIcon } from "tdesign-icons-react";
-import { Alert, Button, Empty, Input, Radio, Select, Table, Tag, Upload } from "tdesign-react";
+import { Alert, Button, Empty, Form, Input, Radio, Select, Table, Tag, Upload } from "tdesign-react";
 import type { TableProps, UploadFile } from "tdesign-react";
 
 import { GlobalDialog } from "@/components/ui";
@@ -79,6 +79,32 @@ export function ImportUsersModal({ groupOptions, onClose }: ImportUsersModalProp
     const [contactUsernames, setContactUsernames] = useState<Map<string, string>>(new Map());
     const createUsers = useBatchCreateFeishuUsers();
     const contactsQuery = useFeishuContacts(source === "feishu");
+    const { error: contactsError, refetch: refetchContacts } = contactsQuery;
+    const reportedContactsError = useRef<unknown>(null);
+
+    useEffect(() => {
+        if (!contactsError) {
+            reportedContactsError.current = null;
+            return;
+        }
+
+        if (reportedContactsError.current === contactsError) {
+            return;
+        }
+
+        // 同一错误只提示一次，重试再次失败会生成新的错误对象
+        reportedContactsError.current = contactsError;
+        prompt.error({
+            content: consoleErrorMessage(contactsError),
+            footer: (
+                <Button onClick={() => void refetchContacts()} size="small" variant="outline">
+                    重试
+                </Button>
+            ),
+            title: "飞书通讯录加载失败",
+        });
+    }, [contactsError, refetchContacts, prompt]);
+
     const contacts = useMemo(() => {
         const unique = new Map<string, FeishuContactView>();
 
@@ -176,7 +202,6 @@ export function ImportUsersModal({ groupOptions, onClose }: ImportUsersModalProp
             setParsing(false);
         }
     };
-    const clearSelection = () => setSelectedContacts(new Map());
     const submit = () => {
         const submitted =
             source === "feishu"
@@ -263,31 +288,23 @@ export function ImportUsersModal({ groupOptions, onClose }: ImportUsersModalProp
             cell: ({ row }) => (
                 <div className="flex min-w-0 items-center gap-2.5">
                     <UserAvatar name={row.displayName} size={34} src={row.avatar} />
-                    <span className="min-w-0 truncate font-medium">{row.displayName || "未命名成员"}</span>
+                    <div className="min-w-0">
+                        <div className="truncate font-medium">{row.displayName || "未命名成员"}</div>
+                        {row.email?.trim() ? (
+                            <div className="truncate text-xs text-[var(--td-text-color-secondary)]">{row.email}</div>
+                        ) : null}
+                    </div>
                 </div>
             ),
             colKey: "displayName",
             title: "成员",
-            width: 170,
-        },
-        {
-            cell: ({ row }) =>
-                row.email?.trim() ? (
-                    <span className="block max-w-40 truncate">{row.email}</span>
-                ) : (
-                    <Tag theme="warning" variant="light">
-                        飞书未提供
-                    </Tag>
-                ),
-            colKey: "email",
-            title: "邮箱",
             width: 180,
         },
         {
-            cell: ({ row }) => <CopyableIdentifier className="max-w-48" value={row.providerUserId} />,
+            cell: ({ row }) => <CopyableIdentifier mask value={row.providerUserId} />,
             colKey: "providerUserId",
             title: "飞书用户编号",
-            width: 200,
+            width: 170,
         },
         {
             cell: ({ row }) => {
@@ -341,7 +358,7 @@ export function ImportUsersModal({ groupOptions, onClose }: ImportUsersModalProp
             },
             colKey: "username",
             title: "登录名",
-            width: 190,
+            width: 150,
         },
         {
             cell: ({ row }) => {
@@ -371,10 +388,10 @@ export function ImportUsersModal({ groupOptions, onClose }: ImportUsersModalProp
     const previewColumns: NonNullable<TableProps<PreviewRow>["columns"]> = [
         { colKey: "key", title: "序号", width: 64 },
         {
-            cell: ({ row }) => <CopyableIdentifier className="max-w-72" value={row.providerUserId} />,
+            cell: ({ row }) => <CopyableIdentifier mask value={row.providerUserId} />,
             colKey: "providerUserId",
             title: "飞书用户 ID",
-            width: 320,
+            width: 300,
         },
         {
             cell: ({ row }) =>
@@ -391,11 +408,12 @@ export function ImportUsersModal({ groupOptions, onClose }: ImportUsersModalProp
             cell: ({ row }) => row.userGroup || <EmptyValue text="默认用户组" />,
             colKey: "userGroup",
             title: "用户组",
-            width: 160,
+            width: 150,
         },
     ];
     const visibleIssues = issues.slice(0, 6);
     const hasMoreContacts = contactsQuery.hasNextPage;
+    const contactEmptyDescription = contactKeyword ? "没有匹配的飞书成员" : "飞书通讯录暂无成员";
 
     return (
         <GlobalDialog
@@ -420,7 +438,7 @@ export function ImportUsersModal({ groupOptions, onClose }: ImportUsersModalProp
             onClose={close}
             open
             title="导入用户"
-            width={1000}
+            width={760}
         >
             <div className="flex flex-col gap-5">
                 <Radio.Group
@@ -431,69 +449,57 @@ export function ImportUsersModal({ groupOptions, onClose }: ImportUsersModalProp
                     variant="default-filled"
                 />
                 {source === "feishu" ? (
-                    <div className="flex flex-col gap-3">
-                        <div className="overflow-hidden rounded-2xl border border-[var(--td-component-border)]">
-                            <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4">
-                                <Input
-                                    className="w-full sm:max-w-72"
-                                    clearable
-                                    onChange={(value) => setContactKeyword(String(value))}
-                                    placeholder="搜索姓名、邮箱或用户编号"
-                                    prefixIcon={<SearchIcon />}
-                                    value={contactKeyword}
-                                />
-                                <span className="text-xs text-[var(--td-text-color-secondary)]">
-                                    可导入 {contactRows.filter((contact) => !feishuContactImportIssue(contact)).length}
-                                </span>
-                            </div>
-                            <Table<ContactRow>
-                                columns={contactColumns}
-                                data={filteredContacts}
-                                empty={
-                                    <Empty description={contactKeyword ? "没有匹配的飞书成员" : "飞书通讯录暂无成员"} />
-                                }
-                                loading={contactsQuery.isPending || contactsQuery.isFetchingNextPage}
-                                maxHeight={320}
-                                onSelectChange={handleContactSelect}
-                                rowKey="__rowKey"
-                                selectedRowKeys={selectedContactRows
-                                    .map((contact) => contact.providerUserId)
-                                    .filter((providerUserId): providerUserId is string => Boolean(providerUserId))}
+                    <Form labelAlign="top">
+                        <Form.FormItem label="搜索成员">
+                            <Input
+                                clearable
+                                onChange={(value) => setContactKeyword(String(value))}
+                                placeholder="搜索姓名、邮箱或用户编号"
+                                suffixIcon={<SearchIcon />}
+                                value={contactKeyword}
                             />
-                            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                                <div>
-                                    {hasMoreContacts ? (
-                                        <Button
-                                            loading={contactsQuery.isFetchingNextPage}
-                                            onClick={() => void contactsQuery.fetchNextPage()}
-                                            variant="text"
-                                        >
-                                            加载更多飞书成员
-                                        </Button>
-                                    ) : null}
+                        </Form.FormItem>
+                        <Form.FormItem label="飞书成员">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex flex-wrap items-center justify-end gap-3">
+                                    <span className="text-xs text-[var(--td-text-color-secondary)]">
+                                        可导入{" "}
+                                        {contactRows.filter((contact) => !feishuContactImportIssue(contact)).length}
+                                    </span>
                                 </div>
-                                {selectedContactRows.length > 0 ? (
-                                    <Button onClick={clearSelection} size="small" variant="text">
-                                        清空选择
-                                    </Button>
-                                ) : null}
+                                <Table<ContactRow>
+                                    columns={contactColumns}
+                                    data={filteredContacts}
+                                    empty={
+                                        <Empty
+                                            description={contactsQuery.error ? undefined : contactEmptyDescription}
+                                        />
+                                    }
+                                    loading={contactsQuery.isPending || contactsQuery.isFetchingNextPage}
+                                    maxHeight={320}
+                                    onSelectChange={handleContactSelect}
+                                    rowKey="__rowKey"
+                                    selectedRowKeys={selectedContactRows
+                                        .map((contact) => contact.providerUserId)
+                                        .filter((providerUserId): providerUserId is string => Boolean(providerUserId))}
+                                />
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        {hasMoreContacts ? (
+                                            <Button
+                                                loading={contactsQuery.isFetchingNextPage}
+                                                onClick={() => void contactsQuery.fetchNextPage()}
+                                                variant="text"
+                                            >
+                                                加载更多飞书成员
+                                            </Button>
+                                        ) : null}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        {contactsQuery.error ? (
-                            <Empty
-                                action={
-                                    <Button onClick={() => void contactsQuery.refetch()} theme="primary">
-                                        重试
-                                    </Button>
-                                }
-                                description={consoleErrorMessage(contactsQuery.error)}
-                                title="飞书通讯录加载失败"
-                                type="fail"
-                            />
-                        ) : null}
-                        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-[var(--td-bg-color-page)] px-4 py-3">
+                        </Form.FormItem>
+                        <Form.FormItem className="mt-4" label="用户组">
                             <Select
-                                className="w-full sm:w-64"
                                 clearable
                                 filterable
                                 onChange={(value) => {
@@ -503,36 +509,32 @@ export function ImportUsersModal({ groupOptions, onClose }: ImportUsersModalProp
                                 placeholder="使用默认用户组"
                                 value={selectedGroup}
                             />
-                        </div>
-                    </div>
+                        </Form.FormItem>
+                    </Form>
                 ) : (
-                    <div className="flex flex-col gap-3.5">
-                        <div className="rounded-2xl border border-dashed border-[var(--td-component-border)] p-5">
-                            <div className="flex flex-wrap items-center justify-between gap-4">
-                                <Upload
-                                    accept=".csv,text/csv"
-                                    autoUpload={false}
-                                    beforeUpload={(file: UploadFile) => {
-                                        if (file.raw) {
-                                            void handleFile(file.raw);
-                                        }
-                                        return false;
-                                    }}
-                                    disabled={parsing || createUsers.isPending}
-                                    max={1}
-                                    theme="custom"
-                                >
-                                    <Button
-                                        disabled={parsing || createUsers.isPending}
-                                        icon={<UploadIcon />}
-                                        loading={parsing}
-                                        variant="outline"
-                                    >
-                                        {fileName ? "重新选择" : "选择文件"}
-                                    </Button>
-                                </Upload>
-                            </div>
-                        </div>
+                    <div className="flex flex-col gap-4">
+                        <Upload
+                            accept=".csv,text/csv"
+                            autoUpload={false}
+                            beforeUpload={(file: UploadFile) => {
+                                if (file.raw) {
+                                    void handleFile(file.raw);
+                                }
+                                return false;
+                            }}
+                            disabled={parsing || createUsers.isPending}
+                            max={1}
+                            theme="custom"
+                        >
+                            <Button
+                                disabled={parsing || createUsers.isPending}
+                                icon={<UploadIcon />}
+                                loading={parsing}
+                                variant="outline"
+                            >
+                                {fileName ? "重新选择" : "选择文件"}
+                            </Button>
+                        </Upload>
                         {fileName ? (
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="min-w-0 truncate">{fileName}</span>

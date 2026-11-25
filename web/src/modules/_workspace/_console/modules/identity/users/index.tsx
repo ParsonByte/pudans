@@ -50,7 +50,7 @@ import { UserEditorModal } from "./components/user-editor-modal";
 import { UserGroupTree } from "./components/user-group-tree";
 import { UserGroupTag, UserStatusTag } from "./components/user-tags";
 import { usersToCsv } from "./composables/_feishu-users";
-import { useDeleteUser, useSetUserStatus } from "./composables/_user-actions";
+import { invalidateUserData, useDeleteUser, useSetUserStatus } from "./composables/_user-actions";
 import { useUserGroupOptions } from "./composables/_user-groups";
 import { USER_PERMISSIONS } from "./composables/_user-permissions";
 import { userDetailPath } from "./composables/_user-route";
@@ -73,11 +73,47 @@ type UserRow = ListedUser & {
     __rowKey: string;
 };
 
-type BulkStatusResult = {
+type BulkUserResult = {
     changed: number;
     failures: { message: string; name: string }[];
     skipped: number;
 };
+
+async function runBulkUserAction(
+    targets: ListedUser[],
+    action: (user: ListedUser, name: string) => Promise<boolean>,
+): Promise<BulkUserResult> {
+    const results = await Promise.allSettled(
+        targets.map(async (user) => {
+            if (!user.name) {
+                throw new Error("用户名称缺失。");
+            }
+
+            return { name: user.name, skipped: !(await action(user, user.name)) };
+        }),
+    );
+    const failures: BulkUserResult["failures"] = [];
+    let changed = 0;
+    let skipped = 0;
+
+    results.forEach((result, index) => {
+        if (result.status === "rejected") {
+            failures.push({
+                message: consoleErrorMessage(result.reason),
+                name: targets[index]?.name ?? "未知用户",
+            });
+            return;
+        }
+
+        if (result.value.skipped) {
+            skipped += 1;
+        } else {
+            changed += 1;
+        }
+    });
+
+    return { changed, failures, skipped };
+}
 
 type EditingUser = {
     detail: User;
@@ -232,6 +268,30 @@ export function UsersView() {
             title: "删除用户",
         });
     };
+    const keepFailedSelection = (failures: BulkUserResult["failures"]) => {
+        const failedNames = new Set(failures.map((failure) => failure.name));
+
+        setSelectedUsers(
+            (previous) =>
+                new Map([...previous].filter(([, user]) => Boolean(user.name) && failedNames.has(user.name as string))),
+        );
+    };
+    const promptBulkFailures = (result: BulkUserResult, title: string) => {
+        prompt.warning({
+            content: (
+                <div className="grid gap-1">
+                    {result.failures.slice(0, 8).map((failure) => (
+                        <div key={failure.name}>
+                            {failure.name}：{failure.message}
+                        </div>
+                    ))}
+                    {result.failures.length > 8 ? <div>另有 {result.failures.length - 8} 个用户处理失败。</div> : null}
+                </div>
+            ),
+            duration: 8000,
+            title,
+        });
+    };
     const confirmBulkStatus = (disabled: boolean) => {
         if (selectedRows.length === 0) {
             return;
@@ -249,54 +309,20 @@ export function UsersView() {
         });
     };
     const bulkStatus = useMutation({
-        mutationFn: async ({
-            disabled,
-            users: targets,
-        }: {
-            disabled: boolean;
-            users: ListedUser[];
-        }): Promise<BulkStatusResult> => {
-            const results = await Promise.allSettled(
-                targets.map(async (user) => {
-                    if (!user.name) {
-                        throw new Error("用户名称缺失。");
-                    }
-
-                    if (Boolean(user.disabled) === disabled) {
-                        return { name: user.name, skipped: true };
-                    }
-
-                    if (disabled) {
-                        await apiClient.user.disableUser({ username: user.name });
-                    } else {
-                        await apiClient.user.enableUser({ username: user.name });
-                    }
-
-                    return { name: user.name, skipped: false };
-                }),
-            );
-            const failures: BulkStatusResult["failures"] = [];
-            let changed = 0;
-            let skipped = 0;
-
-            results.forEach((result, index) => {
-                if (result.status === "rejected") {
-                    failures.push({
-                        message: consoleErrorMessage(result.reason),
-                        name: targets[index]?.name ?? "未知用户",
-                    });
-                    return;
+        mutationFn: ({ disabled, users: targets }: { disabled: boolean; users: ListedUser[] }) =>
+            runBulkUserAction(targets, async (user, name) => {
+                if (Boolean(user.disabled) === disabled) {
+                    return false;
                 }
 
-                if (result.value.skipped) {
-                    skipped += 1;
+                if (disabled) {
+                    await apiClient.user.disableUser({ username: name });
                 } else {
-                    changed += 1;
+                    await apiClient.user.enableUser({ username: name });
                 }
-            });
 
-            return { changed, failures, skipped };
-        },
+                return true;
+            }),
         onError: (error) => prompt.error(consoleErrorMessage(error)),
         onSuccess: (result) => {
             if (result.changed > 0) {
@@ -304,31 +330,8 @@ export function UsersView() {
             }
 
             if (result.failures.length > 0) {
-                const failedNames = new Set(result.failures.map((failure) => failure.name));
-                setSelectedUsers(
-                    (previous) =>
-                        new Map(
-                            [...previous].filter(
-                                ([, user]) => Boolean(user.name) && failedNames.has(user.name as string),
-                            ),
-                        ),
-                );
-                prompt.warning({
-                    content: (
-                        <div className="grid gap-1">
-                            {result.failures.slice(0, 8).map((failure) => (
-                                <div key={failure.name}>
-                                    {failure.name}：{failure.message}
-                                </div>
-                            ))}
-                            {result.failures.length > 8 ? (
-                                <div>另有 {result.failures.length - 8} 个用户处理失败。</div>
-                            ) : null}
-                        </div>
-                    ),
-                    duration: 8000,
-                    title: `已更新 ${result.changed} 个用户，${result.failures.length} 个失败`,
-                });
+                keepFailedSelection(result.failures);
+                promptBulkFailures(result, `已更新 ${result.changed} 个用户，${result.failures.length} 个失败`);
                 return;
             }
 
@@ -344,6 +347,44 @@ export function UsersView() {
             }
 
             prompt.info("所选用户已是目标状态。");
+        },
+    });
+    const confirmBulkDelete = () => {
+        if (selectedRows.length === 0) {
+            return;
+        }
+
+        confirmGlobalDialog({
+            cancelText: "取消",
+            confirmText: "批量删除",
+            content: `将会删除选中的 ${selectedRows.length} 个用户及其身份绑定，删除后无法恢复。`,
+            danger: true,
+            onConfirm: () => {
+                void bulkDelete.mutateAsync(selectedRows);
+            },
+            title: "批量删除用户",
+        });
+    };
+    const bulkDelete = useMutation({
+        mutationFn: (targets: ListedUser[]) =>
+            runBulkUserAction(targets, async (_, name) => {
+                await apiClient.user.deleteUser({ name });
+                return true;
+            }),
+        onError: (error) => prompt.error(consoleErrorMessage(error)),
+        onSuccess: (result) => {
+            if (result.changed > 0) {
+                invalidateUserData(queryClient, { feishuContacts: true });
+            }
+
+            if (result.failures.length > 0) {
+                keepFailedSelection(result.failures);
+                promptBulkFailures(result, `已删除 ${result.changed} 个用户，${result.failures.length} 个失败`);
+                return;
+            }
+
+            clearSelection();
+            prompt.success(`已删除 ${result.changed} 个用户。`);
         },
     });
     const listUsersForExport = async () => {
@@ -629,6 +670,9 @@ export function UsersView() {
             value: "disable",
         });
     }
+    if (canBulk && canDelete) {
+        bulkItems.push({ content: "批量删除", prefixIcon: <DeleteIcon />, theme: "error", value: "delete" });
+    }
     if (bulkItems.length > 0) {
         bulkItems.push({ divider: true, value: "divider" });
     }
@@ -640,6 +684,8 @@ export function UsersView() {
             confirmBulkStatus(false);
         } else if (key === "disable") {
             confirmBulkStatus(true);
+        } else if (key === "delete") {
+            confirmBulkDelete();
         } else if (key === "clear") {
             clearSelection();
         }
@@ -720,7 +766,7 @@ export function UsersView() {
                                                 重置
                                             </Button>
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-2 xl:ml-auto">
+                                        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap xl:ml-auto">
                                             {canCreate ? (
                                                 <Button
                                                     icon={<UserAddIcon />}
@@ -740,14 +786,19 @@ export function UsersView() {
                                                     导出
                                                 </Button>
                                             ) : null}
-                                            {canSelect && selectedRows.length > 0 ? (
+                                            {canSelect ? (
                                                 <Dropdown
+                                                    disabled={selectedRows.length === 0}
                                                     onClick={(item) => handleBulkAction(String(item.value))}
                                                     maxColumnWidth={140}
                                                     options={bulkItems}
                                                     trigger="click"
                                                 >
-                                                    <Button icon={<TaskDoubleIcon />} variant="outline">
+                                                    <Button
+                                                        disabled={selectedRows.length === 0}
+                                                        icon={<TaskDoubleIcon />}
+                                                        variant="outline"
+                                                    >
                                                         批量操作
                                                     </Button>
                                                 </Dropdown>
