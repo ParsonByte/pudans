@@ -1,0 +1,44 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-generation-tasks
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Index"
+    rbac.authorization.pudans.tolim.cn/display-name: "生成任务查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "generationtasks"
+      - "generationtasks/mine"
+      - "generationtasks/status"
+      - "generationtasks/events"
+      - "generationtasks/result"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-generation-tasks
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-generation-tasks" ]
+    rbac.authorization.pudans.tolim.cn/module: "Index"
+    rbac.authorization.pudans.tolim.cn/display-name: "生成任务管理"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "generationtasks/start"
+      - "generationtasks/cancel"
+      - "generationtasks/-"
+    verbs:
+      - "create"

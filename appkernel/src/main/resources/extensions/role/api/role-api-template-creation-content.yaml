@@ -1,0 +1,62 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-use-index-assets
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Index"
+    rbac.authorization.pudans.tolim.cn/display-name: "索引资产库使用"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "assets/items"
+      - "assets/facets"
+      - "assets/view"
+      - "catalogs/assets"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "assets/register"
+      - "assets/-"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-use-index-content
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Index"
+    rbac.authorization.pudans.tolim.cn/display-name: "索引内容与探索使用"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "catalogs/explore"
+      - "explore/feed"
+      - "works/view"
+      - "works/play"
+      - "works/related"
+      - "templates/feed"
+      - "templates/view"
+      - "activities/feed"
+      - "activities/view"
+      - "activities/submissions"
+      - "subjects/mine"
+      - "subjects/view"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "works/-"
+      - "activities/submissions"
+      - "creators/-"
+    verbs:
+      - "create"

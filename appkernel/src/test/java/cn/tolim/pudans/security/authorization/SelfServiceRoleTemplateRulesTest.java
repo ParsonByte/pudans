@@ -19,6 +19,11 @@ class SelfServiceRoleTemplateRulesTest {
 
     private static final String IDENTITY_TEMPLATE = "role-api-template-identity.yaml";
 
+    private static final String CREATION_CONTENT_TEMPLATE =
+            "role-api-template-creation-content.yaml";
+
+    private static final String AGENT_TEMPLATE = "role-api-template-agent.yaml";
+
     @Test
     void passkeyTemplateCoversRegistrationRoutes() throws Exception {
         var roleName = "role-template-own-passkeys";
@@ -59,6 +64,57 @@ class SelfServiceRoleTemplateRulesTest {
                 API_PREFIX + "/personalaccesstokens/token-a/actions/restoration");
         assertAllowed(
                 IDENTITY_TEMPLATE, roleName, HttpMethod.DELETE, API_PREFIX + "/personalaccesstokens/token-a");
+    }
+
+    @Test
+    void assetTemplateCoversAssetArchiveAndCatalogRoutes() throws Exception {
+        var roleName = "role-template-use-index-assets";
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/assets/-/facets");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/assets/-/items");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/assets/asset-a/view");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/catalogs/-/assets");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.POST, API_PREFIX + "/assets/-/register");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.POST, API_PREFIX + "/assets/asset-a/-/reuse");
+        assertDenied(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.POST, API_PREFIX + "/assets/-/items");
+    }
+
+    @Test
+    void contentTemplateCoversExploreContentAndCreatorRoutes() throws Exception {
+        var roleName = "role-template-use-index-content";
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/catalogs/-/explore");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/explore/-/feed");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/works/work-a/view");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/works/work-a/play");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.POST, API_PREFIX + "/works/work-a/-/like");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.POST, API_PREFIX + "/works/work-a/-/remix");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/templates/-/feed");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/templates/template-a/view");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/activities/-/feed");
+        assertAllowed(
+                CREATION_CONTENT_TEMPLATE,
+                roleName,
+                HttpMethod.POST,
+                API_PREFIX + "/activities/activity-a/submissions");
+        assertAllowed(
+                CREATION_CONTENT_TEMPLATE,
+                roleName,
+                HttpMethod.GET,
+                API_PREFIX + "/activities/activity-a/submissions/-/mine");
+        assertAllowed(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/subjects/-/mine");
+        assertAllowed(
+                CREATION_CONTENT_TEMPLATE,
+                roleName,
+                HttpMethod.POST,
+                API_PREFIX + "/creators/creator-a/-/follow");
+        assertDenied(CREATION_CONTENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/works/work-a/-/like");
+    }
+
+    @Test
+    void agentViewTemplateCoversRunStatusAndEventStreams() throws Exception {
+        var roleName = "role-template-view-agent-sessions";
+        assertAllowed(AGENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/agentruns/run-a/status");
+        assertAllowed(AGENT_TEMPLATE, roleName, HttpMethod.GET, API_PREFIX + "/agentruns/run-a/events");
+        assertDenied(AGENT_TEMPLATE, roleName, HttpMethod.POST, API_PREFIX + "/agentruns/-/start");
     }
 
     private static void assertAllowed(String template, String roleName, HttpMethod method, String path)
