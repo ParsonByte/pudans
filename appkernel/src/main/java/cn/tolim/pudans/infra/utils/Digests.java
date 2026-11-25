@@ -1,5 +1,9 @@
 package cn.tolim.pudans.infra.utils;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,6 +30,35 @@ public final class Digests {
             return HEX.formatHex(MessageDigest.getInstance(SHA_256).digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 不可用", e);
+        }
+    }
+
+    public static String sha256Hex(byte[] value) {
+        Objects.requireNonNull(value, "摘要内容不能为空");
+        try {
+            return HEX.formatHex(MessageDigest.getInstance(SHA_256).digest(value));
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException("SHA-256 不可用", error);
+        }
+    }
+
+    // 分块计算文件摘要，避免把大文件整体读入内存。
+    public static String sha256Hex(Path file) {
+        Objects.requireNonNull(file, "摘要文件不能为空");
+        try (InputStream input = Files.newInputStream(file)) {
+            var digest = MessageDigest.getInstance(SHA_256);
+            var buffer = new byte[64 * 1024];
+            int read;
+            while ((read = input.read(buffer)) >= 0) {
+                if (read > 0) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+            return HEX.formatHex(digest.digest());
+        } catch (IOException error) {
+            throw new IllegalStateException("无法读取摘要文件", error);
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException("SHA-256 不可用", error);
         }
     }
 
