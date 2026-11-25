@@ -11,6 +11,7 @@ import { AppShell, type AppShellGroup, type AppShellItem } from "@/components/la
 import { type DynamicMenuGroup, type DynamicMenuSelection, useDynamicMenu } from "@/composables/useDynamicMenu";
 import { HOME_WORKSPACE_KEY } from "@/composables/workspace-navigation";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { IndexQuotaIndicator } from "@/modules/_workspace/_index/components/index-quota-indicator";
 import { IndexSidebar } from "@/modules/_workspace/_index/components/index-sidebar";
 import { setWorkspaceCollapsed, useWorkspaceStore } from "@/stores/_workspace";
 
@@ -147,6 +148,7 @@ function WorkspaceLayoutContent({ children, workspace }: WorkspaceLayoutProps) {
             activeItem={navigation.activeItem}
             collapsed={collapsed}
             groups={navigation.groups}
+            headerUtilities={workspace === HOME_WORKSPACE_KEY ? <IndexQuotaIndicator /> : undefined}
             items={navigation.items}
             loading={dynamicMenu.loading}
             onCollapse={setWorkspaceCollapsed}
