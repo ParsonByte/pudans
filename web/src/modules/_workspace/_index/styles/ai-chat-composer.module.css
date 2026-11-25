@@ -1,7 +1,5 @@
 .theme {
     --chat-input-bg: var(--td-bg-color-container);
-    --chat-input-border: color-mix(in srgb, var(--td-brand-color) 30%, white);
-    --chat-input-focus-border: color-mix(in srgb, var(--td-brand-color) 42%, white);
     --chat-input-muted: var(--td-text-color-secondary);
     --chat-input-faint: var(--td-text-color-placeholder);
     --chat-input-option: var(--td-bg-color-container-hover);
@@ -19,22 +17,17 @@
 
 .surface {
     overflow: hidden;
-    border: 1px solid var(--chat-input-border);
     border-radius: 20px;
     background: var(--chat-input-bg);
     box-shadow: var(--chat-input-shadow);
-    transition:
-        border-color 160ms ease,
-        box-shadow 160ms ease;
+    transition: box-shadow 160ms ease;
 }
 
 .surface:focus-within {
-    border-color: var(--chat-input-focus-border);
     box-shadow: var(--chat-input-shadow), var(--chat-input-focus-shadow);
 }
 
 .surfaceActive {
-    border-color: var(--chat-input-focus-border);
     box-shadow: var(--chat-input-shadow), var(--chat-input-focus-shadow);
 }
 

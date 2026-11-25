@@ -92,13 +92,29 @@ function FeedTileActions({ pendingLabel }: { pendingLabel: string }) {
     );
 }
 
-function FeedTile({ actionsPendingLabel, icon }: { actionsPendingLabel?: string; icon: ReactNode }) {
+function FeedTile({
+    actionsPendingLabel,
+    icon,
+    label,
+}: {
+    actionsPendingLabel?: string;
+    icon: ReactNode;
+    label: string;
+}) {
     return (
         <div className={styles.feedTile}>
             <Link aria-label="打开作品播放页" className={styles.feedTileLink} href={indexWorkHref("preview")} />
-            <span aria-hidden className={styles.feedTileIcon}>
-                {icon}
-            </span>
+            <div aria-hidden className={styles.feedTileVisual}>
+                <span className={styles.feedTileGlyph}>{icon}</span>
+                <span className={styles.feedTileLabel}>{label}</span>
+            </div>
+            <div aria-hidden className={styles.feedTileMeta}>
+                <span className={`${styles.skeletonBar} ${styles.skeletonBarWide}`} />
+                <span className={styles.feedTileByline}>
+                    <span className={styles.feedTileAvatar} />
+                    <span className={`${styles.skeletonBar} ${styles.skeletonBarShort}`} />
+                </span>
+            </div>
             {actionsPendingLabel ? <FeedTileActions pendingLabel={actionsPendingLabel} /> : null}
         </div>
     );
@@ -110,7 +126,12 @@ function DiscoverPlaceholder() {
             <PendingNotice section="discover" />
             <div className={styles.discoverMasonry}>
                 {DISCOVER_TILE_KEYS.map((key) => (
-                    <FeedTile actionsPendingLabel="作品流接口待接入" icon={<BrowseGalleryIcon size={16} />} key={key} />
+                    <FeedTile
+                        actionsPendingLabel="作品流接口待接入"
+                        icon={<BrowseGalleryIcon size={24} />}
+                        key={key}
+                        label="作品封面待接入"
+                    />
                 ))}
             </div>
         </>
@@ -123,7 +144,12 @@ function TemplatesPlaceholder() {
             <PendingNotice section="templates" />
             <div className={`${styles.masonry} ${styles.templateMasonry}`}>
                 {TEMPLATE_TILE_KEYS.map((key) => (
-                    <FeedTile actionsPendingLabel="模板库接口待接入" icon={<AiImageIcon size={16} />} key={key} />
+                    <FeedTile
+                        actionsPendingLabel="模板库接口待接入"
+                        icon={<AiImageIcon size={24} />}
+                        key={key}
+                        label="模板预览待接入"
+                    />
                 ))}
             </div>
         </>

@@ -173,26 +173,69 @@
     margin-bottom: 12px;
 }
 
-.feedTileIcon {
+.feedTileVisual {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    display: grid;
-    width: 30px;
-    height: 30px;
-    place-items: center;
-    border: 1px solid var(--td-component-stroke);
-    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 9px;
+    padding: 24px 16px 76px;
+    inset: 0;
     color: var(--td-text-color-placeholder);
-    background: var(--td-bg-color-container);
+}
+
+.feedTileGlyph {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--td-text-color-primary) 8%, transparent);
+    border-radius: 16px;
+    color: var(--td-text-color-secondary);
+    background: color-mix(in srgb, var(--td-bg-color-container) 68%, transparent);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 10%);
+    backdrop-filter: blur(14px);
+}
+
+.feedTileLabel {
+    color: var(--td-text-color-secondary);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.feedTileMeta {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 44px 14px 14px;
+}
+
+.feedTileByline {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.feedTileAvatar {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--td-text-color-placeholder) 16%, transparent);
 }
 
 .feedTileActions {
     position: absolute;
     z-index: 2;
     right: 10px;
-    bottom: 10px;
-    left: 10px;
+    top: 10px;
+    left: auto;
     display: flex;
     gap: 6px;
     opacity: 0;
@@ -212,7 +255,7 @@
 
 .feedTileAction {
     display: inline-flex;
-    height: 38px;
+    height: 34px;
     align-items: center;
     justify-content: center;
     gap: 7px;
@@ -240,12 +283,11 @@
 
 .feedTileActionPrimary {
     min-width: 0;
-    flex: 1 1 auto;
 }
 
 .feedTileActionIcon {
-    width: 38px;
-    min-width: 38px;
+    width: 34px;
+    min-width: 34px;
     padding: 0;
 }
 
@@ -352,7 +394,7 @@
 .skeletonBar {
     height: 10px;
     border-radius: 999px;
-    background: var(--td-bg-color-component);
+    background: color-mix(in srgb, var(--td-text-color-placeholder) 16%, transparent);
 }
 
 .skeletonBarWide {
@@ -483,18 +525,28 @@
     }
 
     .feedTileActions {
-        right: 8px;
-        bottom: 8px;
-        left: 8px;
+        display: none;
     }
 
-    .feedTileAction {
-        height: 36px;
+    .feedTileVisual {
+        gap: 7px;
+        padding: 18px 12px 68px;
     }
 
-    .feedTileActionIcon {
-        width: 36px;
-        min-width: 36px;
+    .feedTileGlyph {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+    }
+
+    .feedTileMeta {
+        gap: 6px;
+        padding: 38px 10px 10px;
+    }
+
+    .feedTileAvatar {
+        width: 16px;
+        height: 16px;
     }
 
     .composerDock {
@@ -505,13 +557,5 @@
     .composerPlaceholder {
         height: 66px;
         border-radius: 16px;
-    }
-}
-
-@media (hover: none) {
-    .feedTileActions {
-        opacity: 1;
-        pointer-events: auto;
-        transform: translateY(0);
     }
 }
