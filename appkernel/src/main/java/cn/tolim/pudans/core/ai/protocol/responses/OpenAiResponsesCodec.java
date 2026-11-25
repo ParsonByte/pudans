@@ -5,6 +5,7 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.agentscope.core.formatter.JsonSchema;
+import io.agentscope.core.message.AudioBlock;
 import io.agentscope.core.message.Base64Source;
 import io.agentscope.core.message.ContentBlock;
 import io.agentscope.core.message.DataBlock;
@@ -17,6 +18,7 @@ import io.agentscope.core.message.ThinkingBlock;
 import io.agentscope.core.message.ToolResultBlock;
 import io.agentscope.core.message.ToolUseBlock;
 import io.agentscope.core.message.URLSource;
+import io.agentscope.core.message.VideoBlock;
 import io.agentscope.core.model.ChatResponse;
 import io.agentscope.core.model.ChatUsage;
 import io.agentscope.core.model.GenerateOptions;
@@ -29,8 +31,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import org.springframework.http.HttpStatus;
 
 public class OpenAiResponsesCodec {
 
@@ -40,21 +40,17 @@ public class OpenAiResponsesCodec {
 
     private static final String OUTPUT_TEXT = "output_text";
 
-    private static final String MINIMAX = "minimax";
-
-    private static final String DEEPSEEK = "deepseek";
-
-    private static final String DASHSCOPE = "dashscope";
-
     private static final String PROVIDER_OUTPUT_ITEMS = "providerOutputItems";
-
-    private static final Set<String> MINIMAX_REASONING_EFFORTS =
-            Set.of("none", "minimal", "low", "medium", "high");
 
     private static final TypeReference<Map<String, Object>> OBJECT_TYPE = new TypeReference<>() {};
 
+    private final ResponsesProfile profile;
+
+    public OpenAiResponsesCodec(ResponsesProfile profile) {
+        this.profile = profile;
+    }
+
     public Map<String, Object> request(
-            String providerId,
             String modelId,
             List<Msg> messages,
             List<ToolSchema> tools,
@@ -62,7 +58,7 @@ public class OpenAiResponsesCodec {
             Integer fallbackMaxTokens) {
         var body = new LinkedHashMap<String, Object>();
         body.put("model", modelId);
-        body.put("input", inputItems(providerId, messages));
+        body.put("input", inputItems(messages));
         var instructions = systemText(messages);
         if (!instructions.isBlank()) {
             body.put("instructions", instructions);
@@ -72,27 +68,40 @@ public class OpenAiResponsesCodec {
                 "max_output_tokens",
                 options == null ? fallbackMaxTokens : maxOutputTokens(options, fallbackMaxTokens));
         if (options != null) {
-            put(body, "temperature", temperature(providerId, options.getTemperature()));
-            put(body, "top_p", topP(providerId, options.getTopP()));
-            if (options.getReasoningEffort() != null) {
-                put(body, "reasoning", reasoning(providerId, options.getReasoningEffort()));
+            var temperature = options.getTemperature();
+            if (temperature != null) {
+                profile.validateTemperature(temperature);
+                body.put("temperature", temperature);
             }
-            put(body, "parallel_tool_calls", parallelToolCalls(providerId, options.getParallelToolCalls()));
+            var topP = options.getTopP();
+            if (topP != null) {
+                profile.validateTopP(topP);
+                body.put("top_p", topP);
+            }
+            if (options.getReasoningEffort() != null) {
+                put(body, "reasoning", profile.reasoning(options.getReasoningEffort()));
+            }
+            var parallel = options.getParallelToolCalls();
+            if (parallel != null && !profile.supportsParallelToolCalls()) {
+                throw new IllegalArgumentException("当前 Responses 协议不支持 parallel_tool_calls。");
+            }
+            put(body, "parallel_tool_calls", parallel);
         }
         if (tools != null && !tools.isEmpty()) {
             body.put("tools", tools(tools));
         }
-        var toolChoice = toolChoice(providerId, options == null ? null : options.getToolChoice());
-        if (toolChoice != null) {
-            body.put("tool_choice", toolChoice);
+        if (options != null && options.getToolChoice() != null) {
+            var choice = options.getToolChoice();
+            var custom = profile.toolChoice(choice);
+            body.put("tool_choice", custom != null ? custom : standardToolChoice(choice));
         }
         applyResponseFormat(body, options);
-        if (DASHSCOPE.equals(providerId)) {
-            body.put("store", false);
+        var store = profile.store();
+        if (store != null) {
+            body.put("store", store);
         }
-        if (DEEPSEEK.equals(providerId)) {
-            normalizeDeepSeek(body);
-        }
+        profile.customizeBody(body);
+        profile.unsupportedBodyFields().forEach(body::remove);
         body.put("stream", true);
         return Map.copyOf(body);
     }
@@ -101,16 +110,15 @@ public class OpenAiResponsesCodec {
         return new StreamDecoder(modelName, providerId);
     }
 
-    private static List<Map<String, Object>> inputItems(
-            String providerId, List<Msg> messages) {
+    private List<Map<String, Object>> inputItems(List<Msg> messages) {
         var items = new ArrayList<Map<String, Object>>();
         if (messages == null) {
             return List.of();
         }
         for (var message : messages) {
             switch (message.getRole()) {
-                case USER -> items.add(userItem(providerId, message.getContent()));
-                case ASSISTANT -> items.addAll(assistantItems(providerId, message));
+                case USER -> items.add(userItem(message.getContent()));
+                case ASSISTANT -> items.addAll(assistantItems(message));
                 case TOOL -> items.addAll(toolResultItems(message.getContent()));
                 case SYSTEM -> {}
             }
@@ -118,23 +126,21 @@ public class OpenAiResponsesCodec {
         return List.copyOf(items);
     }
 
-    private static Map<String, Object> userItem(
-            String providerId, List<ContentBlock> blocks) {
+    private Map<String, Object> userItem(List<ContentBlock> blocks) {
         var content = new ArrayList<Map<String, Object>>();
         for (var block : blocks) {
             if (block instanceof TextBlock text) {
                 content.add(Map.of("type", "input_text", "text", text.getText()));
             } else {
-                content.add(mediaItem(providerId, block));
+                content.add(mediaItem(block));
             }
         }
         return Map.of("role", "user", "content", List.copyOf(content));
     }
 
-    private static List<Map<String, Object>> assistantItems(
-            String providerId, Msg message) {
+    private List<Map<String, Object>> assistantItems(Msg message) {
         var items = new ArrayList<Map<String, Object>>();
-        items.addAll(replayedItems(providerId, message.getMetadata()));
+        items.addAll(replayedItems(message.getMetadata()));
         for (var block : message.getContent()) {
             if (block instanceof ToolUseBlock tool) {
                 items.add(Map.of(
@@ -160,8 +166,7 @@ public class OpenAiResponsesCodec {
         return List.copyOf(items);
     }
 
-    private static List<Map<String, Object>> replayedItems(
-            String providerId, Map<String, Object> metadata) {
+    private List<Map<String, Object>> replayedItems(Map<String, Object> metadata) {
         if (metadata == null || metadata.isEmpty()) {
             return List.of();
         }
@@ -169,9 +174,7 @@ public class OpenAiResponsesCodec {
         if (!(value instanceof List<?> items)) {
             return List.of();
         }
-        var allowed = DEEPSEEK.equals(providerId)
-                ? Set.of("reasoning", "web_search_call")
-                : Set.of("reasoning");
+        var allowed = profile.replayedItemTypes();
         var replayed = new ArrayList<Map<String, Object>>();
         for (var item : items) {
             if (!(item instanceof Map<?, ?> map) || !allowed.contains(map.get("type"))) {
@@ -197,27 +200,21 @@ public class OpenAiResponsesCodec {
         return List.copyOf(items);
     }
 
-    private static Map<String, Object> mediaItem(String providerId, ContentBlock block) {
+    private Map<String, Object> mediaItem(ContentBlock block) {
         var source = source(block);
         if (source == null) {
             throw unsupported("Responses 消息包含不支持的媒体块。");
         }
         var mediaType = mediaType(source);
+        var mediaData = mediaData(source);
+        var custom = profile.mediaItem(mediaType, mediaData);
+        if (custom != null) {
+            return custom;
+        }
         if (mediaType.startsWith("image/")) {
-            return Map.of("type", "input_image", "image_url", mediaData(source));
+            return Map.of("type", "input_image", "image_url", mediaData);
         }
-        if (mediaType.startsWith("video/")) {
-            if (DEEPSEEK.equals(providerId)) {
-                throw unsupported("DeepSeek Responses 仅支持图片输入。");
-            }
-            if (MINIMAX.equals(providerId) || DASHSCOPE.equals(providerId)) {
-                return Map.of("type", "input_video", "video_url", mediaData(source));
-            }
-            return Map.of(
-                    "type", "input_file", "filename", "input", "file_data", mediaData(source));
-        }
-        return Map.of(
-                "type", "input_file", "filename", "input", "file_data", mediaData(source));
+        return Map.of("type", "input_file", "filename", "input", "file_data", mediaData);
     }
 
     private static String mediaData(Source source) {
@@ -246,6 +243,12 @@ public class OpenAiResponsesCodec {
         }
         if (block instanceof ImageBlock image) {
             return image.getSource();
+        }
+        if (block instanceof VideoBlock video) {
+            return video.getSource();
+        }
+        if (block instanceof AudioBlock audio) {
+            return audio.getSource();
         }
         return null;
     }
@@ -291,18 +294,7 @@ public class OpenAiResponsesCodec {
         return schema;
     }
 
-    private static Object toolChoice(String providerId, ToolChoice choice) {
-        if (choice == null) {
-            return null;
-        }
-        if (MINIMAX.equals(providerId)) {
-            return switch (choice) {
-                case ToolChoice.None ignored -> "none";
-                case ToolChoice.Auto ignored -> "auto";
-                default -> throw new IllegalArgumentException(
-                        "MiniMax Responses tool_choice 只支持 auto 或 none。");
-            };
-        }
+    private static Object standardToolChoice(ToolChoice choice) {
         return switch (choice) {
             case ToolChoice.Auto ignored -> "auto";
             case ToolChoice.None ignored -> "none";
@@ -342,78 +334,6 @@ public class OpenAiResponsesCodec {
         return fallback != null && fallback > 0 ? fallback : null;
     }
 
-    private static Double temperature(String providerId, Double temperature) {
-        if (temperature == null || !MINIMAX.equals(providerId)) {
-            return temperature;
-        }
-        if (temperature < 0 || temperature > 1) {
-            throw new IllegalArgumentException("MiniMax Responses temperature 必须在 0 到 1 之间。");
-        }
-        return temperature;
-    }
-
-    private static Double topP(String providerId, Double topP) {
-        if (topP == null) {
-            return null;
-        }
-        if (MINIMAX.equals(providerId) && (topP < 0 || topP > 1)) {
-            throw new IllegalArgumentException("MiniMax Responses top_p 必须在 0 到 1 之间。");
-        }
-        return topP;
-    }
-
-    private static Map<String, Object> reasoning(String providerId, String effort) {
-        if (MINIMAX.equals(providerId) && !MINIMAX_REASONING_EFFORTS.contains(effort)) {
-            throw new IllegalArgumentException(
-                    "MiniMax Responses reasoning effort 必须是 none、minimal、low、medium 或 high。");
-        }
-        return Map.of("effort", effort);
-    }
-
-    private static Boolean parallelToolCalls(String providerId, Boolean value) {
-        if (MINIMAX.equals(providerId) && value != null) {
-            throw new IllegalArgumentException(
-                    "MiniMax Responses 不支持 parallel_tool_calls。");
-        }
-        return value;
-    }
-
-    private static void normalizeDeepSeek(Map<String, Object> body) {
-        for (var field : List.of(
-                "store",
-                "previous_response_id",
-                "conversation",
-                "background",
-                "metadata",
-                "include",
-                "prompt",
-                "truncation",
-                "service_tier",
-                "safety_identifier",
-                "prompt_cache_key",
-                "prompt_cache_retention",
-                "context_management",
-                "parallel_tool_calls",
-                "max_tool_calls",
-                "stream_options")) {
-            body.remove(field);
-        }
-        if (body.get("tools") instanceof List<?> tools) {
-            var normalized = new ArrayList<Object>();
-            for (var tool : tools) {
-                if (tool instanceof Map<?, ?> map) {
-                    var value = new LinkedHashMap<String, Object>();
-                    map.forEach((key, fieldValue) -> value.put(String.valueOf(key), fieldValue));
-                    value.remove("strict");
-                    normalized.add(Map.copyOf(value));
-                } else {
-                    normalized.add(tool);
-                }
-            }
-            body.put("tools", List.copyOf(normalized));
-        }
-    }
-
     private static void put(Map<String, Object> body, String key, Object value) {
         if (value != null) {
             body.put(key, value);
@@ -446,8 +366,7 @@ public class OpenAiResponsesCodec {
     }
 
     private static ApiException unsupported(String message) {
-        return new ApiException(
-                HttpStatus.BAD_REQUEST, "ai-responses-content-unsupported", message);
+        return ResponsesProfile.unsupportedMedia(message);
     }
 
     public final class StreamDecoder {
@@ -485,7 +404,7 @@ public class OpenAiResponsesCodec {
             }
             try {
                 var event = JsonUtils.mapper().readTree(data);
-                var type = text(event.path("type"));
+                var type = profile.eventType(event);
                 return switch (type) {
                     case "response.created", "response.in_progress" -> created(event);
                     case "response.output_text.delta" -> textDelta(event);
@@ -702,7 +621,7 @@ public class OpenAiResponsesCodec {
             }
             for (var item : output) {
                 var type = text(item.path("type"));
-                if (!"reasoning".equals(type) && !"web_search_call".equals(type)) {
+                if (!profile.providerOutputItemTypes().contains(type)) {
                     continue;
                 }
                 items.add(JsonUtils.jsonToObject(item.toString(), OBJECT_TYPE));
@@ -752,6 +671,9 @@ public class OpenAiResponsesCodec {
         }
 
         private String finishReason(String status) {
+            if (status == null) {
+                return null;
+            }
             return switch (status) {
                 case "completed" -> "stop";
                 case "incomplete" -> "length";

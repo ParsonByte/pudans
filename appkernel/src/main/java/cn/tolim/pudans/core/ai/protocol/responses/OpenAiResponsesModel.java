@@ -1,6 +1,8 @@
 package cn.tolim.pudans.core.ai.protocol.responses;
 
 import cn.tolim.pudans.core.ai.protocol.AiChatProtocolRequest;
+import cn.tolim.pudans.core.ai.protocol.AiProtocolProfile;
+import cn.tolim.pudans.core.ai.protocol.AiProtocolProfiles;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.model.ChatModelBase;
@@ -12,7 +14,6 @@ import io.agentscope.core.model.transport.HttpRequest;
 import io.agentscope.core.model.transport.HttpTransport;
 import io.agentscope.core.model.transport.HttpTransportFactory;
 import java.time.Duration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import reactor.core.publisher.Flux;
@@ -20,18 +21,25 @@ import reactor.core.scheduler.Schedulers;
 
 public class OpenAiResponsesModel extends ChatModelBase {
 
+    private static final ResponsesProfile STANDARD = new StandardResponsesProfile();
+
     private final AiChatProtocolRequest request;
 
     private final HttpTransport transport;
 
-    private final OpenAiResponsesCodec codec = new OpenAiResponsesCodec();
+    private final ResponsesProfile profile;
 
-    public OpenAiResponsesModel(AiChatProtocolRequest request) {
-        this(request, HttpTransportFactory.getDefault());
+    private final OpenAiResponsesCodec codec;
+
+    public OpenAiResponsesModel(AiChatProtocolRequest request, AiProtocolProfile profile) {
+        this(request, profile, HttpTransportFactory.getDefault());
     }
 
-    OpenAiResponsesModel(AiChatProtocolRequest request, HttpTransport transport) {
+    OpenAiResponsesModel(
+            AiChatProtocolRequest request, AiProtocolProfile profile, HttpTransport transport) {
         this.request = request;
+        this.profile = AiProtocolProfiles.resolve(profile, ResponsesProfile.class, STANDARD);
+        this.codec = new OpenAiResponsesCodec(this.profile);
         this.transport = transport;
         if (request.contextWindow() != null && request.contextWindow() > 0) {
             setContextWindowSize(request.contextWindow());
@@ -50,7 +58,6 @@ public class OpenAiResponsesModel extends ChatModelBase {
             List<Msg> messages, List<ToolSchema> tools, GenerateOptions options) {
         return Flux.defer(() -> {
             var body = codec.request(
-                    request.providerId(),
                     request.modelId(),
                     messages,
                     tools,
@@ -79,11 +86,6 @@ public class OpenAiResponsesModel extends ChatModelBase {
     }
 
     private Map<String, String> headers() {
-        var headers = new LinkedHashMap<String, String>();
-        headers.put("content-type", "application/json");
-        headers.put("accept", "text/event-stream");
-        headers.put("authorization", "Bearer " + request.apiKey());
-        headers.putAll(request.headers());
-        return Map.copyOf(headers);
+        return profile.headers(request.apiKey(), request.headers());
     }
 }

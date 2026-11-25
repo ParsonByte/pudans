@@ -4,7 +4,10 @@ import cn.tolim.pudans.contract.ai.AiModel;
 import cn.tolim.pudans.core.ai.protocol.AiChatProtocolRequest;
 import cn.tolim.pudans.core.ai.protocol.AiProtocol;
 import cn.tolim.pudans.core.ai.protocol.AiProtocolDescriptor;
+import cn.tolim.pudans.core.ai.protocol.AiProtocolProfiles;
 import cn.tolim.pudans.core.ai.protocol.AiProtocols;
+import cn.tolim.pudans.core.ai.protocol.chatcompletions.ChatCompletionsProfile;
+import cn.tolim.pudans.core.ai.protocol.chatcompletions.StandardChatCompletionsProfile;
 import cn.tolim.pudans.core.ai.provider.AiProvider;
 import cn.tolim.pudans.core.ai.provider.AiProviders;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -24,6 +27,8 @@ public class AgentChatModelFactory {
 
     private static final String FEATURE_DETAILS = "features";
 
+    private static final ChatCompletionsProfile STANDARD_CHAT = new StandardChatCompletionsProfile();
+
     private final AiProtocols protocols;
 
     private final AiProviders providers;
@@ -33,7 +38,7 @@ public class AgentChatModelFactory {
         return create(route, null);
     }
 
-    // 把运行级推理开关映射为 DashScope 思考参数。
+    // 把运行级推理开关交给协议配置映射为渠道参数。
     public Model create(AgentModelRoute route, String reasoning) {
         var channel = route.channel();
         var upstream = requiredText(
@@ -41,26 +46,17 @@ public class AgentChatModelFactory {
         var apiKey = requiredText(
                 route.credentials().get(API_KEY), "渠道缺少 apiKey 凭据。");
         var descriptor = protocol(channel.protocol(), channel.provider());
-        if (descriptor.protocol() != AiProtocol.CHAT_COMPLETIONS) {
-            var provider = providers.require(channel.provider());
-            return protocols.requireChat(descriptor.protocol().value())
-                    .create(request(
-                            route,
-                            provider,
-                            apiKey,
-                            upstream,
-                            descriptor.protocol(),
-                            additionalBodyParams(provider.id(), route.model(), reasoning)));
-        }
         var provider = providers.require(channel.provider());
-        return protocols.requireChat(AiProtocol.CHAT_COMPLETIONS.value())
-                .create(request(
-                        route,
-                        provider,
-                        apiKey,
-                        upstream,
-                        AiProtocol.CHAT_COMPLETIONS,
-                        additionalBodyParams(provider.id(), route.model(), reasoning)));
+        var protocol = descriptor.protocol();
+        var profile = provider.protocolProfile(protocol);
+        var bodyParams = protocol == AiProtocol.CHAT_COMPLETIONS
+                ? AiProtocolProfiles.resolve(profile, ChatCompletionsProfile.class, STANDARD_CHAT)
+                        .reasoningBodyParams(supports(route.model(), "reasoning"), reasoning)
+                : Map.<String, Object>of();
+        return protocols.requireChat(protocol.value())
+                .create(
+                        request(route, provider, apiKey, upstream, protocol, bodyParams),
+                        profile);
     }
 
     private static AiChatProtocolRequest request(
@@ -103,20 +99,6 @@ public class AgentChatModelFactory {
                 structured,
                 structured && supports(route.model(), "tools"),
                 protocol == AiProtocol.CHAT_COMPLETIONS ? bodyParams : Map.of());
-    }
-
-    private static Map<String, Object> additionalBodyParams(
-            String provider, AiModel model, String reasoning) {
-        if (!"dashscope".equals(provider)
-                || !StringUtils.hasText(reasoning)
-                || !supports(model, "reasoning")) {
-            return Map.of();
-        }
-        var normalized = reasoning.trim().toLowerCase(java.util.Locale.ROOT);
-        var disabled = "none".equals(normalized)
-                || "off".equals(normalized)
-                || "disabled".equals(normalized);
-        return Map.of("enable_thinking", !disabled);
     }
 
     private AiProtocolDescriptor protocol(String protocol, String provider) {

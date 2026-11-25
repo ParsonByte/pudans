@@ -1,19 +1,21 @@
 package cn.tolim.pudans.core.ai.protocol.messages;
 
-import cn.tolim.pudans.core.ai.protocol.AiProtocol;
 import cn.tolim.pudans.core.ai.protocol.AiChatProtocol;
 import cn.tolim.pudans.core.ai.protocol.AiChatProtocolRequest;
+import cn.tolim.pudans.core.ai.protocol.AiProtocol;
+import cn.tolim.pudans.core.ai.protocol.AiProtocolProfile;
+import cn.tolim.pudans.core.ai.protocol.AiProtocolProfiles;
 import io.agentscope.core.model.ExecutionConfig;
 import io.agentscope.core.model.GenerateOptions;
 import io.agentscope.core.model.Model;
 import io.agentscope.extensions.model.anthropic.AnthropicChatModel;
 import java.time.Duration;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MessagesProtocol implements AiChatProtocol {
+
+    private static final MessagesProfile STANDARD = new StandardMessagesProfile();
 
     @Override
     public AiProtocol protocol() {
@@ -22,7 +24,7 @@ public class MessagesProtocol implements AiChatProtocol {
 
     @Override
     public String description() {
-        return "Anthropic Messages 兼容协议，使用官方 Anthropic SDK 支持文本、图片、PDF、思考与工具调用。";
+        return "Anthropic Messages 线协议，支持文本、图片、PDF、思考与工具调用。";
     }
 
     @Override
@@ -36,38 +38,33 @@ public class MessagesProtocol implements AiChatProtocol {
     }
 
     @Override
-    public Model create(AiChatProtocolRequest request) {
+    public Model create(AiChatProtocolRequest request, AiProtocolProfile profile) {
+        var resolved = AiProtocolProfiles.resolve(profile, MessagesProfile.class, STANDARD);
         var options = GenerateOptions.builder()
                 .executionConfig(ExecutionConfig.builder()
                         .timeout(Duration.ofMillis(request.timeoutMs()))
                         .build())
-                .additionalHeaders(additionalHeaders(request.headers()))
-                .additionalBodyParams(request.additionalBodyParams());
-        if (request.maxOutputTokens() != null && request.maxOutputTokens() > 0) {
-            options.maxTokens(request.maxOutputTokens());
+                .additionalHeaders(resolved.additionalHeaders(request.headers()))
+                .additionalBodyParams(resolved.additionalBodyParams(request.additionalBodyParams()));
+        var maxTokens = resolved.maxOutputTokens(request.maxOutputTokens());
+        if (maxTokens != null && maxTokens > 0) {
+            options.maxTokens(maxTokens);
         }
         var builder = AnthropicChatModel.builder()
                 .baseUrl(request.baseUrl())
-                .apiKey(request.apiKey())
                 .modelName(request.modelId())
-                .stream(true)
+                .stream(resolved.stream())
+                .formatter(resolved.formatter())
                 .defaultOptions(options.build());
+        if (resolved.authentication() == MessagesProfile.Authentication.BEARER) {
+            builder.authToken(request.apiKey());
+        } else {
+            builder.apiKey(request.apiKey());
+        }
         if (request.contextWindow() != null && request.contextWindow() > 0) {
             builder.contextWindowSize(request.contextWindow());
         }
+        resolved.customize(builder);
         return builder.build();
-    }
-
-    private static Map<String, String> additionalHeaders(Map<String, String> headers) {
-        var values = new LinkedHashMap<String, String>();
-        if (headers != null) {
-            headers.forEach((key, value) -> {
-                if (!"x-api-key".equalsIgnoreCase(key)
-                        && !"anthropic-version".equalsIgnoreCase(key)) {
-                    values.put(key, value);
-                }
-            });
-        }
-        return Map.copyOf(values);
     }
 }

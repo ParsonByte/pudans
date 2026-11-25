@@ -136,7 +136,7 @@ public class AiChannelProbe {
 
     private Mono<AiChannelTestResult> testSystemOne(
             AiChannelEntity channel, Map<String, String> credentials, String protocol) {
-        providers.require(channel.getProvider());
+        var provider = providers.require(channel.getProvider());
         var model = channel.getConfig() == null ? null : channel.getConfig().get("model");
         if (!(model instanceof String text) || text.isBlank()) {
             return Mono.error(new ApiException(
@@ -151,7 +151,8 @@ public class AiChannelProbe {
                         text,
                         Map.of("probe", true),
                         Map.of("health", new SystemOneDecisionClient.YesNo(
-                                "判断服务是否可用。", "可用", "不可用")))
+                                "判断服务是否可用。", "可用", "不可用")),
+                        provider.protocolProfile(AiProtocol.SYSTEM_ONE))
                 .map(response -> new AiChannelTestResult(
                         true, protocol, 200, null, null, "ok", Instant.now()))
                 .onErrorResume(error -> Mono.just(new AiChannelTestResult(
