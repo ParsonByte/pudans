@@ -25,6 +25,8 @@ rules:
     resources:
       - "storagepolicies"
       - "storagepolicies/types"
+      - "storageroutes"
+      - "storageroutes/purposes"
     verbs:
       - "get"
       - "list"
@@ -69,6 +71,20 @@ rules:
     verbs:
       - "get"
       - "list"
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storageroutes"
+    verbs:
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storageroutes/-"
+    verbs:
       - "create"
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
