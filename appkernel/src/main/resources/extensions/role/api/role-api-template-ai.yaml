@@ -1,0 +1,176 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-catalog
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 目录查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "catalogs/models"
+      - "catalogs/creation"
+      - "catalogs/chat"
+      - "catalogs/tools"
+      - "catalogs/skills"
+      - "catalogs/assets"
+      - "catalogs/understanding"
+      - "catalogs/memory"
+      - "catalogs/sandbox"
+      - "catalogs/explore"
+    verbs:
+      - "get"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-quota
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 配额查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "quotas/snapshot"
+    verbs:
+      - "get"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-config
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 配置查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aichannels"
+      - "aimodels"
+      - "aichannelmodels"
+      - "aipricerules"
+      - "aidefaultmodels"
+      - "aiproviders"
+      - "aiprotocols"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aichannels/-"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiquotaplans"
+      - "aiquotaassignments"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiquotaassignments/resolve"
+    verbs:
+      - "get"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-ai-config
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-ai-config" ]
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 配置管理"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aichannels"
+      - "aimodels"
+      - "aichannelmodels"
+      - "aipricerules"
+      - "aidefaultmodels"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aichannels/-"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-ai-quota
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-ai-quota" ]
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 配额管理"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiquotaplans"
+      - "aiquotaassignments"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiquotaassignments/resolve"
+    verbs:
+      - "get"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-ai-catalogs
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 目录管理"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "catalogentries"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
