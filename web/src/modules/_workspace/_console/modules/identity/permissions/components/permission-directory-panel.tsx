@@ -8,7 +8,7 @@ import { BrowseIcon, ControlPlatformIcon, RefreshIcon, SearchIcon, ViewListIcon 
 import { Button, Empty, Input, Table, Tag } from "tdesign-react";
 import type { TableProps } from "tdesign-react";
 
-import { MenuIcon, useDesignTokens } from "@/components/ui";
+import { MenuIcon, ScrollArea, useDesignTokens } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/ui/use-media-query";
 
 import { type RoleMenuEntry, operationTypeLabel } from "../../roles/composables/_role-permissions";
@@ -117,7 +117,7 @@ export function PermissionDirectoryPanel({ group, onRefresh, refreshing }: Permi
                     prefixIcon={<SearchIcon />}
                     value={keyword}
                 />
-                <div className="mt-4 min-w-0 overflow-x-auto">
+                <ScrollArea axis="x" className="mt-4 min-w-0">
                     <Table<DirectoryRow>
                         columns={columns}
                         data={rows}
@@ -126,7 +126,7 @@ export function PermissionDirectoryPanel({ group, onRefresh, refreshing }: Permi
                         rowKey="__rowKey"
                         tableLayout="fixed"
                     />
-                </div>
+                </ScrollArea>
             </div>
         </div>
     );

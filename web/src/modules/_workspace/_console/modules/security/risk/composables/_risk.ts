@@ -28,6 +28,8 @@ export const RISK_ACTION_OPTIONS = [
     { label: "告警", value: "ALERT" },
 ];
 
+export const RISK_METRIC_OPTIONS = [{ label: "IP（来源地址）", value: "IP" }];
+
 export const RISK_ACTION_LABELS: Record<string, string> = {
     ALERT: "告警",
     BLOCK: "阻断",
@@ -49,6 +51,12 @@ export function sceneLabel(scene?: string, scenes?: RiskSceneStat[]): string {
     const stat = scenes?.find((item) => item.scene === scene);
 
     return stat?.label || stat?.description || scene;
+}
+
+export function riskSceneOptions(scenes?: RiskSceneStat[]): Array<{ label: string; value: string }> {
+    return (scenes ?? [])
+        .filter((stat): stat is RiskSceneStat & { scene: string } => Boolean(stat.scene) && Boolean(stat.action))
+        .map((stat) => ({ label: sceneLabel(stat.scene, scenes), value: stat.scene }));
 }
 
 export function ruleThreshold(rule: RiskRule): string {

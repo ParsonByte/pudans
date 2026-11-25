@@ -8,6 +8,7 @@ import { Form, Textarea, Typography } from "tdesign-react";
 import { GlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { consoleErrorMessage } from "@/modules/_workspace/_console/composables/_errors";
+import { IdentityDialogFooter } from "@/modules/_workspace/_console/modules/identity/components/identity-dialog-footer";
 
 import { UC_PROFILE_QUERY_KEY } from "../../../composables/_queries";
 
@@ -43,14 +44,19 @@ export function ProfileEditorDialog({ onClose, user }: ProfileEditorDialogProps)
 
     return (
         <GlobalDialog
-            confirmLoading={updateProfile.isPending}
-            confirmText="保存更改"
+            footer={
+                <IdentityDialogFooter
+                    onCancel={onClose}
+                    onSubmit={() => form.submit()}
+                    pending={updateProfile.isPending}
+                    submitLabel="保存更改"
+                />
+            }
             onClose={() => {
                 if (!updateProfile.isPending) {
                     onClose();
                 }
             }}
-            onConfirm={() => form.submit()}
             open
             title="编辑个人资料"
             width={560}

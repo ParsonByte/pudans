@@ -1,7 +1,7 @@
 "use client";
 
 import type { SecretCatalogItem } from "@pudans-dev/api-client";
-import { Button, Tag } from "tdesign-react";
+import { Tag } from "tdesign-react";
 
 import { GlobalDialog, useDesignTokens } from "@/components/ui";
 
@@ -18,13 +18,7 @@ type SecretDetailModalProps = {
 export function SecretDetailModal({ item, onClose }: SecretDetailModalProps) {
     return (
         <GlobalDialog
-            footer={
-                <div className="flex justify-end">
-                    <Button theme="primary" onClick={onClose}>
-                        关闭
-                    </Button>
-                </div>
-            }
+            footer={false}
             onClose={onClose}
             open={Boolean(item)}
             title={

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { BuildingIcon, SearchIcon } from "tdesign-icons-react";
 import { Button, Empty, Input } from "tdesign-react";
 
-import { MenuIcon } from "@/components/ui";
+import { MenuIcon, ScrollArea } from "@/components/ui";
 
 import { type PermissionWorkspaceGroup, matchesWorkspace } from "../composables/_permission-directory";
 
@@ -39,7 +39,7 @@ export function WorkspaceListPanel({ groups, onSelect, selectedKey }: WorkspaceL
                 value={keyword}
             />
 
-            <div className="mt-4 min-h-[260px] overflow-y-auto lg:max-h-[calc(100vh-250px)]">
+            <ScrollArea className="mt-4 min-h-[260px] lg:max-h-[calc(100vh-250px)]">
                 {visibleGroups.length === 0 ? (
                     <div className="py-10">
                         <Empty description={keyword ? "没有匹配的工作区" : "暂无工作区"} />
@@ -69,7 +69,7 @@ export function WorkspaceListPanel({ groups, onSelect, selectedKey }: WorkspaceL
                         </div>
                     </section>
                 )}
-            </div>
+            </ScrollArea>
         </div>
     );
 }

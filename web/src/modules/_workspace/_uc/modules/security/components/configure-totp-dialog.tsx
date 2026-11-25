@@ -9,6 +9,7 @@ import { GlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { CopyableIdentifier } from "@/modules/_workspace/_console/components/copyable-identifier";
 import { consoleErrorMessage } from "@/modules/_workspace/_console/composables/_errors";
+import { IdentityDialogFooter } from "@/modules/_workspace/_console/modules/identity/components/identity-dialog-footer";
 
 import { UC_TWO_FACTOR_QUERY_KEY } from "../../../composables/_queries";
 
@@ -64,14 +65,19 @@ export function ConfigureTotpDialog({ onClose, replaceExisting }: ConfigureTotpD
 
     return (
         <GlobalDialog
-            confirmLoading={configureTotp.isPending}
-            confirmText={replaceExisting ? "更换验证器" : "绑定验证器"}
+            footer={
+                <IdentityDialogFooter
+                    onCancel={onClose}
+                    onSubmit={() => form.submit()}
+                    pending={configureTotp.isPending}
+                    submitLabel={replaceExisting ? "更换验证器" : "绑定验证器"}
+                />
+            }
             onClose={() => {
                 if (!configureTotp.isPending) {
                     onClose();
                 }
             }}
-            onConfirm={() => form.submit()}
             open
             title={replaceExisting ? "更换动态口令验证器" : "绑定动态口令验证器"}
             width={560}

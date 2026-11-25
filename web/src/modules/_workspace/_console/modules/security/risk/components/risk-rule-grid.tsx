@@ -5,6 +5,8 @@ import { AddIcon, RefreshIcon } from "tdesign-icons-react";
 import { Button, Card, Empty, Pagination, Skeleton } from "tdesign-react";
 import type { PaginationProps } from "tdesign-react";
 
+import { ScrollArea } from "@/components/ui";
+
 import { consoleErrorMessage } from "../../../../composables/_errors";
 import { RiskRuleCard } from "./risk-rule-card";
 
@@ -98,9 +100,9 @@ export function RiskRuleGrid({
                 ))}
             </div>
             {total > 0 ? (
-                <div className="flex min-w-0 justify-end overflow-x-auto">
+                <ScrollArea axis="x" className="flex min-w-0 justify-end">
                     <Pagination {...pagination} total={total} />
-                </div>
+                </ScrollArea>
             ) : null}
         </div>
     );

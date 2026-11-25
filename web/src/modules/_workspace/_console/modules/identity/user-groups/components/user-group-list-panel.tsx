@@ -7,6 +7,8 @@ import type { UserGroup } from "@pudans-dev/api-client";
 import { AddIcon, LockOnIcon, SearchIcon, SecuredIcon, UsergroupIcon } from "tdesign-icons-react";
 import { Button, Empty, Input, Skeleton } from "tdesign-react";
 
+import { ScrollArea } from "@/components/ui";
+
 import { consoleErrorMessage } from "../../../../composables/_errors";
 import { isBuiltinUserGroup, userGroupDescription, userGroupDisplayName } from "../composables/_user-group";
 
@@ -78,7 +80,7 @@ export function UserGroupListPanel({
                 value={keyword}
             />
 
-            <div className="mt-4 min-h-[260px] overflow-y-auto lg:max-h-[calc(100vh-250px)]">
+            <ScrollArea className="mt-4 min-h-[260px] lg:max-h-[calc(100vh-250px)]">
                 {loading ? (
                     <div className="flex flex-col gap-2">
                         {Array.from({ length: 6 }).map((_, index) => (
@@ -120,7 +122,7 @@ export function UserGroupListPanel({
                         />
                     </>
                 )}
-            </div>
+            </ScrollArea>
         </div>
     );
 }

@@ -67,6 +67,7 @@ export function RankedBarList({ emptyText, items }: RankedBarListProps) {
                             </span>
                         </div>
                         <Progress
+                            className="mt-2 pl-10"
                             color={index < 3 ? rankColor : token.colorPrimaryBorder}
                             label={false}
                             percentage={item.value === 0 ? 0 : Math.max(3, Math.round((item.value / maximum) * 100))}
@@ -75,7 +76,7 @@ export function RankedBarList({ emptyText, items }: RankedBarListProps) {
                         />
                         {item.meta ? (
                             <div
-                                className="flex flex-wrap items-center gap-x-3 text-[11px]"
+                                className="mt-1.5 flex flex-wrap items-center gap-x-3 text-[11px]"
                                 style={{ color: token.colorTextTertiary }}
                             >
                                 {item.meta}

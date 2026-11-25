@@ -4,7 +4,7 @@ import { useMemo } from "react";
 
 import type { AuditSessionSummary } from "@pudans-dev/api-client";
 
-import { EChart } from "@/components/ui";
+import { EChart, ScrollArea } from "@/components/ui";
 import type { EChartsCoreOption } from "@/components/ui/echart";
 import { useMobile } from "@/hooks/ui/use-mobile";
 import { useResizeObserver } from "@/hooks/utils/use-resize-observer";
@@ -344,9 +344,9 @@ export function JourneyRelationshipGraph({ sessions }: JourneyRelationshipGraphP
 
     return (
         <div className="min-w-0 overflow-hidden" ref={ref}>
-            <div className="max-h-[560px] overflow-x-hidden overflow-y-auto sm:max-h-[760px]">
+            <ScrollArea className="max-h-[560px] overflow-x-hidden sm:max-h-[760px]">
                 <EChart height={graph.height} option={option} />
-            </div>
+            </ScrollArea>
         </div>
     );
 }

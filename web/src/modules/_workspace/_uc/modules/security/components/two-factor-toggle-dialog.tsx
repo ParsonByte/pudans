@@ -8,6 +8,7 @@ import { Form, Input } from "tdesign-react";
 import { GlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { consoleErrorMessage } from "@/modules/_workspace/_console/composables/_errors";
+import { IdentityDialogFooter } from "@/modules/_workspace/_console/modules/identity/components/identity-dialog-footer";
 
 import { UC_TWO_FACTOR_QUERY_KEY } from "../../../composables/_queries";
 
@@ -52,15 +53,20 @@ export function TwoFactorToggleDialog({ enabled, onClose }: TwoFactorToggleDialo
 
     return (
         <GlobalDialog
-            confirmLoading={toggleTwoFactor.isPending}
-            confirmText={enabled ? "停用双重验证" : "启用双重验证"}
-            danger={enabled}
+            footer={
+                <IdentityDialogFooter
+                    onCancel={onClose}
+                    onSubmit={() => form.submit()}
+                    pending={toggleTwoFactor.isPending}
+                    submitLabel={enabled ? "停用双重验证" : "启用双重验证"}
+                    submitTheme={enabled ? "danger" : "primary"}
+                />
+            }
             onClose={() => {
                 if (!toggleTwoFactor.isPending) {
                     onClose();
                 }
             }}
-            onConfirm={() => form.submit()}
             open
             title={enabled ? "停用双重验证" : "启用双重验证"}
             width={440}

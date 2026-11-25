@@ -9,7 +9,7 @@ import { AddIcon, SearchIcon, UserClearIcon } from "tdesign-icons-react";
 import { Button, Card, Empty, Input, Skeleton, Table } from "tdesign-react";
 import type { TableProps } from "tdesign-react";
 
-import { confirmGlobalDialog } from "@/components/ui";
+import { ScrollArea, confirmGlobalDialog } from "@/components/ui";
 import { useMediaQuery } from "@/hooks/ui/use-media-query";
 
 import { EmptyValue } from "../../../../components/empty-value";
@@ -243,7 +243,7 @@ export function UserGroupMembers({
                         description={keyword ? "没有匹配的成员" : "这个用户组还没有成员"}
                     />
                 ) : (
-                    <div className="min-w-0 overflow-x-auto">
+                    <ScrollArea axis="x" className="min-w-0">
                         <Table<MemberRow>
                             columns={columns}
                             data={rows}
@@ -260,7 +260,7 @@ export function UserGroupMembers({
                             rowKey="__rowKey"
                             tableLayout="fixed"
                         />
-                    </div>
+                    </ScrollArea>
                 )}
             </div>
         </Card>
