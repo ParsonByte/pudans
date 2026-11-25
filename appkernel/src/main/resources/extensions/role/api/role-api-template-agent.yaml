@@ -1,0 +1,225 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-agent-sessions
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "Agent 会话查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "agentsessions"
+      - "agentsessions/mine"
+      - "agentsessions/summary"
+      - "agentsessions/view"
+      - "agentsessions/messages"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "agentruns"
+      - "agentruns/status"
+      - "agentruns/events"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-agent-sessions
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-agent-sessions" ]
+    rbac.authorization.pudans.tolim.cn/module: "Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "Agent 会话管理"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "agentsessions"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "agentsessions/-"
+    verbs:
+      - "create"
+      - "patch"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "agentruns/start"
+      - "agentruns/cancel"
+      - "agentruns/approvals"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-agent-sandboxes
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "Agent 沙箱查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "sandboxes"
+      - "sandboxes/mine"
+      - "sandboxes/view"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "sandboxes/events"
+    verbs:
+      - "get"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-agent-sandboxes
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-agent-sandboxes" ]
+    rbac.authorization.pudans.tolim.cn/module: "Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "Agent 沙箱管理"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "sandboxes"
+      - "sandboxes/create"
+    verbs:
+      - "create"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "sandboxes/-"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-index-ai
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-manage-agent-sessions", "role-template-manage-agent-sandboxes", "role-template-manage-personal-memories" ]
+    rbac.authorization.pudans.tolim.cn/module: "Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 创作工作台"
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-personal-memories
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "个人记忆查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memories"
+      - "memories/personal"
+      - "memories/view"
+      - "memoryjobs"
+      - "memoryjobs/mine"
+      - "memoryjobs/status"
+      - "memoryjobs/items"
+      - "memoryvectorspaces"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memories/retrieve"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-personal-memories
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-personal-memories" ]
+    rbac.authorization.pudans.tolim.cn/module: "Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "个人记忆管理"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memories"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memories/-"
+      - "memoryjobs"
+      - "memoryjobs/run"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-review-memory-pool
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "记忆池审核"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memories/pool"
+      - "memoryjobs"
+      - "memoryvectorspaces"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memories/-"
+      - "memoryvectorspaces/sync"
+    verbs:
+      - "create"
