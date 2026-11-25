@@ -12,9 +12,12 @@ import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { IndexView } from "@/modules/_workspace/_index";
 import { WORKSPACE_VIEWS } from "@/routes/(_workspace)";
 
+import { useIsClient } from "../../../hooks/utils/use-is-client";
+
 function WorkspacePageContent() {
     const { workspace } = useParams<{ workspace: string }>();
     const dynamicMenu = useDynamicMenu(workspace);
+    const isClient = useIsClient();
     const prompt = useMessagePrompt();
     const isIndexWorkspace = workspace === HOME_WORKSPACE_KEY;
     const selection = dynamicMenu.selection;
@@ -67,7 +70,8 @@ function WorkspacePageContent() {
         workspace,
     ]);
 
-    if (dynamicMenu.loading) {
+    // 服务端拿不到菜单数据只能渲染加载态，首屏等水合完成再渲染内容，避免两边结构不一致
+    if (dynamicMenu.loading || !isClient) {
         return (
             <div className="flex min-h-48 items-center justify-center">
                 <Loading />
