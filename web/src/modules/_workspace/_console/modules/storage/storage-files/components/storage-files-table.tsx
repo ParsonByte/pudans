@@ -19,7 +19,7 @@ type StorageFilesTableProps = {
     error?: unknown;
     files: StorageFile[];
     loading: boolean;
-    onRetry: () => void;
+    onRetry?: () => void;
     pagination: PaginationProps | false;
     renderActions: (file: StorageFile) => ReactNode;
     tab: StorageFilesTab;
@@ -119,6 +119,7 @@ export function StorageFilesTable({
 
     return (
         <ConsoleTable
+            cardless
             columns={columns}
             data={files}
             error={error}

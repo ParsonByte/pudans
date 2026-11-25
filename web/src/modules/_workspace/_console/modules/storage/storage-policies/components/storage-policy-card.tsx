@@ -59,9 +59,8 @@ export function StoragePolicyCard({ onDelete, onDetails, pending, policy }: Stor
     return (
         <Card
             bodyStyle={{ display: "flex", flex: 1, flexDirection: "column", minHeight: 0, padding: 20 }}
+            bordered={false}
             className="h-full"
-            hoverShadow
-            shadow
         >
             <div className="flex min-w-0 items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-3">

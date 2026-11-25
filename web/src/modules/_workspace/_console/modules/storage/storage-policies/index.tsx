@@ -3,22 +3,21 @@
 import { useEffect, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AddIcon, DataBaseIcon, RefreshIcon } from "tdesign-icons-react";
+import { AddIcon, RefreshIcon } from "tdesign-icons-react";
 import { Button, Card, Empty, Skeleton } from "tdesign-react";
 
 import { GlobalDialog, confirmGlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { usePermission } from "@/hooks/utils/use-permission";
 
-import { ConsoleAddCard } from "../../../components/add-card";
 import { ObjectDetails } from "../../../components/object-details";
-import { type ConsoleOverviewMetric, ConsolePageOverview } from "../../../components/page-overview";
+import { PageBreadcrumb } from "../../../components/page-breadcrumb";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatCountOrDash } from "../../../composables/_format";
 import { useConsoleSession } from "../../../composables/_session";
 import { type StoragePolicy, deleteStoragePolicy, listStoragePolicies } from "../../../composables/_storage";
 import { StoragePolicyCard } from "./components/storage-policy-card";
 import { StoragePolicyEditorModal } from "./components/storage-policy-editor-modal";
+import { StoragePolicyMetricGrid } from "./components/storage-policy-metric-grid";
 import {
     STORAGE_POLICIES_QUERY_KEY,
     STORAGE_POLICIES_QUERY_ROOT,
@@ -62,22 +61,6 @@ export function StoragePoliciesView() {
     }, [policiesQuery.error, prompt]);
 
     const policies = policiesQuery.data ? (policiesQuery.data.items ?? []) : undefined;
-    const overview = policies
-        ? {
-              defaults: policies.filter((policy) => policy.spec.defaultPolicy).length,
-              ready: policies.filter((policy) => policy.status?.ready).length,
-              total: policies.length,
-              types: new Set(
-                  policies.map((policy) => policy.spec.type?.trim()).filter((type): type is string => Boolean(type)),
-              ).size,
-          }
-        : undefined;
-    const metrics: ConsoleOverviewMetric[] = [
-        { label: "策略总数", value: formatCountOrDash(overview?.total) },
-        { label: "就绪", value: formatCountOrDash(overview?.ready) },
-        { label: "默认策略", value: formatCountOrDash(overview?.defaults) },
-        { label: "存储类型", value: formatCountOrDash(overview?.types) },
-    ];
     const refresh = () => void policiesQuery.refetch();
     const confirmDelete = (policy: StoragePolicy) => {
         confirmGlobalDialog({
@@ -111,34 +94,38 @@ export function StoragePoliciesView() {
     return (
         <>
             <div className="flex min-w-0 flex-col gap-4">
-                <ConsolePageOverview
-                    actions={
-                        <>
-                            {canCreate ? (
-                                <Button icon={<AddIcon />} onClick={() => setEditorOpen(true)} theme="primary">
-                                    添加存储策略
-                                </Button>
-                            ) : null}
-                            <Button
-                                icon={<RefreshIcon />}
-                                loading={policiesQuery.isFetching}
-                                onClick={refresh}
-                                variant="outline"
-                            >
-                                刷新
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <PageBreadcrumb current="存储策略" parents={["存储"]} />
+                    <div className="flex items-center gap-2">
+                        <Button
+                            icon={<RefreshIcon />}
+                            loading={policiesQuery.isFetching}
+                            onClick={refresh}
+                            variant="outline"
+                        >
+                            刷新
+                        </Button>
+                        {canCreate ? (
+                            <Button icon={<AddIcon />} onClick={() => setEditorOpen(true)} theme="primary">
+                                添加存储策略
                             </Button>
-                        </>
-                    }
-                    icon={<DataBaseIcon size={22} />}
-                    metrics={metrics}
-                    title="存储策略"
-                />
+                        ) : null}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+                    <StoragePolicyMetricGrid
+                        loading={policiesQuery.isPending}
+                        policies={policies}
+                        total={policiesQuery.data?.total}
+                    />
+                </div>
 
                 {policiesQuery.error ? (
                     <StoragePolicyLoadError error={policiesQuery.error} onRetry={refresh} />
                 ) : policiesQuery.isPending ? (
                     <StoragePolicyGridSkeleton />
-                ) : policies?.length === 0 && !canCreate ? (
+                ) : policies?.length === 0 ? (
                     <Empty description="尚未配置存储策略" />
                 ) : (
                     <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -151,7 +138,6 @@ export function StoragePoliciesView() {
                                 policy={policy}
                             />
                         ))}
-                        {canCreate ? <ConsoleAddCard onClick={() => setEditorOpen(true)} title="添加存储策略" /> : null}
                     </div>
                 )}
             </div>
@@ -174,7 +160,7 @@ function StoragePolicyGridSkeleton() {
     return (
         <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {Array.from({ length: POLICY_SKELETON_COUNT }).map((_, index) => (
-                <Card key={index} shadow>
+                <Card bordered={false} key={index}>
                     <Skeleton animation="gradient" theme="avatar-text" />
                 </Card>
             ))}
@@ -184,7 +170,7 @@ function StoragePolicyGridSkeleton() {
 
 function StoragePolicyLoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
     return (
-        <Card shadow>
+        <Card bordered={false}>
             <Empty
                 action={
                     <Button icon={<RefreshIcon />} onClick={onRetry} theme="primary">

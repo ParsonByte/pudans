@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Divider, Form, Input, InputNumber, Select, Switch, Textarea } from "tdesign-react";
+import { Divider, Form, Input, InputNumber, Select, Switch, Textarea } from "tdesign-react";
 
-import { GlobalDialog } from "@/components/ui";
+import { GlobalDialog, ScrollArea } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
 import { consoleErrorMessage } from "../../../../composables/_errors";
@@ -16,6 +16,7 @@ import {
     listStoragePolicyTypes,
     validateStoragePolicy,
 } from "../../../../composables/_storage";
+import { IdentityDialogFooter } from "../../../identity/components/identity-dialog-footer";
 import {
     STORAGE_POLICIES_QUERY_ROOT,
     STORAGE_POLICY_TYPES_QUERY_KEY,
@@ -145,23 +146,20 @@ export function StoragePolicyEditorModal({ onClose }: StoragePolicyEditorModalPr
 
     return (
         <GlobalDialog
-            confirmLoading={submitting}
             footer={
-                <div className="flex justify-end gap-2">
-                    <Button disabled={submitting} onClick={close} variant="outline">
-                        取消
-                    </Button>
-                    <Button loading={submitting} onClick={() => form.submit()} theme="primary">
-                        创建存储策略
-                    </Button>
-                </div>
+                <IdentityDialogFooter
+                    onCancel={close}
+                    onSubmit={() => form.submit()}
+                    pending={submitting}
+                    submitLabel="创建存储策略"
+                />
             }
             onClose={close}
             open
             title="添加存储策略"
             width={780}
         >
-            <div className="max-h-[68vh] overflow-y-auto pr-1">
+            <ScrollArea className="max-h-[68vh] pr-1">
                 <Form
                     form={form}
                     initialData={INITIAL_VALUES}
@@ -393,7 +391,7 @@ export function StoragePolicyEditorModal({ onClose }: StoragePolicyEditorModalPr
                         </Form.FormItem>
                     ) : null}
                 </Form>
-            </div>
+            </ScrollArea>
         </GlobalDialog>
     );
 }

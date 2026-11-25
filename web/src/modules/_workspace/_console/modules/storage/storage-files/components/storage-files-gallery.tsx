@@ -29,7 +29,7 @@ export function StorageFilesGallery({ canPreview, files, loading, renderActions,
             return (
                 <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                     {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
-                        <Card key={`storage-file-skeleton-${index}`} shadow>
+                        <Card bordered={false} key={`storage-file-skeleton-${index}`}>
                             <Skeleton animation="gradient" theme="avatar-text" />
                         </Card>
                     ))}
@@ -38,7 +38,7 @@ export function StorageFilesGallery({ canPreview, files, loading, renderActions,
         }
 
         return (
-            <Card shadow>
+            <Card bordered={false}>
                 <StorageFilesEmpty tab={tab} />
             </Card>
         );
@@ -75,9 +75,8 @@ function StorageFileCard({
     return (
         <Card
             bodyStyle={{ display: "flex", flex: 1, flexDirection: "column", minHeight: 0, padding: 0 }}
+            bordered={false}
             className="h-full overflow-hidden"
-            hoverShadow
-            shadow
         >
             <div className="relative aspect-[4/3] min-w-0">
                 <StorageFilePreview canPreview={canPreview} className="h-full w-full" file={file} />

@@ -3,20 +3,19 @@
 import { useEffect, useState } from "react";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BrowseGalleryIcon, FolderOpenIcon, RefreshIcon, ViewListIcon } from "tdesign-icons-react";
+import { BrowseGalleryIcon, RefreshIcon, ViewListIcon } from "tdesign-icons-react";
 import { Button, Card, Empty, Pagination, RadioGroup, Skeleton, Tabs } from "tdesign-react";
 import type { PaginationProps } from "tdesign-react";
 
-import { confirmGlobalDialog } from "@/components/ui";
+import { ScrollArea, SectionCard, confirmGlobalDialog } from "@/components/ui";
 import { usePagination } from "@/hooks/table/use-pagination";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { useMobile } from "@/hooks/ui/use-mobile";
 import { useLocalStorage } from "@/hooks/utils/use-local-storage";
 import { usePermission } from "@/hooks/utils/use-permission";
 
-import { type ConsoleOverviewMetric, ConsolePageOverview } from "../../../components/page-overview";
+import { PageBreadcrumb } from "../../../components/page-breadcrumb";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatBytes, formatCountOrDash } from "../../../composables/_format";
 import { useConsoleSession } from "../../../composables/_session";
 import {
     type StorageFile,
@@ -28,6 +27,7 @@ import {
 import { StorageFileActions } from "./components/storage-file-actions";
 import { StorageFileDetailsModal } from "./components/storage-file-details-modal";
 import { StorageFilesGallery } from "./components/storage-files-gallery";
+import { StorageFilesMetricGrid } from "./components/storage-files-metric-grid";
 import { StorageFilesTable } from "./components/storage-files-table";
 import {
     STORAGE_FILES_DOWNLOAD_URL_QUERY_ROOT,
@@ -37,7 +37,6 @@ import {
     STORAGE_FILE_PERMISSIONS,
     type StorageFilesTab,
     type StorageFilesViewMode,
-    isImageStorageFile,
     storageFileDownloadUrlQueryOptions,
     storageFileName,
 } from "./composables/_storage-files";
@@ -143,30 +142,11 @@ export function StorageFilesView() {
         },
     });
 
-    const activeFiles = activeQuery.data?.items ?? [];
-    const trashedFiles = trashedQuery.data?.items ?? [];
-    const currentFiles = activeTab === "active" ? activeFiles : trashedFiles;
-    const currentPageLoaded = Boolean(currentQuery.data);
-    const pageImageCount = currentFiles.filter(isImageStorageFile).length;
-    const currentPageCapacity = currentFiles.reduce((total, file) => total + (file.spec.size ?? 0), 0);
     const isSyncing =
         activeQuery.isFetching ||
         trashedQuery.isFetching ||
         activeTotalQuery.isFetching ||
         trashedTotalQuery.isFetching;
-    const overviewMetrics: ConsoleOverviewMetric[] = [
-        {
-            label: "可用文件",
-            value: formatCountOrDash(activeTotalQuery.data?.total ?? activeQuery.data?.total),
-        },
-        {
-            label: "回收站",
-            value: formatCountOrDash(trashedTotalQuery.data?.total ?? trashedQuery.data?.total),
-        },
-        { label: "本页图片", value: currentPageLoaded ? formatCountOrDash(pageImageCount) : "—" },
-        { label: "本页容量", value: currentPageLoaded ? formatBytes(currentPageCapacity) : "—" },
-    ];
-
     const refreshFiles = () => {
         void queryClient.invalidateQueries({ queryKey: STORAGE_FILES_LIST_QUERY_ROOT });
         void queryClient.invalidateQueries({ queryKey: STORAGE_FILES_TOTAL_QUERY_ROOT });
@@ -277,7 +257,7 @@ export function StorageFilesView() {
             return (
                 <div className="flex min-w-0 flex-col gap-3">
                     {query.error ? (
-                        <Card shadow>
+                        <Card bordered={false}>
                             <Empty
                                 action={<Button onClick={() => void query.refetch()}>重试</Button>}
                                 description={consoleErrorMessage(query.error)}
@@ -295,24 +275,26 @@ export function StorageFilesView() {
                         />
                     ) : null}
                     {files.length > 0 && paginationConfig !== false ? (
-                        <div className="flex min-w-0 justify-end overflow-x-auto">
+                        <ScrollArea axis="x" className="flex min-w-0 justify-end">
                             <Pagination {...paginationConfig} />
-                        </div>
+                        </ScrollArea>
                     ) : null}
                 </div>
             );
         }
 
         return (
-            <StorageFilesTable
-                error={query.error}
-                files={files}
-                loading={query.isFetching}
-                onRetry={() => void query.refetch()}
-                pagination={paginationConfig}
-                renderActions={renderActions}
-                tab={tab}
-            />
+            <SectionCard title={tab === "active" ? "文件列表" : "回收站列表"}>
+                <StorageFilesTable
+                    error={query.error}
+                    files={files}
+                    loading={query.isFetching}
+                    onRetry={query.error ? () => void query.refetch() : undefined}
+                    pagination={paginationConfig}
+                    renderActions={renderActions}
+                    tab={tab}
+                />
+            </SectionCard>
         );
     };
 
@@ -337,16 +319,20 @@ export function StorageFilesView() {
     return (
         <>
             <div className="flex min-w-0 flex-col gap-4">
-                <ConsolePageOverview
-                    actions={
-                        <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refreshFiles} variant="outline">
-                            刷新
-                        </Button>
-                    }
-                    icon={<FolderOpenIcon size={22} />}
-                    metrics={overviewMetrics}
-                    title="文件与回收站"
-                />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <PageBreadcrumb current="存储文件" parents={["存储"]} />
+                    <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refreshFiles} variant="outline">
+                        刷新
+                    </Button>
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+                    <StorageFilesMetricGrid
+                        activeTotal={activeTotalQuery.data?.total}
+                        currentFiles={currentQuery.data?.items}
+                        loading={activeTotalQuery.isPending || trashedTotalQuery.isPending || currentQuery.isPending}
+                        trashedTotal={trashedTotalQuery.data?.total}
+                    />
+                </div>
                 <Tabs
                     action={
                         <RadioGroup
