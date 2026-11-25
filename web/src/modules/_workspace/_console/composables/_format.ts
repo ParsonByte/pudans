@@ -2,6 +2,9 @@ import { format } from "date-fns";
 
 const KILOBYTE = 1024;
 const BYTE_UNITS = ["KB", "MB", "GB", "TB"];
+const MILLISECONDS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const SECONDS_PER_HOUR = 3600;
 const COUNT_FORMATTER = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
 
 export function formatDateTime(value?: string | null): string {
@@ -56,6 +59,28 @@ export function formatDuration(value?: number | null): string {
     }
 
     return value < 1000 ? `${value} ms` : `${(value / 1000).toFixed(2)} s`;
+}
+
+// 录制时长等长跨度按小时、分钟展示。
+export function formatElapsedTime(value?: number | null): string {
+    if (!value || value <= 0) {
+        return "—";
+    }
+
+    const totalSeconds = Math.floor(value / MILLISECONDS_PER_SECOND);
+    const hours = Math.floor(totalSeconds / SECONDS_PER_HOUR);
+    const minutes = Math.floor((totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
+    const seconds = totalSeconds % SECONDS_PER_MINUTE;
+    const pad = (part: number) => String(part).padStart(2, "0");
+
+    if (hours > 0) {
+        return `${hours} 小时 ${pad(minutes)} 分`;
+    }
+    if (minutes > 0) {
+        return `${minutes} 分 ${pad(seconds)} 秒`;
+    }
+
+    return `${seconds} 秒`;
 }
 
 export function formatAverageSteps(value?: number | null): string {

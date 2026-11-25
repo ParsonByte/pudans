@@ -25,6 +25,7 @@ import {
     UserCircleIcon,
     UserListIcon,
     UserSettingIcon,
+    VideoCameraIcon,
 } from "tdesign-icons-react";
 
 type MenuIconProps = {
@@ -55,6 +56,9 @@ const MENU_ICONS: Record<string, TDesignIcon> = {
     tags: TagIcon,
     terminal: TerminalIcon,
     "user-cog": UserSettingIcon,
+    radio: VideoCameraIcon,
+    video: VideoCameraIcon,
+    "video-camera": VideoCameraIcon,
     "user-round": UserCircleIcon,
     users: UserListIcon,
     "users-round": UserListIcon,
