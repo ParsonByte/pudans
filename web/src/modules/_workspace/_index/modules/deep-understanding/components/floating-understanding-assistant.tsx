@@ -7,10 +7,15 @@ import { type TdChatSenderParams } from "@tdesign-react/chat";
 import { CloseIcon, LightbulbIcon, LinkIcon, RefreshIcon } from "tdesign-icons-react";
 import { MessagePlugin } from "tdesign-react";
 
+import { useThemeSync } from "@/hooks/ui/use-theme-sync";
+
 import { ChatSenderWithSlots } from "../../../components/chat-sender-with-slots";
 import styles from "../styles/deep-understanding.module.css";
 
-const DANS_ICON_COLORS = ["#757CFF", "#FFF191"];
+const DANS_ICON_COLORS: Record<"light" | "dark", [string, string]> = {
+    dark: ["#9ca4ff", "#fff191"],
+    light: ["#5f67e8", "#e0b634"],
+};
 
 const DIALOGUE_PROMPTS = [
     {
@@ -32,6 +37,8 @@ export function FloatingUnderstandingAssistant() {
     const [value, setValue] = useState("");
     const [submittedPrompt, setSubmittedPrompt] = useState("");
     const senderRef = useRef<HTMLElement>(null);
+    const { isDark } = useThemeSync();
+    const dansIconColors = DANS_ICON_COLORS[isDark ? "dark" : "light"];
 
     useEffect(() => {
         if (!open) {
@@ -79,12 +86,7 @@ export function FloatingUnderstandingAssistant() {
                     <header className={styles.assistantHeader}>
                         <span className={styles.assistantIdentity}>
                             <span className={styles.assistantAvatar}>
-                                <GraphicDesignTwo
-                                    fill={DANS_ICON_COLORS}
-                                    size={19}
-                                    strokeWidth={3.4}
-                                    theme="two-tone"
-                                />
+                                <GraphicDesignTwo fill={dansIconColors} size={19} strokeWidth={3.4} theme="two-tone" />
                             </span>
                             <span>
                                 <strong id="understanding-assistant-title">认知中枢</strong>
@@ -111,7 +113,7 @@ export function FloatingUnderstandingAssistant() {
                                 <div className={styles.pendingReply}>
                                     <span className={styles.pendingReplyIcon}>
                                         <GraphicDesignTwo
-                                            fill={DANS_ICON_COLORS}
+                                            fill={dansIconColors}
                                             size={15}
                                             strokeWidth={3.6}
                                             theme="two-tone"
@@ -127,7 +129,7 @@ export function FloatingUnderstandingAssistant() {
                             <div className={styles.assistantEmpty}>
                                 <span className={styles.assistantEmptyIcon}>
                                     <GraphicDesignTwo
-                                        fill={DANS_ICON_COLORS}
+                                        fill={dansIconColors}
                                         size={27}
                                         strokeWidth={3.2}
                                         theme="two-tone"
@@ -179,7 +181,7 @@ export function FloatingUnderstandingAssistant() {
                 type="button"
             >
                 <span aria-hidden className={styles.assistantPulse} />
-                <GraphicDesignTwo fill={DANS_ICON_COLORS} size={30} strokeWidth={3.2} theme="two-tone" />
+                <GraphicDesignTwo fill={dansIconColors} size={30} strokeWidth={3.2} theme="two-tone" />
                 <span aria-hidden className={styles.assistantOnline} />
             </button>
         </>
