@@ -30,7 +30,7 @@ Turn a set of changes into one or more commits whose messages are single-line Co
 2. Confirm the work is coherent, belongs to the current task and is verified. Tests must pass first; see `.agents/rules/development.md`.
 3. If the change set contains multiple unrelated tasks, split it into separate commits. Do not collapse unrelated work into one commit without explicit approval.
 4. Pick the type: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `build`, `ci`, `perf`, `style`.
-5. Draft the subject as `<type>: <area> <lowercase imperative phrase>`, at most 72 characters, no trailing period, no capital after the type.
+5. Draft the subject as `<type>: <area> <lowercase imperative phrase>`, at most 72 characters, no trailing period, no capital after the type. Mark a breaking change with `!` immediately after the type, for example `refactor!: replace the system settings route`.
 6. Stage only the intended paths; never stage build output, `.env`, local config or lockfile noise that does not belong to the change.
 7. Commit with a single `-m`:
    ```bash
