@@ -19,6 +19,7 @@ type AppShellProps = {
     children: ReactNode;
     collapsed?: boolean;
     groups: AppShellGroup[];
+    headerUtilities?: ReactNode;
     items: AppShellItem[];
     loading?: boolean;
     onCollapse?: (collapsed: boolean) => void;
@@ -28,17 +29,13 @@ type AppShellProps = {
 };
 
 export function AppShell({
-    actions = (
-        <div className="app-shell__actions">
-            <ThemeMenu />
-            <UserMenu />
-        </div>
-    ),
+    actions,
     activeGroup,
     activeItem,
     children,
     collapsed = false,
     groups,
+    headerUtilities,
     items,
     loading = false,
     onCollapse,
@@ -50,6 +47,13 @@ export function AppShell({
     const isCompact = useMobile();
     const menuCollapsed = isCompact ? !collapsed : collapsed;
     const onToggleSidebar = onCollapse ? () => onCollapse(!collapsed) : undefined;
+    const headerActions = actions ?? (
+        <div className="app-shell__actions">
+            {headerUtilities}
+            <ThemeMenu />
+            <UserMenu />
+        </div>
+    );
 
     useEffect(() => {
         document.title = pageTitle ? `${pageTitle} - Pudans` : "Pudans";
@@ -58,7 +62,7 @@ export function AppShell({
     return (
         <div className="app-shell">
             <AppHeader
-                actions={actions}
+                actions={headerActions}
                 activeGroup={activeGroup}
                 collapsed={menuCollapsed}
                 groups={groups}

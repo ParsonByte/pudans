@@ -1,0 +1,225 @@
+.popup {
+    --quota-divider: rgb(0 0 0 / 8%);
+    --quota-panel-bg: rgb(255 255 255 / 98%);
+    --quota-panel-shadow: 0 18px 48px rgb(15 23 42 / 16%), 0 2px 10px rgb(15 23 42 / 8%);
+    --quota-pill-bg: rgb(0 0 0 / 5%);
+    --quota-ring-track: rgb(0 0 0 / 18%);
+    --quota-track: rgb(0 0 0 / 10%);
+    color-scheme: light;
+}
+
+:global(.dark) .popup {
+    --quota-divider: rgb(255 255 255 / 10%);
+    --quota-panel-bg: rgb(35 35 37 / 98%);
+    --quota-panel-shadow: 0 22px 52px rgb(0 0 0 / 42%), 0 2px 10px rgb(0 0 0 / 26%);
+    --quota-pill-bg: rgb(255 255 255 / 8%);
+    --quota-ring-track: rgb(255 255 255 / 22%);
+    --quota-track: rgb(255 255 255 / 14%);
+    color-scheme: dark;
+}
+
+.popup :global(.t-popup__content) {
+    overflow: hidden;
+    padding: 0;
+    border-radius: 18px;
+    background: var(--quota-panel-bg);
+    box-shadow: var(--quota-panel-shadow);
+    animation: panel-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: top right;
+    word-break: normal;
+}
+
+.trigger:global(.t-button) {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 5px;
+    border-radius: 9px;
+    color: var(--td-text-color-secondary);
+    background: transparent;
+}
+
+.trigger:global(.t-button):hover,
+.triggerOpen:global(.t-button) {
+    color: var(--td-text-color-primary);
+    background: var(--td-bg-color-container-hover);
+}
+
+.ring {
+    display: block;
+    overflow: visible;
+}
+
+.ringTrack {
+    stroke: var(--quota-ring-track);
+}
+
+.ringValue {
+    stroke: hsl(var(--quota-hue) 72% 42%);
+    stroke-linecap: round;
+    transition:
+        stroke 240ms ease,
+        stroke-dashoffset 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:global(.dark) .ringValue {
+    stroke: hsl(var(--quota-hue) 68% 58%);
+}
+
+.panel {
+    width: min(408px, calc(100vw - 24px));
+    padding: 18px 18px 16px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.title {
+    color: var(--td-text-color-primary);
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    line-height: 22px;
+}
+
+.status {
+    display: inline-flex;
+    height: 24px;
+    align-items: center;
+    gap: 6px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: var(--quota-pill-bg);
+    color: var(--td-text-color-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.statusDot {
+    width: 5px;
+    height: 5px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--td-text-color-placeholder);
+}
+
+.limits {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.meter {
+    min-width: 0;
+}
+
+.meterHeader,
+.mcpHeader {
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.meterLabel {
+    overflow: hidden;
+    color: var(--td-text-color-secondary);
+    font-size: 12px;
+    line-height: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.meterValue {
+    flex: 0 0 auto;
+    color: var(--td-text-color-primary);
+    font-size: 17px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 20px;
+}
+
+.meterValuePending {
+    color: var(--td-text-color-placeholder);
+    font-weight: 500;
+}
+
+.meterProgress {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.meterReset {
+    display: block;
+    margin-top: 7px;
+    overflow: hidden;
+    color: var(--td-text-color-placeholder);
+    font-size: 11px;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.divider {
+    height: 1px;
+    margin: 16px 0 13px;
+    background: var(--quota-divider);
+}
+
+.mcp {
+    min-width: 0;
+}
+
+.mcpHeader {
+    align-items: center;
+}
+
+.mcpLabel {
+    color: var(--td-text-color-primary);
+    font-size: 12.5px;
+    font-weight: 550;
+    line-height: 20px;
+}
+
+@keyframes panel-in {
+    from {
+        opacity: 0;
+        transform: translate3d(6px, -6px, 0) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
+@media (max-width: 767px) {
+    .panel {
+        width: min(360px, calc(100vw - 16px));
+        padding: 16px;
+    }
+
+    .popup :global(.t-popup__content) {
+        border-radius: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .popup :global(.t-popup__content) {
+        animation: none;
+    }
+
+    .ringValue {
+        transition: none;
+    }
+}
