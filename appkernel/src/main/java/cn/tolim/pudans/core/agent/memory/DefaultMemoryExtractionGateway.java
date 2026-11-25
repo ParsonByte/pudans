@@ -7,10 +7,13 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentMessageEntity;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentSessionEntity;
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.agentscope.core.message.Msg;
-import io.agentscope.core.message.MsgRole;
-import io.agentscope.core.message.TextBlock;
-import io.agentscope.core.model.GenerateOptions;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.request.ChatRequestParameters;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -29,7 +32,7 @@ import reactor.core.scheduler.Schedulers;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AgentScopeMemoryExtractionGateway implements MemoryExtractionGateway {
+public class DefaultMemoryExtractionGateway implements MemoryExtractionGateway {
 
     private static final int MAX_MEMORIES = 20;
 
@@ -62,21 +65,7 @@ public class AgentScopeMemoryExtractionGateway implements MemoryExtractionGatewa
         return routes
                 .resolve(session.getWorkspaceId(), null)
                 .map(models::create)
-                .flatMap(model -> model
-                        .stream(
-                                List.of(systemMessage(), userMessage(transcript)),
-                                List.of(),
-                                GenerateOptions.builder()
-                                        .temperature(0.1)
-                                        .maxTokens(2000)
-                                        .build())
-                        .collectList()
-                        .map(responses -> responses.stream()
-                                .flatMap(response -> response.getContent().stream())
-                                .filter(TextBlock.class::isInstance)
-                                .map(TextBlock.class::cast)
-                                .map(TextBlock::getText)
-                                .reduce("", String::concat))
+                .flatMap(model -> collect(model, transcript)
                         .map(this::parse)
                         .subscribeOn(Schedulers.boundedElastic()))
                 .onErrorMap(
@@ -95,15 +84,39 @@ public class AgentScopeMemoryExtractionGateway implements MemoryExtractionGatewa
                                 error));
     }
 
-    private static Msg systemMessage() {
-        return Msg.builder().role(MsgRole.SYSTEM).textContent(SYSTEM_PROMPT).build();
-    }
-
-    private static Msg userMessage(String transcript) {
-        return Msg.builder()
-                .role(MsgRole.USER)
-                .textContent("真实消息如下：\n" + transcript)
+    // 复用流式聊天模型并按增量拼接真实响应文本。
+    private static Mono<String> collect(StreamingChatModel model, String transcript) {
+        var request = ChatRequest.builder()
+                .messages(
+                        SystemMessage.from(SYSTEM_PROMPT),
+                        UserMessage.from("真实消息如下：\n" + transcript))
+                .parameters(ChatRequestParameters.builder()
+                        .temperature(0.1)
+                        .maxOutputTokens(2000)
+                        .build())
                 .build();
+        return Mono.create(sink -> {
+            var text = new StringBuilder();
+            model.chat(request, new StreamingChatResponseHandler() {
+
+                @Override
+                public void onPartialResponse(String partial) {
+                    if (partial != null) {
+                        text.append(partial);
+                    }
+                }
+
+                @Override
+                public void onCompleteResponse(ChatResponse response) {
+                    sink.success(text.toString());
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    sink.error(error);
+                }
+            });
+        });
     }
 
     private static String transcript(List<AgentMessageEntity> messages) {

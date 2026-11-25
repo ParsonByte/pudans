@@ -29,7 +29,7 @@ public class SandboxProperties {
 
     private String mcpServerUrl;
 
-    private String workspaceRoot = "/home/agentscope/workspace";
+    private String workspaceRoot = "/home/pudans/workspace";
 
     private Duration defaultTtl = Duration.ofMinutes(30);
 
@@ -155,8 +155,6 @@ public class SandboxProperties {
         private String runUser = "user";
 
         private String persistenceMode = "TAR";
-
-        private int snapshotRetention;
 
         public boolean configured() {
             return StringUtils.hasText(apiKey)

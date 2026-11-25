@@ -19,42 +19,40 @@ import cn.tolim.pudans.infra.r2dbc.agent.AgentToolCallEntity;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentToolCallRepository;
 import cn.tolim.pudans.infra.utils.Digests;
 import cn.tolim.pudans.infra.utils.RequestIdentity;
-import io.agentscope.core.ReActAgent;
-import io.agentscope.core.agent.RuntimeContext;
-import io.agentscope.core.event.AgentEvent;
-import io.agentscope.core.event.AgentResultEvent;
-import io.agentscope.core.event.ExceedMaxItersEvent;
-import io.agentscope.core.event.ModelCallStartEvent;
-import io.agentscope.core.event.RequireUserConfirmEvent;
-import io.agentscope.core.event.ToolCallStartEvent;
-import io.agentscope.core.event.ToolResultEndEvent;
-import io.agentscope.core.event.ConfirmResult;
-import io.agentscope.core.message.Msg;
-import io.agentscope.core.message.ToolResultState;
-import io.agentscope.core.message.ToolUseBlock;
-import io.agentscope.core.message.UserMessage;
-import io.agentscope.core.permission.PermissionBehavior;
-import io.agentscope.core.permission.PermissionContextState;
-import io.agentscope.core.permission.PermissionMode;
-import io.agentscope.core.permission.PermissionRule;
-import io.agentscope.core.tool.Toolkit;
+import com.fasterxml.jackson.core.type.TypeReference;
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.response.ChatModelStreamingEvent;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.CompleteResponse;
+import dev.langchain4j.model.chat.response.PartialResponse;
+import dev.langchain4j.model.chat.response.PartialThinking;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import reactor.adapter.JdkFlowAdapter;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -62,7 +60,7 @@ import reactor.core.scheduler.Schedulers;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AgentScopeRuntime implements AgentRuntime {
+public class DefaultAgentRuntime implements AgentRuntime {
 
     private static final String RUNNING = "running";
 
@@ -74,12 +72,20 @@ public class AgentScopeRuntime implements AgentRuntime {
 
     private static final String CANCELLED = "cancelled";
 
+    private static final String AGENT_NAME = "pudans-agent";
+
+    private static final String AGENT_ROLE = "assistant";
+
     private static final Duration APPROVAL_TTL = Duration.ofMinutes(5);
+
+    private static final int MAX_ITERATIONS = 10;
 
     private static final int DEFAULT_OUTPUT_RESERVE_TOKENS = 1024;
 
     private static final String SYSTEM_PROMPT =
             "你是 Pudans 工作区助手。调用 generate_media 时必须使用真实模型并返回真实任务标识，不得伪造生成结果。";
+
+    private static final TypeReference<Map<String, Object>> OBJECT_TYPE = new TypeReference<>() {};
 
     private final AgentModelRouteResolver routes;
 
@@ -115,10 +121,9 @@ public class AgentScopeRuntime implements AgentRuntime {
             }
             return prepare(context).flatMap(active -> {
                 if (activeRuns.putIfAbsent(context.runId(), active) != null) {
-                    closeAgent(active);
                     return releaseQuota(active).then(Mono.error(alreadyActive()));
                 }
-                launch(active, new UserMessage(context.prompt()));
+                launch(active);
                 return Mono.empty();
             });
         });
@@ -132,11 +137,7 @@ public class AgentScopeRuntime implements AgentRuntime {
                 return Mono.just(false);
             }
             active.cancelled.set(true);
-            try {
-                active.agent.interrupt(active.runtimeContext);
-            } catch (RuntimeException error) {
-                log.warn("中断 AgentScope 运行失败：run={}", context.runId(), error);
-            }
+            dispose(active);
             return finish(
                             active,
                             AgentRunEvents.RUN_CANCELLED,
@@ -155,59 +156,51 @@ public class AgentScopeRuntime implements AgentRuntime {
             if (active == null || active.terminal.get() || active.cancelled.get()) {
                 return Mono.just(false);
             }
-            var toolCall = active.pendingApprovals.get(approvalId);
-            if (toolCall == null) {
+            var pending = active.pendingApprovals.remove(approvalId);
+            if (pending == null) {
                 return Mono.just(false);
             }
-            return markRunning(active).doOnNext(ignored -> {
-                active.pendingApprovals.remove(approvalId);
-                active.waitingApproval.set(false);
-                launch(active, confirmation(toolCall, approved));
-            }).thenReturn(true);
+            if (!approved) {
+                return deny(active, pending).thenReturn(true);
+            }
+            return executeApproved(active, pending).then(Mono.defer(() -> {
+                if (active.pendingApprovals.isEmpty()) {
+                    active.waitingApproval.set(false);
+                    return markRunning(active).then(Mono.fromRunnable(() -> launch(active)));
+                }
+                return Mono.empty();
+            })).thenReturn(true);
         });
     }
 
     private Mono<ActiveExecution> prepare(AgentRunContext context) {
         return routes.resolve(context.workspaceId(), context.modelId()).flatMap(route -> memoryContext
                 .recall(context.ownerId(), context.workspaceId(), context.prompt())
-                .flatMap(remembered -> {
-                    var agent = createAgent(route, context, remembered);
-                    return reserve(context, route.model())
-                            .flatMap(reservation -> markStarted(context, reservation.id())
-                                    .onErrorResume(error -> releaseReservation(reservation.id())
-                                            .then(Mono.error(error)))
-                                    .thenReturn(active(context, route, agent, reservation)))
-                            .onErrorResume(error -> {
-                                close(agent);
-                                return Mono.error(error);
-                            });
-                }));
+                .flatMap(remembered -> reserve(context, route.model())
+                        .flatMap(reservation -> markStarted(context, reservation.id())
+                                .onErrorResume(error -> releaseReservation(reservation.id())
+                                        .then(Mono.error(error)))
+                                .thenReturn(active(context, route, remembered, reservation)))));
     }
 
-    // 使用真实 AgentScope ReActAgent，并注册真实的生成工具。
-    ReActAgent createAgent(
-            AgentModelRoute route, AgentRunContext context, String rememberedContext) {
-        var toolkit = new Toolkit();
-        toolkit.registerTool(mediaTool);
-        var permissions = PermissionContextState.builder()
-                .mode(PermissionMode.DEFAULT)
-                .addAskRule(
-                        GenerateMediaTool.NAME,
-                        new PermissionRule(
-                                GenerateMediaTool.NAME,
-                                null,
-                                PermissionBehavior.ASK,
-                                "pudans-agent"))
-                .build();
-        return ReActAgent.builder()
-                .name("pudans-agent")
-                .description("Pudans 工作区对话助手")
-                .sysPrompt(systemPrompt(rememberedContext))
-                .model(modelFactory.create(route, context.reasoning()))
-                .toolkit(toolkit)
-                .permissionContext(permissions)
-                .stopOnReject(true)
-                .build();
+    private ActiveExecution active(
+            AgentRunContext context,
+            AgentModelRoute route,
+            String rememberedContext,
+            ReservedQuota reservation) {
+        var toolContext = new AgentToolContext(
+                context.runId(),
+                context.sessionId(),
+                context.ownerId(),
+                context.workspaceId(),
+                reservation.id());
+        var model = modelFactory.create(route, context.reasoning());
+        var active = new ActiveExecution(
+                context, route, model, toolContext, reservation.id(), reservation.credits());
+        active.messages.add(
+                dev.langchain4j.data.message.SystemMessage.from(systemPrompt(rememberedContext)));
+        active.messages.add(UserMessage.from(context.prompt()));
+        return active;
     }
 
     private Mono<ReservedQuota> reserve(AgentRunContext context, AiModel model) {
@@ -257,146 +250,187 @@ public class AgentScopeRuntime implements AgentRuntime {
         });
     }
 
-    private ActiveExecution active(
-            AgentRunContext context,
-            AgentModelRoute route,
-            ReActAgent agent,
-            ReservedQuota reservation) {
-        var toolContext = new AgentToolContext(
-                context.runId(),
-                context.sessionId(),
-                context.ownerId(),
-                context.workspaceId(),
-                reservation.id());
-        var runtimeContext = RuntimeContext.builder()
-                .sessionId(context.sessionId().toString())
-                .userId(context.ownerId())
-                .put(AgentToolContext.class, toolContext)
-                .put("runId", context.runId().toString())
-                .put("workspaceId", context.workspaceId())
-                .build();
-        return new ActiveExecution(
-                context,
-                route,
-                agent,
-                runtimeContext,
-                reservation.id(),
-                reservation.credits());
-    }
-
-    private void launch(ActiveExecution active, Msg input) {
+    private void launch(ActiveExecution active) {
+        if (!active.looping.compareAndSet(false, true)) {
+            return;
+        }
         try {
-            execute(active, input)
-                    .doFinally(ignored -> {
-                        if (active.terminal.get() || active.cancelled.get()) {
-                            closeAgent(active);
-                        }
-                    })
+            var subscription = execute(active)
+                    .doFinally(ignored -> active.looping.set(false))
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe(ignored -> {}, error -> {
                         log.error(
-                                "AgentScope 运行以未处理错误结束：run={}",
+                                "Agent 运行以未处理错误结束：run={}",
                                 active.context.runId(),
                                 error);
                         fail(active, error).subscribe();
                     });
+            active.subscription.set(subscription);
         } catch (RuntimeException error) {
-            log.error("启动 AgentScope 运行失败：run={}", active.context.runId(), error);
+            active.looping.set(false);
+            log.error("启动 Agent 运行失败：run={}", active.context.runId(), error);
             fail(active, error).subscribe();
         }
     }
 
-    private Mono<Void> execute(ActiveExecution active, Msg input) {
-        return active.agent
-                .streamEvents(List.of(input), active.runtimeContext)
-                .concatMap(event -> handle(active, event))
-                .then(Mono.defer(() -> ensureSettled(active)))
-                .onErrorResume(error -> failOrCancel(active, error));
-    }
-
-    private Mono<Void> handle(ActiveExecution active, AgentEvent event) {
-        if (event instanceof ModelCallStartEvent) {
-            return markProviderRequestSent(active);
-        }
-        if (event instanceof ToolCallStartEvent tool) {
-            return ensureToolCall(active, tool.getToolCallId(), tool.getToolCallName())
-                    .then(publish(active, AgentScopeEventMapper.map(event)));
-        }
-        if (event instanceof ToolResultEndEvent tool) {
-            return finishToolCall(active, tool).then(publish(
-                    active, AgentScopeEventMapper.map(event)));
-        }
-        if (event instanceof RequireUserConfirmEvent confirmation) {
-            return handleConfirmation(active, confirmation);
-        }
-        if (event instanceof AgentResultEvent result) {
-            return handleResult(active, result);
-        }
-        if (event instanceof ExceedMaxItersEvent) {
-            var mapped = AgentScopeEventMapper.map(event);
-            return finish(
-                    active,
-                    AgentRunEvents.RUN_FAILED,
-                    FAILED,
-                    "agent-max-iterations",
-                    "Agent 达到最大推理轮次。",
-                    mapped.data());
-        }
-        return publish(active, AgentScopeEventMapper.map(event));
-    }
-
-    private Mono<Void> handleResult(ActiveExecution active, AgentResultEvent event) {
-        var result = event.getResult();
-        var mapped = AgentScopeEventMapper.map(event);
-        return persistAssistant(active, result).flatMap(messageId -> {
-            if (mapped == null || mapped.type() == null) {
+    // 每次模型调用都是一轮 ReAct 推理；工具审批会暂停在等待态。
+    private Mono<Void> execute(ActiveExecution active) {
+        return Mono.defer(() -> {
+            if (active.cancelled.get() || active.terminal.get()) {
                 return Mono.empty();
             }
-            active.finalResult.compareAndSet(null, result);
-            var data = new LinkedHashMap<>(mapped.data());
-            data.put("messageId", messageId);
-            var failure = failure(result);
-            recordMemory(active, result);
-            return finish(
-                    active,
-                    mapped.type(),
-                    AgentScopeEventMapper.statusForType(mapped.type()),
-                    failure.code(),
-                    failure.message(),
-                    data);
+            if (active.iterations.incrementAndGet() > MAX_ITERATIONS) {
+                return finish(
+                        active,
+                        AgentRunEvents.RUN_FAILED,
+                        FAILED,
+                        "agent-max-iterations",
+                        "Agent 达到最大推理轮次。",
+                        Map.of("maxIters", MAX_ITERATIONS));
+            }
+            var reply = new ReplyState();
+            return events.publish(
+                            active.context.runId(),
+                            active.context.sessionId(),
+                            AgentRunEvents.RUN_STARTED,
+                            startData(active, reply))
+                    .then(markProviderRequestSent(active))
+                    .then(stream(active, reply))
+                    .then(Mono.defer(() -> ensureSettled(active)));
+        }).onErrorResume(error -> failOrCancel(active, error));
+    }
+
+    private Mono<Void> stream(ActiveExecution active, ReplyState reply) {
+        var request = ChatRequest.builder()
+                .messages(List.copyOf(active.messages))
+                .toolSpecifications(mediaTool.specification())
+                .build();
+        return JdkFlowAdapter.flowPublisherToFlux(active.model.chat(request))
+                .concatMap(event -> handle(active, reply, event))
+                .then();
+    }
+
+    private Mono<Void> handle(
+            ActiveExecution active, ReplyState reply, ChatModelStreamingEvent event) {
+        if (event instanceof PartialResponse partial) {
+            return publishDelta(active, reply, partial.text());
+        }
+        if (event instanceof PartialThinking partial) {
+            return publishReasoning(active, reply, partial.text());
+        }
+        if (event instanceof CompleteResponse complete) {
+            return complete(active, reply, complete.chatResponse());
+        }
+        return Mono.empty();
+    }
+
+    private Mono<Void> publishDelta(ActiveExecution active, ReplyState reply, String delta) {
+        if (!StringUtils.hasText(delta)) {
+            return Mono.empty();
+        }
+        var start = reply.textStarted
+                ? Mono.<Void>empty()
+                : events.publish(
+                        active.context.runId(),
+                        active.context.sessionId(),
+                        AgentRunEvents.MESSAGE_START,
+                        map("replyId", reply.replyId, "blockId", reply.textBlockId));
+        reply.textStarted = true;
+        return start.then(events.publish(
+                active.context.runId(),
+                active.context.sessionId(),
+                AgentRunEvents.MESSAGE_DELTA,
+                map(
+                        "replyId", reply.replyId,
+                        "blockId", reply.textBlockId,
+                        "delta", delta)));
+    }
+
+    private Mono<Void> publishReasoning(ActiveExecution active, ReplyState reply, String delta) {
+        if (!StringUtils.hasText(delta)) {
+            return Mono.empty();
+        }
+        return events.publish(
+                active.context.runId(),
+                active.context.sessionId(),
+                AgentRunEvents.REASONING_DELTA,
+                map(
+                        "replyId", reply.replyId,
+                        "blockId", reply.thinkingBlockId,
+                        "delta", delta));
+    }
+
+    private Mono<Void> complete(ActiveExecution active, ReplyState reply, ChatResponse response) {
+        var message = response == null ? null : response.aiMessage();
+        if (message == null) {
+            return Mono.error(new ApiException(
+                    HttpStatus.BAD_GATEWAY,
+                    "agent-response-invalid",
+                    "聊天模型没有返回消息。"));
+        }
+        active.finalResult.set(response);
+        var requests = normalizedRequests(message.toolExecutionRequests());
+        var assistant = AiMessage.builder()
+                .text(message.text())
+                .thinking(message.thinking())
+                .toolExecutionRequests(requests)
+                .build();
+        active.messages.add(assistant);
+        if (!requests.isEmpty()) {
+            return requestApprovals(active, reply, message.text(), requests);
+        }
+        return persistAssistant(active, message).flatMap(messageId -> {
+            if (!reply.textStarted && StringUtils.hasText(message.text())) {
+                return publishDelta(active, reply, message.text())
+                        .then(persistResult(active, message, messageId));
+            }
+            return persistResult(active, message, messageId);
         });
     }
 
-    private Mono<UUID> persistAssistant(ActiveExecution active, Msg result) {
-        var entity = AgentMessageEntity.assistantMessage(
-                active.context.sessionId(),
-                active.context.runId(),
-                AgentScopeEventMapper.assistantContent(result),
-                AgentScopeEventMapper.toolCalls(result),
-                AgentScopeEventMapper.usage(result),
-                now());
-        return messages.save(entity).flatMap(saved -> requireRun(active.context.runId())
-                .flatMap(run -> {
-                    run.setOutputMessageId(saved.getId());
-                    return runs.save(run);
-                })
-                .thenReturn(saved.getId()));
+    private Mono<Void> persistResult(ActiveExecution active, AiMessage message, UUID messageId) {
+        var data = new LinkedHashMap<String, Object>();
+        data.put("text", message.text());
+        data.put("toolCalls", List.of());
+        data.put("usage", usage(active.finalResult.get()));
+        data.put("messageId", messageId);
+        recordMemory(active, message.text());
+        return finish(
+                active,
+                AgentRunEvents.RUN_COMPLETED,
+                COMPLETED,
+                null,
+                null,
+                data);
     }
 
-    private Mono<Void> handleConfirmation(
-            ActiveExecution active, RequireUserConfirmEvent event) {
-        var calls = event.getToolCalls() == null ? List.<ToolUseBlock>of() : event.getToolCalls();
-        if (calls.isEmpty()) {
+    private Mono<Void> requestApprovals(
+            ActiveExecution active, ReplyState reply, String text, List<ToolExecutionRequest> requests) {
+        var emitted = new AtomicBoolean(reply.textStarted);
+        var prefix = Mono.defer(() -> {
+            if (emitted.compareAndSet(false, true) && StringUtils.hasText(text)) {
+                return publishDelta(active, reply, text);
+            }
             return Mono.empty();
-        }
-        return Flux.fromIterable(calls)
-                .concatMap(toolCall -> ensureToolCall(
-                                active, toolCall.getId(), toolCall.getName())
-                        .flatMap(toolCallId -> persistApproval(active, toolCall, toolCallId)))
+        });
+        return prefix
+                .thenMany(Flux.fromIterable(requests)
+                        .concatMap(request -> ensureToolCall(active, request.id(), request.name())
+                                .flatMap(toolCallId -> events
+                                        .publish(
+                                                active.context.runId(),
+                                                active.context.sessionId(),
+                                                AgentRunEvents.TOOL_START,
+                                                map(
+                                                        "replyId", reply.replyId,
+                                                        "toolCallId", request.id(),
+                                                        "toolName", request.name()))
+                                        .then(persistApproval(
+                                                active, reply.replyId, request, toolCallId)))))
                 .collectList()
                 .flatMap(pending -> {
-                    pending.forEach(value ->
-                            active.pendingApprovals.put(value.approvalId(), value.toolCall()));
+                    pending.forEach(value -> active.pendingApprovals.put(
+                            value.approvalId(), value));
                     active.waitingApproval.set(true);
                     return markWaiting(active).thenMany(Flux.fromIterable(pending)
                             .concatMap(value -> events.publish(
@@ -408,14 +442,67 @@ public class AgentScopeRuntime implements AgentRuntime {
                 });
     }
 
+    private Mono<Void> executeApproved(ActiveExecution active, PendingApproval pending) {
+        var request = pending.toolCall();
+        return mediaTool
+                .execute(active.toolContext, arguments(request.arguments()))
+                .map(JsonUtils::objectToJson)
+                .map(text -> new ToolOutcome(text, "succeeded", false))
+                .onErrorResume(error -> {
+                    log.warn("Agent 工具执行失败：run={} tool={}", active.context.runId(), request.name(), error);
+                    var message = StringUtils.hasText(error.getMessage())
+                            ? error.getMessage()
+                            : "工具执行失败。";
+                    return Mono.just(new ToolOutcome(message, "failed", true));
+                })
+                .flatMap(outcome -> {
+                    active.messages.add(ToolExecutionResultMessage.builder()
+                            .id(request.id())
+                            .toolName(request.name())
+                            .text(outcome.text())
+                            .isError(outcome.error())
+                            .build());
+                    return finishToolCall(active, request.id(), outcome.state())
+                            .then(events.publish(
+                                    active.context.runId(),
+                                    active.context.sessionId(),
+                                    AgentRunEvents.TOOL_RESULT,
+                                    map(
+                                            "replyId", pending.replyId(),
+                                            "toolCallId", request.id(),
+                                            "toolName", request.name(),
+                                            "state", outcome.state())));
+                });
+    }
+
+    private Mono<Void> deny(ActiveExecution active, PendingApproval pending) {
+        var request = pending.toolCall();
+        return finishToolCall(active, request.id(), "denied")
+                .then(events.publish(
+                        active.context.runId(),
+                        active.context.sessionId(),
+                        AgentRunEvents.TOOL_RESULT,
+                        map(
+                                "replyId", pending.replyId(),
+                                "toolCallId", request.id(),
+                                "toolName", request.name(),
+                                "state", "denied")))
+                .then(finish(
+                        active,
+                        AgentRunEvents.RUN_FAILED,
+                        FAILED,
+                        "agent-tools-denied",
+                        "所有工具调用均被拒绝。",
+                        Map.of()));
+    }
+
     private static String systemPrompt(String rememberedContext) {
         return StringUtils.hasText(rememberedContext)
                 ? SYSTEM_PROMPT + "\n\n" + rememberedContext
                 : SYSTEM_PROMPT;
     }
 
-    private void recordMemory(ActiveExecution active, Msg result) {
-        var assistantText = result == null ? null : result.getTextContent();
+    private void recordMemory(ActiveExecution active, String assistantText) {
         memoryContext
                 .record(
                         active.context.ownerId(),
@@ -429,25 +516,28 @@ public class AgentScopeRuntime implements AgentRuntime {
     }
 
     private Mono<PendingApproval> persistApproval(
-            ActiveExecution active, ToolUseBlock toolCall, UUID toolCallId) {
+            ActiveExecution active, String replyId, ToolExecutionRequest request, UUID toolCallId) {
         return approvals
                 .findFirstByRunIdAndToolCallIdAndStatus(
                         active.context.runId(), toolCallId, "pending")
                 .map(existing -> new PendingApproval(
-                        existing.getId(), existing.getExpiresAt(), toolCall))
+                        existing.getId(), existing.getExpiresAt(), replyId, request))
                 .switchIfEmpty(Mono.defer(() -> {
                     var approval = new AgentApprovalEntity();
                     approval.setId(UUID.randomUUID());
                     approval.setRunId(active.context.runId());
                     approval.setToolCallId(toolCallId);
                     approval.setStatus("pending");
-                    var request = approvalRequest(active, toolCall);
-                    approval.setRequestJson(JsonUtils.objectToJson(request));
+                    var body = new LinkedHashMap<String, Object>();
+                    body.put("runId", active.context.runId());
+                    body.put("sessionId", active.context.sessionId());
+                    body.put("toolCall", toolCall(request));
+                    approval.setRequestJson(JsonUtils.objectToJson(body));
                     approval.setExpiresAt(now().plus(APPROVAL_TTL));
                     return approvals
                             .save(approval)
                             .map(saved -> new PendingApproval(
-                                    saved.getId(), saved.getExpiresAt(), toolCall));
+                                    saved.getId(), saved.getExpiresAt(), replyId, request));
                 }));
     }
 
@@ -486,7 +576,7 @@ public class AgentScopeRuntime implements AgentRuntime {
     }
 
     private Mono<UUID> ensureToolCall(ActiveExecution active, String toolCallId, String toolName) {
-        var resolvedId = StringUtils.hasText(toolCallId) ? toolCallId.trim() : UUID.randomUUID().toString();
+        var resolvedId = toolCallIdOf(toolCallId);
         var existing = active.toolCallIds.get(resolvedId);
         if (existing != null) {
             return Mono.just(existing);
@@ -517,18 +607,32 @@ public class AgentScopeRuntime implements AgentRuntime {
                 });
     }
 
-    private Mono<Void> finishToolCall(ActiveExecution active, ToolResultEndEvent event) {
-        var auditId = event.getToolCallId() == null
-                ? null
-                : active.toolCallIds.get(event.getToolCallId());
+    private Mono<Void> finishToolCall(ActiveExecution active, String toolCallId, String status) {
+        var auditId = active.toolCallIds.get(toolCallIdOf(toolCallId));
         if (auditId == null) {
             return Mono.empty();
         }
         return toolCalls.findById(auditId).flatMap(entity -> {
-            entity.setStatus(toolState(event.getState()));
+            entity.setStatus(status);
             entity.setFinishedAt(now());
             return toolCalls.save(entity);
         }).then();
+    }
+
+    private Mono<UUID> persistAssistant(ActiveExecution active, AiMessage message) {
+        var entity = AgentMessageEntity.assistantMessage(
+                active.context.sessionId(),
+                active.context.runId(),
+                assistantContent(message),
+                List.of(),
+                usage(active.finalResult.get()),
+                now());
+        return messages.save(entity).flatMap(saved -> requireRun(active.context.runId())
+                .flatMap(run -> {
+                    run.setOutputMessageId(saved.getId());
+                    return runs.save(run);
+                })
+                .thenReturn(saved.getId()));
     }
 
     private Mono<Void> finish(
@@ -563,17 +667,14 @@ public class AgentScopeRuntime implements AgentRuntime {
                 })
                 .then(events.publish(
                         active.context.runId(), active.context.sessionId(), type, eventData))
-                .doFinally(ignored -> {
-                    activeRuns.remove(active.context.runId(), active);
-                    closeAgent(active);
-                });
+                .doFinally(ignored -> activeRuns.remove(active.context.runId(), active));
     }
 
     private Mono<Void> settleIncomplete() {
         return Mono.error(new ApiException(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "agent-stream-incomplete",
-                "AgentScope 事件流在终态前结束。"));
+                "模型事件流在终态前结束。"));
     }
 
     private Mono<Void> ensureSettled(ActiveExecution active) {
@@ -636,25 +737,24 @@ public class AgentScopeRuntime implements AgentRuntime {
     }
 
     private Mono<BigDecimal> settlementCredits(ActiveExecution active) {
-        var result = active.finalResult.get();
-        var chatUsage = result == null ? null : result.getChatUsage();
-        if (chatUsage == null) {
+        var response = active.finalResult.get();
+        var tokenUsage = response == null ? null : response.tokenUsage();
+        if (tokenUsage == null) {
             return Mono.just(active.reservedCredits);
         }
-        var usage = AiUsage.of(
-                chatUsage.getInputTokens(),
-                chatUsage.getOutputTokens(),
-                chatUsage.getCachedTokens(),
-                chatUsage.getTotalTokens());
+        var input = tokens(tokenUsage.inputTokenCount());
+        var output = tokens(tokenUsage.outputTokenCount());
+        var total = tokens(tokenUsage.totalTokenCount());
+        var usage = AiUsage.of(input, output, 0, total > 0 ? total : input + output);
         if (!usage.usable()) {
             return Mono.just(active.reservedCredits);
         }
-        var tokenUsage = new AiPricing.TokenUsage(
+        var tokens = new AiPricing.TokenUsage(
                 BigDecimal.valueOf(usage.inputTokens()),
                 BigDecimal.valueOf(usage.cachedTokens()),
                 BigDecimal.valueOf(usage.outputTokens()));
         return pricing
-                .quoteTokens(active.route.model().id(), tokenUsage, now().toInstant())
+                .quoteTokens(active.route.model().id(), tokens, now().toInstant())
                 .map(AiPricing.PriceQuote::credits)
                 .onErrorResume(error -> {
                     log.warn(
@@ -682,17 +782,6 @@ public class AgentScopeRuntime implements AgentRuntime {
                 });
     }
 
-    private Mono<Void> publish(ActiveExecution active, AgentScopeEventMapper.MappedEvent mapped) {
-        if (mapped == null || mapped.type() == null) {
-            return Mono.empty();
-        }
-        return events.publish(
-                active.context.runId(),
-                active.context.sessionId(),
-                mapped.type(),
-                mapped.data());
-    }
-
     private Mono<AgentRunEntity> requireRun(UUID runId) {
         return runs
                 .findById(runId)
@@ -707,20 +796,12 @@ public class AgentScopeRuntime implements AgentRuntime {
                 "该 Agent 运行已经启动。");
     }
 
-    private UserMessage confirmation(ToolUseBlock toolCall, boolean approved) {
-        return UserMessage.builder()
-                .metadata(Map.of(
-                        Msg.METADATA_CONFIRM_RESULTS,
-                        List.of(new ConfirmResult(approved, toolCall))))
-                .build();
-    }
-
-    private Map<String, Object> approvalRequest(ActiveExecution active, ToolUseBlock toolCall) {
-        var request = new LinkedHashMap<String, Object>();
-        request.put("runId", active.context.runId());
-        request.put("sessionId", active.context.sessionId());
-        request.put("toolCall", AgentScopeEventMapper.toolCall(toolCall));
-        return request;
+    private static Map<String, Object> startData(ActiveExecution active, ReplyState reply) {
+        return map(
+                "sessionId", active.context.sessionId().toString(),
+                "replyId", reply.replyId,
+                "agentName", AGENT_NAME,
+                "role", AGENT_ROLE);
     }
 
     private static Map<String, Object> approvalData(PendingApproval pending) {
@@ -728,32 +809,79 @@ public class AgentScopeRuntime implements AgentRuntime {
         data.put("approvalId", pending.approvalId());
         data.put("status", "pending");
         data.put("expiresAt", pending.expiresAt().toInstant());
-        data.put("toolCall", AgentScopeEventMapper.toolCall(pending.toolCall()));
+        data.put("toolCall", toolCall(pending.toolCall()));
         return data;
     }
 
-    private static Failure failure(Msg result) {
-        if (result == null || result.getGenerateReason() == null) {
-            return new Failure(null, null);
-        }
-        return switch (result.getGenerateReason()) {
-            case MAX_ITERATIONS -> new Failure("agent-max-iterations", "Agent 达到最大推理轮次。");
-            case ALL_TOOLS_DENIED -> new Failure("agent-tools-denied", "所有工具调用均被拒绝。");
-            default -> new Failure(null, null);
-        };
+    private static Map<String, Object> toolCall(ToolExecutionRequest request) {
+        return map(
+                "id", request.id(),
+                "name", request.name(),
+                "input", arguments(request.arguments()),
+                "state", "pending");
     }
 
-    private static String toolState(ToolResultState state) {
-        if (state == null) {
-            return "finished";
+    private static Map<String, Object> assistantContent(AiMessage message) {
+        var content = new LinkedHashMap<String, Object>();
+        content.put("type", "text");
+        content.put("text", message.text() == null ? "" : message.text());
+        return content;
+    }
+
+    private static Map<String, Object> usage(ChatResponse response) {
+        var usage = response == null ? null : response.tokenUsage();
+        if (usage == null) {
+            return Map.of();
         }
-        return switch (state) {
-            case SUCCESS -> "succeeded";
-            case ERROR -> "failed";
-            case DENIED -> "denied";
-            case INTERRUPTED -> "cancelled";
-            case RUNNING -> "running";
-        };
+        var input = tokens(usage.inputTokenCount());
+        var output = tokens(usage.outputTokenCount());
+        var total = tokens(usage.totalTokenCount());
+        return AiUsage.of(input, output, 0, total > 0 ? total : input + output)
+                .toMap();
+    }
+
+    private static int tokens(Integer value) {
+        return value == null ? 0 : Math.max(0, value);
+    }
+
+    private static List<ToolExecutionRequest> normalizedRequests(
+            List<ToolExecutionRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return List.of();
+        }
+        var normalized = new ArrayList<ToolExecutionRequest>(requests.size());
+        for (var request : requests) {
+            normalized.add(StringUtils.hasText(request.id())
+                    ? request
+                    : request.toBuilder().id(UUID.randomUUID().toString()).build());
+        }
+        return List.copyOf(normalized);
+    }
+
+    private String toolCallIdOf(String toolCallId) {
+        return StringUtils.hasText(toolCallId) ? toolCallId.trim() : UUID.randomUUID().toString();
+    }
+
+    private static Map<String, Object> arguments(String arguments) {
+        if (!StringUtils.hasText(arguments)) {
+            return Map.of();
+        }
+        try {
+            return JsonUtils.jsonToObject(arguments, OBJECT_TYPE);
+        } catch (RuntimeException error) {
+            log.warn("忽略无法解析的 Agent 工具参数。");
+            return Map.of();
+        }
+    }
+
+    private static Map<String, Object> map(Object... values) {
+        var data = new LinkedHashMap<String, Object>();
+        for (int index = 0; index + 1 < values.length; index += 2) {
+            if (values[index] != null && values[index + 1] != null) {
+                data.put(values[index].toString(), values[index + 1]);
+            }
+        }
+        return data;
     }
 
     private static boolean interrupted(Throwable error) {
@@ -771,20 +899,10 @@ public class AgentScopeRuntime implements AgentRuntime {
                 || CANCELLED.equals(status);
     }
 
-    private static void closeAgent(ActiveExecution active) {
-        if (active.closed.compareAndSet(false, true)) {
-            close(active.agent);
-        }
-    }
-
-    private static void close(ReActAgent agent) {
-        if (agent == null) {
-            return;
-        }
-        try {
-            agent.close();
-        } catch (RuntimeException error) {
-            log.warn("关闭 AgentScope 运行失败", error);
+    private static void dispose(ActiveExecution active) {
+        var subscription = active.subscription.getAndSet(null);
+        if (subscription != null && !subscription.isDisposed()) {
+            subscription.dispose();
         }
     }
 
@@ -799,9 +917,20 @@ public class AgentScopeRuntime implements AgentRuntime {
     private record ReservedQuota(UUID id, BigDecimal credits) {}
 
     private record PendingApproval(
-            UUID approvalId, OffsetDateTime expiresAt, ToolUseBlock toolCall) {}
+            UUID approvalId, OffsetDateTime expiresAt, String replyId, ToolExecutionRequest toolCall) {}
 
-    private record Failure(String code, String message) {}
+    private record ToolOutcome(String text, String state, boolean error) {}
+
+    private static final class ReplyState {
+
+        private final String replyId = UUID.randomUUID().toString();
+
+        private final String textBlockId = UUID.randomUUID().toString();
+
+        private final String thinkingBlockId = UUID.randomUUID().toString();
+
+        private boolean textStarted;
+    }
 
     private static final class ActiveExecution {
 
@@ -809,13 +938,17 @@ public class AgentScopeRuntime implements AgentRuntime {
 
         private final AgentModelRoute route;
 
-        private final ReActAgent agent;
+        private final StreamingChatModel model;
 
-        private final RuntimeContext runtimeContext;
+        private final AgentToolContext toolContext;
 
         private final UUID quotaReservationId;
 
         private final BigDecimal reservedCredits;
+
+        private final List<ChatMessage> messages = new ArrayList<>();
+
+        private final AtomicInteger iterations = new AtomicInteger();
 
         private final AtomicBoolean terminal = new AtomicBoolean();
 
@@ -825,25 +958,27 @@ public class AgentScopeRuntime implements AgentRuntime {
 
         private final AtomicBoolean waitingApproval = new AtomicBoolean();
 
-        private final AtomicBoolean closed = new AtomicBoolean();
+        private final AtomicBoolean looping = new AtomicBoolean();
 
         private final Map<String, UUID> toolCallIds = new ConcurrentHashMap<>();
 
-        private final Map<UUID, ToolUseBlock> pendingApprovals = new ConcurrentHashMap<>();
+        private final Map<UUID, PendingApproval> pendingApprovals = new ConcurrentHashMap<>();
 
-        private final AtomicReference<Msg> finalResult = new AtomicReference<>();
+        private final AtomicReference<ChatResponse> finalResult = new AtomicReference<>();
+
+        private final AtomicReference<Disposable> subscription = new AtomicReference<>();
 
         private ActiveExecution(
                 AgentRunContext context,
                 AgentModelRoute route,
-                ReActAgent agent,
-                RuntimeContext runtimeContext,
+                StreamingChatModel model,
+                AgentToolContext toolContext,
                 UUID quotaReservationId,
                 BigDecimal reservedCredits) {
             this.context = context;
             this.route = route;
-            this.agent = agent;
-            this.runtimeContext = runtimeContext;
+            this.model = model;
+            this.toolContext = toolContext;
             this.quotaReservationId = quotaReservationId;
             this.reservedCredits = reservedCredits;
         }

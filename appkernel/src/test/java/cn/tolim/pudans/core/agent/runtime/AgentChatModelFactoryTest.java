@@ -18,7 +18,7 @@ import cn.tolim.pudans.core.ai.protocol.AiProtocols;
 import cn.tolim.pudans.core.ai.protocol.chatcompletions.ChatCompletionsProfile;
 import cn.tolim.pudans.core.ai.provider.AiProvider;
 import cn.tolim.pudans.core.ai.provider.AiProviders;
-import io.agentscope.core.model.Model;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,7 +45,7 @@ class AgentChatModelFactoryTest {
     AiChatProtocol chatProtocol;
 
     @Mock
-    Model model;
+    StreamingChatModel model;
 
     private AgentChatModelFactory factory;
 

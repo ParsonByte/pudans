@@ -206,7 +206,7 @@ public class AgentRuns {
                                     return Mono.error(new ApiException(
                                             HttpStatus.CONFLICT,
                                             "agent-approval-resume-unavailable",
-                                            "当前实例没有该审批对应的 AgentScope 暂停状态。"));
+                                            "当前实例没有该审批对应的 Agent 暂停状态。"));
                                 }
                                 approval.setStatus(approved ? "approved" : "rejected");
                                 approval.setDecidedBy(identity.ownerId());

@@ -12,7 +12,6 @@ import cn.tolim.pudans.contract.creation.dto.GenerationTaskSummary;
 import cn.tolim.pudans.core.creation.task.GenerationTasks;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.utils.RequestIdentity;
-import io.agentscope.core.agent.RuntimeContext;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -32,16 +31,22 @@ class GenerateMediaToolTest {
     GenerationTasks tasks;
 
     @Test
+    void declaresTheRealToolSchema() {
+        var tool = new GenerateMediaTool(tasks);
+
+        assertThat(tool.specification().name()).isEqualTo(GenerateMediaTool.NAME);
+        assertThat(tool.specification().parameters().required())
+                .containsExactly("media_type", "model_id", "prompt");
+    }
+
+    @Test
     void createsARealTaskWithTheAgentRunIdentity() {
         var tool = new GenerateMediaTool(tasks);
         var runId = UUID.randomUUID();
         var sessionId = UUID.randomUUID();
         var quotaId = UUID.randomUUID();
         var modelId = UUID.randomUUID();
-        var context = RuntimeContext.builder()
-                .put(AgentToolContext.class, new AgentToolContext(
-                        runId, sessionId, "alice", "workspace-a", quotaId))
-                .build();
+        var context = new AgentToolContext(runId, sessionId, "alice", "workspace-a", quotaId);
         var summary = new GenerationTaskSummary(
                 UUID.randomUUID(),
                 "image",
@@ -59,19 +64,17 @@ class GenerateMediaToolTest {
         when(tasks.start(any(), any(), anyString()))
                 .thenReturn(Mono.just(new GenerationTasks.StartResult(summary, true)));
 
-        StepVerifier.create(tool.generateMedia(
-                        "image",
-                        null,
-                        modelId.toString(),
-                        "a prompt",
-                        Map.of("size", "1024x1024"),
-                        List.of(),
-                        context))
-                .assertNext(result -> {
-                    assertThat(result)
-                            .containsEntry("taskId", summary.id())
-                            .containsEntry("status", "queued");
-                })
+        StepVerifier.create(tool.execute(
+                        context,
+                        Map.of(
+                                "media_type", "image",
+                                "model_id", modelId.toString(),
+                                "prompt", "a prompt",
+                                "settings", Map.of("size", "1024x1024"),
+                                "input_asset_ids", List.of())))
+                .assertNext(result -> assertThat(result)
+                        .containsEntry("taskId", summary.id())
+                        .containsEntry("status", "queued"))
                 .verifyComplete();
 
         var identity = ArgumentCaptor.forClass(RequestIdentity.class);
@@ -92,14 +95,12 @@ class GenerateMediaToolTest {
     void rejectsMissingRuntimeToolContext() {
         var tool = new GenerateMediaTool(tasks);
 
-        StepVerifier.create(tool.generateMedia(
-                        "image",
-                        "text",
-                        UUID.randomUUID().toString(),
-                        "prompt",
-                        Map.of(),
-                        List.of(),
-                        RuntimeContext.empty()))
+        StepVerifier.create(tool.execute(
+                        null,
+                        Map.of(
+                                "media_type", "image",
+                                "model_id", UUID.randomUUID().toString(),
+                                "prompt", "prompt")))
                 .expectErrorSatisfies(error -> assertThat(error)
                         .isInstanceOfSatisfying(ApiException.class, api -> assertThat(api.getCode())
                                 .isEqualTo("agent-tool-context-missing")))

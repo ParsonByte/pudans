@@ -81,7 +81,7 @@ pudans:
     data-plane-base-url: ${AGENTRUN_SANDBOX_DATA_PLANE_BASE_URL:}
     template: ${AGENTRUN_SANDBOX_TEMPLATE:}
     mcp-server-url: ${AGENTRUN_SANDBOX_MCP_SERVER_URL:}
-    workspace-root: ${AGENTRUN_SANDBOX_WORKSPACE_ROOT:/home/agentscope/workspace}
+    workspace-root: ${AGENTRUN_SANDBOX_WORKSPACE_ROOT:/home/pudans/workspace}
     default-ttl: ${AGENTRUN_SANDBOX_DEFAULT_TTL:30m}
     max-ttl-seconds: ${AGENTRUN_SANDBOX_MAX_TTL_SECONDS:86400}
     lease-ttl: ${AGENTRUN_SANDBOX_LEASE_TTL:10m}
@@ -100,7 +100,6 @@ pudans:
       workspace-root: ${E2B_SANDBOX_WORKSPACE_ROOT:/home/user}
       run-user: ${E2B_SANDBOX_RUN_USER:user}
       persistence-mode: ${E2B_SANDBOX_PERSISTENCE_MODE:TAR}
-      snapshot-retention: ${E2B_SANDBOX_SNAPSHOT_RETENTION:0}
   live:
     resolve:
       connect-timeout: 5s

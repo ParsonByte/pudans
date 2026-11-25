@@ -181,7 +181,7 @@ class SandboxSnapshotsTest {
                 "default-template",
                 "cn-shanghai",
                 Sandbox.Status.READY,
-                "/home/agentscope/workspace",
+                "/home/pudans/workspace",
                 NOW.plusSeconds(1_800),
                 NOW,
                 NOW,

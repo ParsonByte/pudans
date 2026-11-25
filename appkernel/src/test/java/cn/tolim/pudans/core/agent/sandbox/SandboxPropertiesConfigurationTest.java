@@ -25,7 +25,7 @@ class SandboxPropertiesConfigurationTest {
 
         assertThat(properties.isEnabled()).isFalse();
         assertThat(properties.getProvider()).isEqualTo("agentrun");
-        assertThat(properties.getWorkspaceRoot()).isEqualTo("/home/agentscope/workspace");
+        assertThat(properties.getWorkspaceRoot()).isEqualTo("/home/pudans/workspace");
         assertThat(properties.getDefaultTtl()).isEqualTo(Duration.ofMinutes(30));
         assertThat(properties.getMaxTtlSeconds()).isEqualTo(86_400);
         assertThat(properties.getLeaseTtl()).isEqualTo(Duration.ofMinutes(10));
@@ -43,7 +43,6 @@ class SandboxPropertiesConfigurationTest {
         assertThat(properties.getE2b().getWorkspaceRoot()).isEqualTo("/home/user");
         assertThat(properties.getE2b().getRunUser()).isEqualTo("user");
         assertThat(properties.getE2b().getPersistenceMode()).isEqualTo("TAR");
-        assertThat(properties.getE2b().getSnapshotRetention()).isZero();
         assertThat(properties.configured("e2b")).isFalse();
     }
 }

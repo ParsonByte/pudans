@@ -39,13 +39,10 @@ public interface AiProvider {
         return resolveBaseUrl(baseUrl);
     }
 
-    // 官方 Anthropic SDK 会追加 /v1/messages。
+    // LangChain4j 会在版本化 Base URL 后追加 /messages。
     default String anthropicBaseUrl(String baseUrl) {
-        return withoutVersion(resolveBaseUrl(baseUrl));
-    }
-
-    default String messagesPath() {
-        return "/v1/messages";
+        var normalized = resolveBaseUrl(baseUrl);
+        return VERSION_PATH.matcher(normalized).matches() ? normalized : normalized + "/v1";
     }
 
     default Map<String, String> messagesHeaders(String apiKey) {
@@ -56,10 +53,6 @@ public interface AiProvider {
 
     default String responsesBaseUrl(String baseUrl) {
         return resolveBaseUrl(baseUrl);
-    }
-
-    default String responsesPath() {
-        return "/responses";
     }
 
     default Map<String, String> responsesHeaders() {

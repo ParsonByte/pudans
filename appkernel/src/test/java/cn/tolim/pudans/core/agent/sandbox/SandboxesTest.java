@@ -54,7 +54,7 @@ class SandboxesTest {
 
     private static final UUID RUN_ID = UUID.randomUUID();
 
-    private static final String WORKSPACE_ROOT = "/home/agentscope/workspace";
+    private static final String WORKSPACE_ROOT = "/home/pudans/workspace";
 
     @Mock
     SandboxStore store;
@@ -277,7 +277,7 @@ class SandboxesTest {
                 .thenReturn(Mono.just(operation));
         when(events.publish(any(), any(), any())).thenReturn(Mono.empty());
         when(gateway.exec(any())).thenReturn(Mono.just(new SandboxGateway.Execution(
-                0, "/home/agentscope/workspace\n", "", false)));
+                0, "/home/pudans/workspace\n", "", false)));
         when(store.finishOperation(
                         eq(operation.id()),
                         eq(SandboxOperation.Status.SUCCEEDED),

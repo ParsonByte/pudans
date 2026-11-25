@@ -5,15 +5,15 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.agent.memory.MemoryVectorSpaceEntity;
-import io.agentscope.core.embedding.EmbeddingModel;
-import io.agentscope.core.message.ContentBlock;
+import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.model.output.Response;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,9 +30,9 @@ class MemoryEmbeddingsTest {
     }
 
     @Test
-    void delegatesTextToTheAgentScopeEmbeddingModel() {
-        when(embeddingModel.embed(org.mockito.ArgumentMatchers.any(ContentBlock.class)))
-                .thenReturn(Mono.just(new double[] {0.1, 0.2, 0.3}));
+    void delegatesTextToTheEmbeddingModel() {
+        when(embeddingModel.embed("需要向量的文本"))
+                .thenReturn(Response.from(Embedding.from(new float[] {0.1f, 0.2f, 0.3f})));
 
         StepVerifier.create(embeddings.embed(space(3), "需要向量的文本"))
                 .assertNext(vector -> assertThat(vector).containsExactly(0.1f, 0.2f, 0.3f))
@@ -41,8 +41,8 @@ class MemoryEmbeddingsTest {
 
     @Test
     void rejectsEmbeddingVectorsWhoseDimensionDoesNotMatchTheRegisteredSpace() {
-        when(embeddingModel.embed(org.mockito.ArgumentMatchers.any(ContentBlock.class)))
-                .thenReturn(Mono.just(new double[] {0.1, 0.2}));
+        when(embeddingModel.embed("需要向量的文本"))
+                .thenReturn(Response.from(Embedding.from(new float[] {0.1f, 0.2f})));
 
         StepVerifier.create(embeddings.embed(space(3), "需要向量的文本"))
                 .expectErrorSatisfies(error -> {
@@ -54,18 +54,9 @@ class MemoryEmbeddingsTest {
     }
 
     @Test
-    void returnsTheEmbeddingWhenItsDimensionMatchesTheRegisteredSpace() {
-        when(embeddingModel.embed(org.mockito.ArgumentMatchers.any(ContentBlock.class)))
-                .thenReturn(Mono.just(new double[] {0.1, 0.2, 0.3}));
-
-        StepVerifier.create(embeddings.embed(space(3), "需要向量的文本"))
-                .assertNext(vector -> assertThat(vector).containsExactly(0.1f, 0.2f, 0.3f))
-                .verifyComplete();
-    }
-
-    @Test
     void rejectsSpacesWithoutAnEmbeddingRoute() {
-        StepVerifier.create(embeddings.embed(new MemoryEmbeddingModels.Space(null, null, null), "text"))
+        StepVerifier.create(
+                        embeddings.embed(new MemoryEmbeddingModels.Space(null, null, null), "text"))
                 .expectErrorSatisfies(error -> {
                     assertThat(error).isInstanceOf(ApiException.class);
                     assertThat(((ApiException) error).getCode())

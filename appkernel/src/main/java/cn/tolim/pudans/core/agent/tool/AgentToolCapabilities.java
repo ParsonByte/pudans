@@ -8,7 +8,7 @@ import reactor.core.publisher.Flux;
 @Component
 public class AgentToolCapabilities implements AiCapabilityRegistry {
 
-    // 目录只暴露当前已注册到 AgentScope 的真实工具。
+    // 目录只暴露当前已注册到 Agent 运行时的真实工具。
     @Override
     public Flux<AiToolDescriptor> tools() {
         return Flux.just(new AiToolDescriptor(

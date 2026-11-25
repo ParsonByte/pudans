@@ -1,12 +1,12 @@
 package cn.tolim.pudans.core.ai.protocol;
 
-import io.agentscope.core.model.Model;
+import dev.langchain4j.model.chat.StreamingChatModel;
 
 public interface AiChatProtocol extends AiProtocolDescriptor {
 
-    Model create(AiChatProtocolRequest request, AiProtocolProfile profile);
+    StreamingChatModel create(AiChatProtocolRequest request, AiProtocolProfile profile);
 
-    default Model create(AiChatProtocolRequest request) {
+    default StreamingChatModel create(AiChatProtocolRequest request) {
         return create(request, null);
     }
 }

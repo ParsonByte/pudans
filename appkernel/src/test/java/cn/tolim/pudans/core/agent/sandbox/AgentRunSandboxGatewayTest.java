@@ -10,16 +10,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.agentscope.extensions.sandbox.agentrun.AgentRunSandboxClient;
-import io.agentscope.extensions.sandbox.agentrun.AgentRunSandboxClientOptions;
-import io.agentscope.extensions.sandbox.agentrun.AgentRunSandboxState;
-import io.agentscope.harness.agent.sandbox.Sandbox;
-import io.agentscope.harness.agent.sandbox.SandboxException;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.test.StepVerifier;
@@ -27,15 +21,15 @@ import reactor.test.StepVerifier;
 @ExtendWith(MockitoExtension.class)
 class AgentRunSandboxGatewayTest {
 
-    private static final String WORKSPACE_ROOT = "/home/agentscope/workspace";
+    private static final String WORKSPACE_ROOT = "/home/pudans/workspace";
 
     private static final String PROVIDER_STATE = "{\"sandboxId\":\"provider-1\"}";
 
     @Mock
-    AgentRunSandboxClient client;
+    SandboxClient client;
 
     @Mock
-    Sandbox sandbox;
+    SandboxSession session;
 
     private SandboxProperties properties;
 
@@ -51,7 +45,7 @@ class AgentRunSandboxGatewayTest {
         properties.setTemplate("default-template");
         properties.setMcpServerUrl("https://mcp.example.com");
         properties.setWorkspaceRoot(WORKSPACE_ROOT);
-        gateway = new AgentRunSandboxGateway(properties, options -> client);
+        gateway = new AgentRunSandboxGateway(properties, client);
     }
 
     @Test
@@ -70,12 +64,10 @@ class AgentRunSandboxGatewayTest {
 
     @Test
     void createsAndSerializesARealProviderSandbox() throws Exception {
-        var state = new AgentRunSandboxState();
-        state.setSandboxId("provider-1");
-        state.setWorkspaceRoot(WORKSPACE_ROOT);
-        when(client.create(any(), any(), any())).thenReturn(sandbox);
-        when(sandbox.getState()).thenReturn(state);
-        when(client.serializeState(state)).thenReturn(PROVIDER_STATE);
+        when(client.create(WORKSPACE_ROOT, "working-template", "cn-beijing")).thenReturn(session);
+        when(session.providerSandboxId()).thenReturn("provider-1");
+        when(session.providerState()).thenReturn(PROVIDER_STATE);
+        when(session.workspaceRoot()).thenReturn(WORKSPACE_ROOT);
 
         StepVerifier.create(gateway.create(command()))
                 .assertNext(created -> {
@@ -85,18 +77,13 @@ class AgentRunSandboxGatewayTest {
                 })
                 .verifyComplete();
 
-        verify(sandbox).start();
-        var options = ArgumentCaptor.forClass(AgentRunSandboxClientOptions.class);
-        verify(client).create(any(), any(), options.capture());
-        assertThat(options.getValue().getTemplateName()).isEqualTo("working-template");
-        assertThat(options.getValue().getRegion()).isEqualTo("cn-beijing");
-        assertThat(options.getValue().getWorkspaceRoot()).isEqualTo(WORKSPACE_ROOT);
+        verify(session).start();
     }
 
     @Test
     void shutsDownAnUnfinishedProviderSandboxWhenCreationFails() throws Exception {
-        when(client.create(any(), any(), any())).thenReturn(sandbox);
-        doThrow(new IllegalStateException("start failed")).when(sandbox).start();
+        when(client.create(any(), any(), any())).thenReturn(session);
+        doThrow(new IllegalStateException("start failed")).when(session).start();
 
         StepVerifier.create(gateway.create(command()))
                 .expectErrorSatisfies(error -> assertThat(error)
@@ -105,15 +92,18 @@ class AgentRunSandboxGatewayTest {
                         }))
                 .verify();
 
-        verify(sandbox).shutdown();
+        verify(session).shutdown();
     }
 
     @Test
     void executesInTheProviderWorkspaceAndReturnsTheNonZeroExitResult() throws Exception {
         givenActiveSandbox();
-        when(sandbox.isRunning()).thenReturn(true);
-        when(sandbox.exec(isNull(), anyString(), eq(20)))
-                .thenThrow(new SandboxException.ExecException(2, "partial", "failed"));
+        when(session.isRunning()).thenReturn(true);
+        when(session.exec(
+                        isNull(),
+                        eq("cd '/home/pudans/workspace/project' && (printf ok)"),
+                        eq(20)))
+                .thenReturn(new SandboxGateway.Execution(2, "partial", "failed", false));
 
         var command = command();
         var created = gateway.create(command).block();
@@ -130,19 +120,14 @@ class AgentRunSandboxGatewayTest {
                     assertThat(result.stderr()).isEqualTo("failed");
                 })
                 .verifyComplete();
-
-        verify(sandbox).exec(
-                isNull(),
-                eq("cd '/home/agentscope/workspace/project' && (printf ok)"),
-                eq(20));
     }
 
     @Test
     void preservesProviderExecutionTimeoutAsAStableErrorType() throws Exception {
         givenActiveSandbox();
-        when(sandbox.isRunning()).thenReturn(true);
-        when(sandbox.exec(isNull(), anyString(), eq(10)))
-                .thenThrow(new SandboxException.ExecTimeoutException("pwd", 10));
+        when(session.isRunning()).thenReturn(true);
+        when(session.exec(isNull(), anyString(), eq(10)))
+                .thenThrow(new SandboxSession.ExecTimeoutException("pwd"));
 
         var command = command();
         var created = gateway.create(command).block();
@@ -160,8 +145,8 @@ class AgentRunSandboxGatewayTest {
     @Test
     void mapsUnexpectedProviderFailuresToTheStableGatewayError() throws Exception {
         givenActiveSandbox();
-        when(sandbox.isRunning()).thenReturn(true);
-        when(sandbox.exec(isNull(), anyString(), eq(10)))
+        when(session.isRunning()).thenReturn(true);
+        when(session.exec(isNull(), anyString(), eq(10)))
                 .thenThrow(new IllegalStateException("provider unavailable"));
 
         var command = command();
@@ -181,12 +166,10 @@ class AgentRunSandboxGatewayTest {
     }
 
     private void givenActiveSandbox() throws Exception {
-        var state = new AgentRunSandboxState();
-        state.setSandboxId("provider-1");
-        state.setWorkspaceRoot(WORKSPACE_ROOT);
-        when(client.create(any(), any(), any())).thenReturn(sandbox);
-        when(sandbox.getState()).thenReturn(state);
-        when(client.serializeState(state)).thenReturn(PROVIDER_STATE);
+        when(client.create(any(), any(), any())).thenReturn(session);
+        when(session.providerSandboxId()).thenReturn("provider-1");
+        when(session.providerState()).thenReturn(PROVIDER_STATE);
+        when(session.workspaceRoot()).thenReturn(WORKSPACE_ROOT);
     }
 
     private static SandboxGateway.CreateCommand command() {
