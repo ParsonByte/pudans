@@ -10,7 +10,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-menu: "uc.account.profile"
     rbac.authorization.pudans.tolim.cn/ui-component: "profile"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "uc"
-    rbac.authorization.pudans.tolim.cn/ui-label: "个人设置"
+    rbac.authorization.pudans.tolim.cn/ui-label: "个人详情"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看飞书同步的账号资料与个人简介。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:user-round"
     rbac.authorization.pudans.tolim.cn/ui-group: "账户"
