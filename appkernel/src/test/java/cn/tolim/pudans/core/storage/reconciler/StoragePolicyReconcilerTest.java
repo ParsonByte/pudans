@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.storage.reconciler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,9 +16,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.storage.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.StorageRoute;
 import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
 import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.extension.contract.controller.Reconciler;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
@@ -99,6 +105,34 @@ class StoragePolicyReconcilerTest {
 
         assertThat(policy.getMetadata().getFinalizers()).isEmpty();
         verify(driverResolver).evict("p1");
+        verify(client).update(policy);
+    }
+
+    @Test
+    void refusesToDeleteAPolicyReferencedByAStorageRoute() {
+        var policy = policy("p1");
+        policy.getMetadata().setDeletionTimestamp(Instant.now());
+        var route = new StorageRoute();
+        var routeMetadata = new Metadata();
+        routeMetadata.setName("creation-result");
+        route.setMetadata(routeMetadata);
+        route.getSpec().setPurpose(StorageRoute.Purpose.CREATION_RESULT);
+        route.getSpec().setPolicyName("p1");
+        route.getSpec().setEnabled(false);
+        when(client.fetch(StoragePolicy.class, "p1")).thenReturn(Optional.of(policy));
+        when(fileRecords.existsByPolicy("p1")).thenReturn(Mono.just(false));
+        when(client.listAll(eq(LiveSource.class), any(ListOptions.class), any(Sort.class)))
+                .thenReturn(List.of());
+        when(client.listAll(eq(LiveRecording.class), any(ListOptions.class), any(Sort.class)))
+                .thenReturn(List.of());
+        when(client.listAll(eq(StorageRoute.class), any(ListOptions.class), any(Sort.class)))
+                .thenReturn(List.of(route));
+        doNothing().when(client).update(any(StoragePolicy.class));
+
+        reconciler.reconcile(new Reconciler.Request("p1"));
+
+        assertThat(policy.getMetadata().getDeletionTimestamp()).isNull();
+        assertThat(policy.getStatus().getMessage()).contains("存储路由");
         verify(client).update(policy);
     }
 

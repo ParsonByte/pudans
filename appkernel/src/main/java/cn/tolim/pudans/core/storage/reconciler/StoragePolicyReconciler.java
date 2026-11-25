@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
+import cn.tolim.pudans.contract.storage.StorageRoute;
 import cn.tolim.pudans.extension.contract.ExtensionClient;
 import cn.tolim.pudans.extension.contract.ListOptions;
 import cn.tolim.pudans.extension.contract.MetadataUtil;
@@ -97,15 +98,22 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         var name = policy.getMetadata().getName();
         var builtin = Boolean.parseBoolean(
                 MetadataUtil.nullSafeLabels(policy).get(BuiltinEntities.BUILTIN_LABEL));
-        var referenced = Boolean.TRUE.equals(
-                        fileRecords.existsByPolicy(name).blockOptional(LOOKUP_TIMEOUT).orElse(false))
-                || referencedByLiveResources(name);
+        var referencedByFiles =
+                Boolean.TRUE.equals(
+                        fileRecords.existsByPolicy(name).blockOptional(LOOKUP_TIMEOUT).orElse(false));
+        var referencedByLive = referencedByLiveResources(name);
+        var referencedByRoutes = referencedByStorageRoutes(name);
+        var referenced = referencedByFiles || referencedByLive || referencedByRoutes;
         if (builtin || policy.getSpec().isDefaultPolicy() || referenced) {
             policy.getMetadata().setDeletionTimestamp(null);
             var status = Optional.ofNullable(policy.getStatus()).orElseGet(StoragePolicy.Status::new);
-            status.setMessage(referenced
-                    ? "存储策略仍被文件引用，无法删除。"
-                    : "默认或内置存储策略不可删除。");
+            if (referencedByRoutes) {
+                status.setMessage("存储策略仍被存储路由引用，无法删除。");
+            } else {
+                status.setMessage(referenced
+                        ? "存储策略仍被文件或直播引用，无法删除。"
+                        : "默认或内置存储策略不可删除。");
+            }
             policy.setStatus(status);
             client.update(policy);
             return;
@@ -128,6 +136,14 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
                 .andQuery(equal("spec.storagePolicy", name))
                 .build();
         return !client.listAll(LiveRecording.class, recordingOptions, defaultSort()).isEmpty();
+    }
+
+    // 判断存储路由是否仍绑定该策略，包括停用路由。
+    private boolean referencedByStorageRoutes(String name) {
+        var options = ListOptions.builder()
+                .andQuery(equal("spec.policyName", name))
+                .build();
+        return !client.listAll(StorageRoute.class, options, defaultSort()).isEmpty();
     }
 
     // 加密尚未加密的凭据并报告是否变更。
