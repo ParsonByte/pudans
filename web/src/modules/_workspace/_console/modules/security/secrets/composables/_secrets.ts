@@ -11,6 +11,7 @@ export const SECRET_PERMISSIONS = {
 
 export const SECRET_QUERY_ROOT = ["console", "secrets"] as const;
 export const DEFAULT_SECRET_TYPE = "Opaque";
+export const SECRET_GENERATED_KEY = "token";
 export const SECRET_KEY_PATTERN = /^[-._a-zA-Z0-9]+$/;
 export const SECRET_NAME_PATTERN = USERNAME_PATTERN;
 
@@ -46,6 +47,12 @@ export function secretEntryCount(item?: SecretCatalogItem): number {
     return item?.keys?.length ?? 0;
 }
 
+export function generateSecretValue(): string {
+    const bytes = crypto.getRandomValues(new Uint8Array(24));
+
+    return `sk-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+
 function escapeJsonPointer(value: string): string {
     return value.replaceAll("~", "~0").replaceAll("/", "~1");
 }
@@ -55,7 +62,7 @@ export function buildCreateSecretPayload(values: SecretEditorValues): Secret {
     const stringData = Object.fromEntries(entries.map((entry) => [entry.key, entry.value ?? ""]));
 
     return {
-        apiVersion: "pudans.tolim.cn/v1alpha1",
+        apiVersion: "v1alpha1",
         kind: "Secret",
         metadata: { name: values.name.trim() },
         type: normalizedType(values.type),
