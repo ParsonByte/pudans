@@ -8,6 +8,7 @@ import { GlobalDialog } from "@/components/ui";
 import { PASSWORD_PATTERN } from "@/constants/validation";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { consoleErrorMessage } from "@/modules/_workspace/_console/composables/_errors";
+import { IdentityDialogFooter } from "@/modules/_workspace/_console/modules/identity/components/identity-dialog-footer";
 
 type ChangePasswordFormValues = {
     confirmPassword: string;
@@ -41,14 +42,19 @@ export function ChangePasswordDialog({ onClose }: ChangePasswordDialogProps) {
 
     return (
         <GlobalDialog
-            confirmLoading={changePassword.isPending}
-            confirmText="更新密码"
+            footer={
+                <IdentityDialogFooter
+                    onCancel={onClose}
+                    onSubmit={() => form.submit()}
+                    pending={changePassword.isPending}
+                    submitLabel="更新密码"
+                />
+            }
             onClose={() => {
                 if (!changePassword.isPending) {
                     onClose();
                 }
             }}
-            onConfirm={() => form.submit()}
             open
             title="修改登录密码"
             width={480}

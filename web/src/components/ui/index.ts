@@ -5,6 +5,7 @@ export { MenuIcon } from "./menu-icon";
 export { MetricCard } from "./metric-card";
 export { NavigationProgress } from "./navigation-progress";
 export { RESULT_LABELS, ResultTag } from "./result-tag";
+export { ScrollArea } from "./scroll-area";
 export { SectionCard } from "./section-card";
 export { StatTile } from "./stat-tile";
 export { ThemeMenu } from "./theme-menu";

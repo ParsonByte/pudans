@@ -18,7 +18,7 @@ import {
 } from "tdesign-icons-react";
 import { Button, Empty, Tag } from "tdesign-react";
 
-import { ResultTag } from "@/components/ui";
+import { ResultTag, ScrollArea } from "@/components/ui";
 
 import { formatCount, formatDateTime, formatDuration, formatPath, operationLabel } from "../composables/_format";
 import { useDashboardTheme } from "../modules/overview/dashboard/composables/_theme";
@@ -220,55 +220,55 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
         const failed = step.result === "FAILED" || step.result === "FAILURE" || step.result === "DENIED";
         const path = [step.requestMethod, formatPath(step.requestPath)].filter(Boolean).join(" ") || "—";
 
+        const dotColor =
+            step.result === "DENIED" ? tone("warning").base : failed ? tone("red").base : tone("green").base;
+
         return (
-            <Button
-                aria-pressed={active}
-                block
-                className={`!h-auto !min-w-0 !justify-start !gap-2 !rounded-xl !border !p-2.5 !text-left !transition-colors ${compact ? "!text-[11px]" : ""}`}
-                key={stepKey(step, index)}
-                onClick={() => select(step)}
-                style={{
-                    background: active ? token.colorPrimaryBg : token.colorFillQuaternary,
-                    borderColor: active ? token.colorPrimaryBorder : token.colorBorderSecondary,
-                }}
-                theme="default"
-                type="button"
-                variant="text"
-            >
+            <div className="relative" key={stepKey(step, index)}>
                 <span
-                    className="mt-1 h-2 w-2 shrink-0 rounded-full"
-                    style={{
-                        background:
-                            step.result === "DENIED"
-                                ? tone("warning").base
-                                : failed
-                                  ? tone("red").base
-                                  : tone("green").base,
-                    }}
+                    aria-hidden
+                    className="absolute top-[15px] left-[13px] z-10 h-2 w-2 -translate-x-1/2 rounded-full"
+                    style={{ background: dotColor }}
                 />
-                <span className="min-w-0 flex-1">
-                    <span className="flex min-w-0 items-center justify-between gap-2">
-                        <span className="truncate font-medium" style={{ color: token.colorText }}>
-                            {operationLabel(step.operation)}
+                <div className="pl-5">
+                    <Button
+                        aria-pressed={active}
+                        block
+                        className={`!h-auto !min-w-0 !justify-start !rounded-xl !border !p-2.5 !text-left !transition-colors [&>span]:w-full ${compact ? "!text-[11px]" : ""}`}
+                        onClick={() => select(step)}
+                        style={{
+                            background: active ? token.colorPrimaryBg : token.colorFillQuaternary,
+                            borderColor: active ? token.colorPrimaryBorder : token.colorBorderSecondary,
+                        }}
+                        theme="default"
+                        type="button"
+                        variant="text"
+                    >
+                        <span className="min-w-0 flex-1">
+                            <span className="flex min-w-0 items-center justify-between gap-2">
+                                <span className="truncate font-medium" style={{ color: token.colorText }}>
+                                    {operationLabel(step.operation)}
+                                </span>
+                                <ResultTag result={step.result} />
+                            </span>
+                            <span
+                                className="mt-0.5 block truncate font-mono text-[10px]"
+                                style={{ color: token.colorTextSecondary }}
+                                title={path}
+                            >
+                                {path}
+                            </span>
+                            <span
+                                className="mt-0.5 flex items-center justify-between gap-2 text-[10px] tabular-nums"
+                                style={{ color: token.colorTextTertiary }}
+                            >
+                                <span>{formatDateTime(step.timestamp)}</span>
+                                <span>{formatDuration(step.durationMs)}</span>
+                            </span>
                         </span>
-                        <ResultTag result={step.result} />
-                    </span>
-                    <span
-                        className="mt-0.5 block truncate font-mono text-[10px]"
-                        style={{ color: token.colorTextSecondary }}
-                        title={path}
-                    >
-                        {path}
-                    </span>
-                    <span
-                        className="mt-0.5 flex items-center justify-between gap-2 text-[10px] tabular-nums"
-                        style={{ color: token.colorTextTertiary }}
-                    >
-                        <span>{formatDateTime(step.timestamp)}</span>
-                        <span>{formatDuration(step.durationMs)}</span>
-                    </span>
-                </span>
-            </Button>
+                    </Button>
+                </div>
+            </div>
         );
     };
     const renderActions = (items: ReplayStep[], key: string, compact = false) => {
@@ -431,7 +431,7 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
             </div>
 
             <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
-                <div className="max-h-[640px] overflow-y-auto pr-1">
+                <ScrollArea className="max-h-[640px] pr-1">
                     {prelude.length > 0 ? <div className="mb-3">{renderActions(prelude, "prelude", true)}</div> : null}
                     {pageNodes.length === 0 ? (
                         <div>{renderActions(sorted, "session")}</div>
@@ -461,7 +461,7 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
                                             <Button
                                                 aria-pressed={active}
                                                 block
-                                                className="!h-auto !rounded-2xl !border !p-3 !text-left !transition-colors"
+                                                className="!h-auto !rounded-2xl !border !p-3 !text-left !transition-colors [&>span]:w-full [&>span]:flex-col [&>span]:items-stretch"
                                                 onClick={() => select(node.step)}
                                                 style={{
                                                     background:
@@ -527,25 +527,25 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
                                                     </span>
                                                 </div>
                                             </Button>
-                                            {node.actions.length > 0 ? (
-                                                <div className="mt-1.5 pl-2">
-                                                    {renderActions(
-                                                        node.actions,
-                                                        `page:${stepKey(node.step, node.index)}`,
-                                                        true,
-                                                    )}
-                                                </div>
-                                            ) : null}
                                         </div>
+                                        {node.actions.length > 0 ? (
+                                            <div className="mt-1.5">
+                                                {renderActions(
+                                                    node.actions,
+                                                    `page:${stepKey(node.step, node.index)}`,
+                                                    true,
+                                                )}
+                                            </div>
+                                        ) : null}
                                     </div>
                                 );
                             })}
                         </div>
                     )}
-                </div>
+                </ScrollArea>
 
-                <div
-                    className="rounded-2xl border p-4"
+                <ScrollArea
+                    className="max-h-[640px] rounded-2xl border p-4"
                     style={{
                         background: selectedDenied
                             ? token.colorWarningBg
@@ -603,7 +603,7 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
                                 value: (
                                     <span className="flex min-w-0 flex-col">
                                         <span className="truncate text-sm">{session?.username ?? "未命名用户"}</span>
-                                        <CopyableIdentifier className="mt-0.5 text-[11px]" value={selected.uid} />
+                                        <CopyableIdentifier className="mt-0.5 text-[11px]" mask value={selected.uid} />
                                     </span>
                                 ),
                             },
@@ -621,11 +621,11 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
                             },
                             {
                                 label: "请求链路",
-                                value: <CopyableIdentifier className="text-[11px]" value={selected.traceFlowId} />,
+                                value: <CopyableIdentifier className="text-[11px]" mask value={selected.traceFlowId} />,
                             },
                             {
                                 label: "审计编号",
-                                value: <CopyableIdentifier className="text-[11px]" value={selected.auditId} />,
+                                value: <CopyableIdentifier className="text-[11px]" mask value={selected.auditId} />,
                             },
                             {
                                 label: "会话结果",
@@ -702,7 +702,7 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
                             </pre>
                         </div>
                     ) : null}
-                </div>
+                </ScrollArea>
             </div>
         </div>
     );

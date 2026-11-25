@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { type RiskBan, type RiskEventView, type RiskRule, apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AddIcon, RefreshIcon } from "tdesign-icons-react";
+import { AddIcon, HelpCircleIcon, RefreshIcon } from "tdesign-icons-react";
 import {
     Breadcrumb,
     Button,
@@ -31,6 +31,7 @@ import { consoleErrorMessage } from "../../../composables/_errors";
 import { formatCount, formatDateTime, formatDuration, operationLabel } from "../../../composables/_format";
 import { DASHBOARD_RANGES, type DashboardRange } from "../../../composables/_range";
 import { useConsoleTableState } from "../../../composables/_table";
+import { IdentityDialogFooter } from "../../identity/components/identity-dialog-footer";
 import { useDashboardTheme } from "../../overview/dashboard/composables/_theme";
 import { RiskActionChart } from "./components/risk-action-chart";
 import { RiskMetricGrid } from "./components/risk-metric-grid";
@@ -39,9 +40,37 @@ import { RiskRuleGrid } from "./components/risk-rule-grid";
 import { RiskSceneDistribution } from "./components/risk-scene-distribution";
 import { RiskSubjectRanking } from "./components/risk-subject-ranking";
 import { RiskTrendChart } from "./components/risk-trend-chart";
-import { RISK_ACTION_OPTIONS, type RiskFormValues, readRiskSpec, sceneLabel } from "./composables/_risk";
+import {
+    RISK_ACTION_OPTIONS,
+    RISK_METRIC_OPTIONS,
+    type RiskFormValues,
+    readRiskSpec,
+    riskSceneOptions,
+    sceneLabel,
+} from "./composables/_risk";
 
 const { BreadcrumbItem } = Breadcrumb;
+
+const REQUIRED_HINT = "必填项";
+const SCENE_HINT = "场景由后端固定提供；同一场景仅一条规则生效，已配置的场景请直接编辑现有规则。";
+const ACTION_HINT = "阻断会在达到阈值后封禁主体一段时间；告警只记录风险事件，不封禁。";
+const METRIC_HINT = "统计指标，后端当前仅支持来源 IP；具体主体随场景自动判定。";
+
+function RequiredLabel({ children, hint }: { children: ReactNode; hint?: string }) {
+    return (
+        <span className="inline-flex items-center gap-1">
+            <Tooltip content={REQUIRED_HINT} placement="top-left">
+                <span className="cursor-help text-[var(--td-error-color)]">*</span>
+            </Tooltip>
+            {children}
+            {hint ? (
+                <Tooltip content={hint} placement="top-left">
+                    <HelpCircleIcon />
+                </Tooltip>
+            ) : null}
+        </span>
+    );
+}
 
 type RiskEventRow = RiskEventView & {
     rowId: string;
@@ -76,6 +105,7 @@ export function RiskView() {
     const table = useConsoleTableState();
     const { token } = useDashboardTheme();
     const [form] = Form.useForm();
+    const formAction = Form.useWatch("action", form) as string | undefined;
     const [range, setRange] = useState<DashboardRange>(7);
     const [activeTab, setActiveTab] = useState<RiskTab>("overview");
     const [open, setOpen] = useState(false);
@@ -100,19 +130,20 @@ export function RiskView() {
     });
     const saveRule = useMutation({
         mutationFn: async ({ record, values }: { record?: RiskRule; values: RiskFormValues }) => {
+            const action = values.action ?? "BLOCK";
             const payload = {
                 apiVersion: "pudans.tolim.cn/v1alpha1",
                 kind: "RiskRule",
                 metadata: { ...record?.metadata, name: record?.metadata.name ?? values.name },
                 spec: {
-                    action: values.action ?? "BLOCK",
-                    blockSeconds: values.blockSeconds ?? 60,
+                    action,
+                    blockSeconds: action === "BLOCK" ? Number(values.blockSeconds) || 60 : 0,
                     description: values.description,
                     enabled: values.enabled ?? true,
                     metric: values.metric ?? "IP",
                     scene: values.scene,
-                    threshold: values.threshold ?? 60,
-                    windowSeconds: values.windowSeconds ?? 60,
+                    threshold: Number(values.threshold) || 60,
+                    windowSeconds: Number(values.windowSeconds) || 60,
                 },
             };
 
@@ -152,6 +183,7 @@ export function RiskView() {
         },
     });
     const overview = overviewQuery.data;
+    const sceneOptions = riskSceneOptions(overview?.scenes);
     const summary = overview?.summary;
     const isSyncing = overviewQuery.isFetching || rulesQuery.isFetching || bansQuery.isFetching;
     const eventRows = useMemo<RiskEventRow[]>(
@@ -456,13 +488,18 @@ export function RiskView() {
             </div>
 
             <GlobalDialog
-                confirmLoading={saveRule.isPending}
-                confirmText="保存"
+                footer={
+                    <IdentityDialogFooter
+                        onCancel={() => setOpen(false)}
+                        onSubmit={() => form.submit()}
+                        pending={saveRule.isPending}
+                        submitLabel="保存"
+                    />
+                }
                 onClose={() => setOpen(false)}
-                onConfirm={() => form.submit()}
                 open={open}
                 title={editing ? "编辑风险规则" : "新建风险规则"}
-                width={560}
+                width={640}
             >
                 <Form
                     form={form}
@@ -481,44 +518,87 @@ export function RiskView() {
                     }}
                 >
                     <Form.FormItem
-                        label="名称"
+                        label={<RequiredLabel>名称</RequiredLabel>}
                         name="name"
-                        requiredMark
+                        requiredMark={false}
                         rules={[{ message: "请输入名称。", required: true, whitespace: true }]}
                     >
                         <Input disabled={Boolean(editing)} placeholder="例如：login-failure" />
                     </Form.FormItem>
-                    <Form.FormItem
-                        label="场景"
-                        name="scene"
-                        requiredMark
-                        rules={[{ message: "请输入场景。", required: true, whitespace: true }]}
-                    >
-                        <Input placeholder="例如：login-failure" />
-                    </Form.FormItem>
-                    <Form.FormItem label="描述" name="description">
-                        <Textarea autosize={{ maxRows: 4, minRows: 2 }} placeholder="可选" />
-                    </Form.FormItem>
-                    <Form.FormItem label="启用" name="enabled">
-                        <Switch />
-                    </Form.FormItem>
-                    <Form.FormItem label="指标" name="metric">
-                        <Input placeholder="IP" />
-                    </Form.FormItem>
-                    <Form.FormItem label="动作" name="action">
-                        <Select options={RISK_ACTION_OPTIONS} />
-                    </Form.FormItem>
-                    <div className="grid gap-4 sm:grid-cols-3">
-                        <Form.FormItem label="阈值" name="threshold">
-                            <InputNumber decimalPlaces={0} min={1} style={{ width: "100%" }} />
+                    <div className="grid gap-x-4 sm:grid-cols-2">
+                        <Form.FormItem
+                            label={<RequiredLabel hint={SCENE_HINT}>场景</RequiredLabel>}
+                            name="scene"
+                            requiredMark={false}
+                            rules={[{ message: "请选择场景。", required: true }]}
+                        >
+                            <Select disabled={Boolean(editing)} options={sceneOptions} placeholder="请选择风险场景" />
                         </Form.FormItem>
-                        <Form.FormItem label="窗口（秒）" name="windowSeconds">
-                            <InputNumber decimalPlaces={0} min={1} style={{ width: "100%" }} />
-                        </Form.FormItem>
-                        <Form.FormItem label="阻断时长（秒）" name="blockSeconds">
-                            <InputNumber decimalPlaces={0} min={0} style={{ width: "100%" }} />
+                        <Form.FormItem
+                            label={
+                                <span className="inline-flex items-center gap-1">
+                                    指标
+                                    <Tooltip content={METRIC_HINT} placement="top-left">
+                                        <HelpCircleIcon />
+                                    </Tooltip>
+                                </span>
+                            }
+                            name="metric"
+                        >
+                            <Select options={RISK_METRIC_OPTIONS} />
                         </Form.FormItem>
                     </div>
+                    <div className="grid gap-x-4 sm:grid-cols-2">
+                        <Form.FormItem
+                            label={
+                                <span className="inline-flex items-center gap-1">
+                                    动作
+                                    <Tooltip content={ACTION_HINT} placement="top-left">
+                                        <HelpCircleIcon />
+                                    </Tooltip>
+                                </span>
+                            }
+                            name="action"
+                        >
+                            <Select options={RISK_ACTION_OPTIONS} />
+                        </Form.FormItem>
+                        {formAction === "BLOCK" ? (
+                            <Form.FormItem
+                                label="阻断时长"
+                                name="blockSeconds"
+                                rules={[{ message: "请输入不小于 1 的整数。", min: 1, number: true }]}
+                            >
+                                <InputNumber decimalPlaces={0} min={1} style={{ width: "100%" }} suffix="秒" />
+                            </Form.FormItem>
+                        ) : null}
+                    </div>
+                    <div className="grid gap-x-4 sm:grid-cols-2">
+                        <Form.FormItem
+                            label="触发阈值"
+                            name="threshold"
+                            rules={[{ message: "请输入不小于 1 的整数。", min: 1, number: true }]}
+                        >
+                            <InputNumber decimalPlaces={0} min={1} style={{ width: "100%" }} suffix="次" />
+                        </Form.FormItem>
+                        <Form.FormItem
+                            label="统计窗口"
+                            name="windowSeconds"
+                            rules={[{ message: "请输入不小于 1 的整数。", min: 1, number: true }]}
+                        >
+                            <InputNumber decimalPlaces={0} min={1} style={{ width: "100%" }} suffix="秒" />
+                        </Form.FormItem>
+                    </div>
+                    <Form.FormItem name="enabled">
+                        <div className="flex items-center gap-2">
+                            <Switch />
+                            <span className="text-sm text-[var(--td-text-color-secondary)]">
+                                启用该规则，关闭后不再统计与拦截
+                            </span>
+                        </div>
+                    </Form.FormItem>
+                    <Form.FormItem label="描述" name="description">
+                        <Textarea autosize={{ maxRows: 4, minRows: 2 }} placeholder="可选，说明规则用途或处置方式" />
+                    </Form.FormItem>
                 </Form>
             </GlobalDialog>
 

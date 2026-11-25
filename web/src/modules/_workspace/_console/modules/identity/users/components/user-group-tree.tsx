@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { UserGroup } from "@pudans-dev/api-client";
 import { SearchIcon } from "tdesign-icons-react";
 import { Button, Input, Skeleton, Tree } from "tdesign-react";
+
+import { ScrollArea } from "@/components/ui";
 
 import { consoleErrorMessage } from "../../../../composables/_errors";
 import { userGroupDescription, userGroupDisplayName } from "../../user-groups/composables/_user-group";
@@ -27,6 +29,7 @@ type UserGroupTreeNode = {
 };
 
 export function UserGroupTree({ error, groups, loading, onRetry, onSelect, selectedName }: UserGroupTreeProps) {
+    const [committed, setCommitted] = useState(false);
     const [keyword, setKeyword] = useState("");
     const filteredGroups = useMemo(() => {
         const query = keyword.trim().toLocaleLowerCase();
@@ -55,6 +58,13 @@ export function UserGroupTree({ error, groups, loading, onRetry, onSelect, selec
         ],
         [filteredGroups],
     );
+    // 树组件在渲染期创建 store 并用定时器回写状态，若随路由过渡渲染挂载会更新未提交的实例，因此等首帧提交后再挂载
+    useEffect(() => {
+        const timer = window.setTimeout(() => setCommitted(true), 0);
+
+        return () => window.clearTimeout(timer);
+    }, []);
+    const actived = useMemo(() => [selectedName || ALL_USERS_NODE], [selectedName]);
     return (
         <div className="min-w-0">
             <Input
@@ -64,8 +74,8 @@ export function UserGroupTree({ error, groups, loading, onRetry, onSelect, selec
                 suffixIcon={<SearchIcon />}
                 value={keyword}
             />
-            <div className="mt-6 max-h-[280px] min-h-[220px] overflow-y-auto lg:max-h-[calc(100vh-250px)]">
-                {loading ? (
+            <ScrollArea className="mt-6 max-h-[280px] min-h-[220px] lg:max-h-[calc(100vh-250px)]">
+                {!committed || loading ? (
                     <div className="flex flex-col gap-2">
                         {Array.from({ length: 5 }).map((_, index) => (
                             <Skeleton animation="gradient" key={index} theme="avatar-text" />
@@ -86,7 +96,7 @@ export function UserGroupTree({ error, groups, loading, onRetry, onSelect, selec
                     <>
                         <Tree
                             activable
-                            actived={[selectedName || ALL_USERS_NODE]}
+                            actived={actived}
                             data={treeData}
                             expandAll
                             hover
@@ -108,7 +118,7 @@ export function UserGroupTree({ error, groups, loading, onRetry, onSelect, selec
                         ) : null}
                     </>
                 )}
-            </div>
+            </ScrollArea>
         </div>
     );
 }

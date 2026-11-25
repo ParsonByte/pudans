@@ -99,6 +99,7 @@ export function UserGroupSummary({
                         </Button>
                     ) : null}
                     <Dropdown
+                        maxColumnWidth={140}
                         onClick={(item) => {
                             if (item.value === "delete") {
                                 onDelete();

@@ -9,6 +9,7 @@ import { Button, Divider, Empty, Form, Input, InputNumber, Skeleton, Switch, Tab
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
 import { ObjectDetails } from "../../../components/object-details";
+import { PageBreadcrumb } from "../../../components/page-breadcrumb";
 import { consoleErrorMessage } from "../../../composables/_errors";
 
 const PARAMETER_GROUPS = [
@@ -274,14 +275,17 @@ function ParameterGroupEditor({ group }: { group: string }) {
 
 export function SettingsView() {
     return (
-        <Tabs
-            defaultValue="site"
-            list={PARAMETER_GROUPS.map((group) => ({
-                label: group.label,
-                lazy: true,
-                panel: <ParameterGroupEditor group={group.key} />,
-                value: group.key,
-            }))}
-        />
+        <div className="flex w-full min-w-0 flex-col gap-4">
+            <PageBreadcrumb current="参数配置" parents={["系统设置"]} />
+            <Tabs
+                defaultValue="site"
+                list={PARAMETER_GROUPS.map((group) => ({
+                    label: group.label,
+                    lazy: true,
+                    panel: <ParameterGroupEditor group={group.key} />,
+                    value: group.key,
+                }))}
+            />
+        </div>
     );
 }
