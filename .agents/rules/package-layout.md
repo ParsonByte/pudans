@@ -26,10 +26,10 @@ Adding an eighth top-level package requires changing this rule first; do not add
 
 `contract/<domain>` and `core/<domain>` map one to one. Both sides must contain exactly the same domain set, and that set contains business domains only.
 
-Current business domains (seven):
+Current business domains (ten):
 
 ```text
-audit  live  rbac  risk  storage  user  webhook
+agent  ai  audit  creation  live  rbac  risk  storage  user  webhook
 ```
 
 Framework subsystems are not part of `core`. `extension`, `infra`, `security` and `setting` are top-level packages, and their contracts live in their own `contract/` package, never in the top-level `contract`.
@@ -50,11 +50,46 @@ Adding a business domain means adding both `contract/<domain>` and `core/<domain
 
 Each side carries only the roles its domain needs; do not create empty directories for symmetry. Apart from `dto/`, a business domain must not gain another intermediate directory.
 
+Registered subdomains for `ai`, `agent` and `creation`:
+
+- `core/ai/`: `catalog`, `embedding`, `gateway`, `protocol`, `provider`, `quota`, `usage`
+- `core/agent/`: `memory`, `runtime`, `sandbox`, `tool`
+- `core/creation/`: `archive`, `content`, `provider`, `task`
+
+`core/ai/protocol` owns wire-protocol descriptors only: `chatcompletions`,
+`messages`, `responses` and `systemone`. Protocol packages must not contain a
+second provider registry.
+
+`core/ai/provider` owns provider identity, endpoint resolution and model
+discovery. Each built-in provider has an independent directory:
+`deepseek`, `minimax` and `dashscope`.
+
+`core/ai/usage` owns protocol-neutral token usage values. It must not persist
+records or calculate credits; persistence stays in `infra/r2dbc/ai` and credit
+calculation stays in `core/ai/quota`.
+
+## Infrastructure subpaths (registered additions)
+
+A new `infra` subpath must be registered in this rule before code is added. The following AI, agent, creation and shared-runtime paths are registered:
+
+- `infra/redis`
+- `infra/r2dbc/ai`
+- `infra/r2dbc/ai/catalog`
+- `infra/r2dbc/ai/quota`
+- `infra/r2dbc/agent`
+- `infra/r2dbc/agent/memory`
+- `infra/r2dbc/agent/memory/vector`
+- `infra/r2dbc/agent/sandbox`
+- `infra/r2dbc/creation`
+- `infra/r2dbc/support`
+
+Existing `infra` subpaths stay valid; this section records additions only.
+
 ## Hard prohibitions
 
 1. No package may be named `service`, and no `service/` directory may exist.
 2. No `resource/` intermediate directory; resource models sit at the root of `contract/<domain>/`.
-3. `contract` may contain only the seven business domain directories. It must not contain `extension`, `infra`, `security` or `setting`.
+3. `contract` may contain only the ten business domain directories. It must not contain `extension`, `infra`, `security` or `setting`.
 4. A business domain root must not contain an `event` package, and the contract layer must not contain an `event` package; event definitions live in `event/<domain>/`. Internal subsystem events such as `extension/event` and `infra/event` are implementation detail and may stay.
 5. The top-level `contract` layer must not hold behaviour interfaces. Domain SPI belongs to the implementation side: the domain root, or `<subsystem>/contract/` for a subsystem.
 6. No `*ServiceImpl` suffix. Multiple implementations are expressed with a source prefix: `Extension*`, `Local*`, `Feishu*`, `Default*` or `Configured*`.
@@ -95,14 +130,17 @@ find . -type d -name resource
 find . -name '*ServiceImpl.java'
 grep -rnE 'class [A-Za-z0-9_]+Service\b|interface [A-Za-z0-9_]+Service\b' .
 find ./contract -type d -name event
-for d in audit live rbac risk storage user webhook; do find ./core/$d -maxdepth 1 -type d -name event; done
+for d in agent ai audit creation live rbac risk storage user webhook; do find ./core/$d -maxdepth 1 -type d -name event; done
 ```
 
 ## Directory tree
 
 ```text
 contract/          business contracts only
+├── agent/         AgentSession, AgentMessage, AgentRun, MemoryItem, Sandbox
+├── ai/            AiChannel, AiModel, price and default-model DTOs
 ├── audit/         AuditRecord
+├── creation/      GenerationTask, Asset, Work, Template, Activity, Subject
 ├── live/          resource models + dto/
 ├── rbac/          roles, bindings, user groups
 ├── risk/          RiskRule + dto/
@@ -110,8 +148,11 @@ contract/          business contracts only
 ├── user/          User, UserConnection
 └── webhook/       Webhook + dto/
 
-core/              the same seven business domains
+core/              the same ten business domains
+├── agent/{endpoint,runtime,memory,sandbox,tool}
+├── ai/{endpoint,catalog,embedding,gateway,protocol,provider,quota,usage}
 ├── audit/{endpoint}
+├── creation/{endpoint,task,provider,archive,content}
 ├── live/{endpoint,reconciler,alert,monitor,recorder,recording,resolve,source}
 ├── rbac/{endpoint,reconciler,group,permission}
 ├── risk/{endpoint,reconciler}
