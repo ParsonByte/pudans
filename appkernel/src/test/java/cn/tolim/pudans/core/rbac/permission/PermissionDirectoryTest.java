@@ -100,7 +100,7 @@ class PermissionDirectoryTest {
                                 Role.UI_ACTION_ANNO, Role.UI_ACTION_VIEW,
                                 Role.UI_MENU_ANNO, "uc.account.profile",
                                 Role.UI_WORKSPACE_ANNO, "uc",
-                                Role.UI_LABEL_ANNO, "个人设置",
+                                Role.UI_LABEL_ANNO, "个人详情",
                                 Role.UI_GROUP_ANNO, "账户",
                                 Role.UI_GROUP_KEY_ANNO, "account",
                                 Role.UI_ORDER_ANNO, "10",
