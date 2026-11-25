@@ -13,8 +13,6 @@ import { SecretsRoute } from "./(_console)/security/secrets/route";
 import { TracesRoute } from "./(_console)/security/traces/route";
 import { StorageFilesRoute } from "./(_console)/storage/storage-files/route";
 import { StoragePoliciesRoute } from "./(_console)/storage/storage-policies/route";
-import { AnnotationsRoute } from "./(_console)/system/annotations/route";
-import { ConfigMapsRoute } from "./(_console)/system/config-maps/route";
 import { SettingsRoute } from "./(_console)/system/settings/route";
 import { WebhooksRoute } from "./(_console)/system/webhooks/route";
 import { IdentitiesRoute } from "./(_uc)/account/identities/route";
@@ -56,8 +54,6 @@ export const WORKSPACE_VIEWS: Record<string, WorkspaceViews> = {
         system: {
             settings: SettingsRoute,
             webhooks: WebhooksRoute,
-            "config-maps": ConfigMapsRoute,
-            annotations: AnnotationsRoute,
         },
     },
 };
