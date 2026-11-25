@@ -29,7 +29,9 @@ metadata:
         "role-template-manage-own-pat",
         "role-template-manage-own-authentications",
         "role-template-own-passkeys",
-        "role-template-own-connections"
+        "role-template-own-connections",
+        "role-template-view-ai-catalog",
+        "role-template-view-ai-quota"
       ]
 rules:
   - apiGroups:
