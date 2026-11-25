@@ -5,6 +5,8 @@ import { PermissionsRoute } from "./(_console)/identity/permissions/route";
 import { RolesRoute } from "./(_console)/identity/roles/route";
 import { UserGroupsRoute } from "./(_console)/identity/user-groups/route";
 import { UsersRoute } from "./(_console)/identity/users/route";
+import { LiveRecordingsRoute } from "./(_console)/live/live-recordings/route";
+import { LiveSourcesRoute } from "./(_console)/live/live-sources/route";
 import { DashboardRoute } from "./(_console)/overview/dashboard/route";
 import { AuditRoute } from "./(_console)/security/audit/route";
 import { ReplayRoute } from "./(_console)/security/replay/route";
@@ -50,6 +52,10 @@ export const WORKSPACE_VIEWS: Record<string, WorkspaceViews> = {
         storage: {
             "storage-policies": StoragePoliciesRoute,
             "storage-files": StorageFilesRoute,
+        },
+        live: {
+            "live-sources": LiveSourcesRoute,
+            "live-recordings": LiveRecordingsRoute,
         },
         system: {
             settings: SettingsRoute,
