@@ -1,25 +1,12 @@
 "use client";
 
-import { useState } from "react";
-
 import { ScanIcon } from "tdesign-icons-react";
 
 import { CognitionCanvas } from "./components/cognition-canvas";
-import { DimensionInspector } from "./components/dimension-inspector";
 import { FloatingUnderstandingAssistant } from "./components/floating-understanding-assistant";
-import { PrivacyScope } from "./components/privacy-scope";
-import { UnderstandingFlow } from "./components/understanding-flow";
-import { UNDERSTANDING_DIMENSIONS, type UnderstandingDimensionId } from "./composables/_dimensions";
 import styles from "./styles/deep-understanding.module.css";
 
 export function DeepUnderstandingView() {
-    const [activeDimensionId, setActiveDimensionId] = useState<UnderstandingDimensionId>("intent");
-    const activeDimensionIndex = Math.max(
-        0,
-        UNDERSTANDING_DIMENSIONS.findIndex((dimension) => dimension.id === activeDimensionId),
-    );
-    const activeDimension = UNDERSTANDING_DIMENSIONS[activeDimensionIndex];
-
     return (
         <section aria-labelledby="deep-understanding-page-title" className={styles.page}>
             <div className={styles.scroller}>
@@ -48,17 +35,7 @@ export function DeepUnderstandingView() {
                     </header>
 
                     <div className={styles.workspace}>
-                        <CognitionCanvas activeDimensionId={activeDimensionId} onSelect={setActiveDimensionId} />
-                        <DimensionInspector
-                            dimension={activeDimension}
-                            index={activeDimensionIndex}
-                            total={UNDERSTANDING_DIMENSIONS.length}
-                        />
-                    </div>
-
-                    <div className={styles.foundation}>
-                        <UnderstandingFlow />
-                        <PrivacyScope />
+                        <CognitionCanvas />
                     </div>
                 </div>
             </div>
