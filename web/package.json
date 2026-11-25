@@ -32,10 +32,6 @@
     "@hookform/resolvers": "^7.0.8",
     "@icon-park/react": "^1.4.2",
     "@pudans-dev/api-client": "*",
-    "@react-three/drei": "^10.7.9",
-    "@react-three/fiber": "^9.8.2",
-    "@react-three/postprocessing": "^3.2.2",
-    "@react-three/rapier": "^2.2.0",
     "@tanstack/react-query": "^5.108.2",
     "@tanstack/react-query-devtools": "^5.108.2",
     "@tanstack/react-table": "^9.3.1",
@@ -55,7 +51,6 @@
     "motion": "^14.14.0",
     "next": "^16.4.6",
     "next-themes": "^0.4.6",
-    "postprocessing": "^6.39.6",
     "qrcode.react": "^4.2.0",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",
@@ -68,7 +63,6 @@
     "shiki": "^4.6.0",
     "tdesign-icons-react": "^0.6.12",
     "tdesign-react": "^1.18.6",
-    "three": "^0.187.0",
     "tvision-color": "^1.6.0",
     "xlsx": "^0.18.5",
     "zod": "^4.6.7"
@@ -84,7 +78,6 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/react-highlight-words": "^0.20.1",
-    "@types/three": "^0.187.0",
     "eslint": "^10.15.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
@@ -97,8 +90,5 @@
     "tw-animate-css": "^1.4.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.73.0"
-  },
-  "overrides": {
-    "@dimforge/rapier3d-compat": "0.19.2"
   }
 }

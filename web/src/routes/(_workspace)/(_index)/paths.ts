@@ -11,7 +11,6 @@ export const INDEX_PAGE_KEYS = {
     aiTools: "ai-tools",
     assets: "assets",
     deepUnderstanding: "deep-understanding",
-    dreamSpace: "dream-space",
     conversation: "conversation",
 } as const;
 
@@ -103,8 +102,6 @@ export function indexPageHref(page: IndexPageKey, sessionIds: readonly string[] 
 
     return `${INDEX_BASE_PATH}?${search}`;
 }
-
-export const INDEX_DREAM_SPACE_HREF = indexPageHref(INDEX_PAGE_KEYS.dreamSpace);
 
 export function indexWorkHref(name: string): string {
     return `${INDEX_BASE_PATH}/${INDEX_DETAIL_PATH_KEYS.work}/${encodeURIComponent(name)}`;

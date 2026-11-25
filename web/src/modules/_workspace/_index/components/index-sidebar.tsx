@@ -7,7 +7,7 @@ import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { GraphicDesignTwo } from "@icon-park/react";
-import { LayoutGridCirclesIcon, LineSquiggleIcon, SparklesIcon } from "lucide-react";
+import { LayoutGridCirclesIcon, SparklesIcon } from "lucide-react";
 import { ChatBubbleHistoryIcon, ChatIcon, ExploreIcon, LightbulbIcon } from "tdesign-icons-react";
 import { Menu } from "tdesign-react";
 
@@ -83,9 +83,6 @@ export function IndexSidebar({ collapsed, isDark, onNavigate }: AppShellSidebarP
                         >
                             <MenuItem icon={<LightbulbIcon />} value={INDEX_PAGE_KEYS.deepUnderstanding}>
                                 深度理解
-                            </MenuItem>
-                            <MenuItem icon={<LineSquiggleIcon className="t-icon" />} value={INDEX_PAGE_KEYS.dreamSpace}>
-                                幻境空间
                             </MenuItem>
                         </SubMenu>
                     </Menu>
