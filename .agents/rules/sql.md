@@ -8,7 +8,22 @@
 ## Required
 
 - All database access uses Spring Data R2DBC; queries remain reactive and non-blocking.
-- Hand-written SQL is allowed only in the R2DBC data access layer: `infra/r2dbc/store/ReactiveExtensionStoreClientImpl`, `infra/r2dbc/store/ExtensionStoreRepository`, `infra/audit/AuditStore`, `infra/audit/AuditRecordRepository`, `infra/audit/AuditArchiveRepository` and `infra/audit/AuditArchiveGuardRepository`.
+- Hand-written SQL is allowed only in the declared R2DBC data access layers and their subpackages:
+  - `infra/r2dbc/store/ReactiveExtensionStoreClientImpl`
+  - `infra/r2dbc/store/ExtensionStoreRepository`
+  - `infra/r2dbc/ai`
+  - `infra/r2dbc/ai/catalog`
+  - `infra/r2dbc/ai/quota`
+  - `infra/r2dbc/agent`
+  - `infra/r2dbc/agent/memory`
+  - `infra/r2dbc/agent/memory/vector`
+  - `infra/r2dbc/agent/sandbox`
+  - `infra/r2dbc/creation`
+  - `infra/r2dbc/support`
+  - `infra/audit/AuditStore`
+  - `infra/audit/AuditRecordRepository`
+  - `infra/audit/AuditArchiveRepository`
+  - `infra/audit/AuditArchiveGuardRepository`
 - Prefer Spring Data R2DBC repository derived queries; add custom queries to the data access layer when a derived query is not sufficient.
 - Bind every value as a parameter; never insert values into SQL text by concatenation or interpolation.
 - Keep SQL identifiers inside the data access layer; endpoints, services, controllers, reconcilers and filters call typed data access methods.
@@ -16,6 +31,7 @@
 ## Prohibited
 
 - Do not introduce JDBC, `JdbcTemplate`, JPA, Hibernate, MyBatis, jOOQ or any blocking database access.
+- Do not use a JDBC-based AI persistence or vector store adapter, including `agentscope-extensions-postgresql` and LangChain4j `PgVectorEmbeddingStore`.
 - Do not add Flyway, Liquibase or any database migration framework.
 - Do not write SQL strings, text-block SQL or `DatabaseClient.sql(...)` in an endpoint, service, controller, reconciler or filter.
 - Do not add `.sql` files, including `schema.sql`, `data.sql`, date-named migration scripts or vendor-specific schema files.
