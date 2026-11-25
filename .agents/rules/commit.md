@@ -10,9 +10,14 @@ Commit messages use the single-line Conventional Commits form:
 
 ```
 <type>: <subject>
+<type>!: <subject>
 ```
 
+The `!` marker immediately after the type means the commit is a breaking change.
+
 Example: `refactor: web consolidate packages and centralize api access`
+
+Example breaking change: `feat!: replace the system settings route`
 
 Common types: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `build`, `ci`, `perf`, `style`.
 
@@ -23,7 +28,7 @@ Common types: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `build`, `ci`,
 - No `Co-authored-by`, signature blocks or change lists as trailers.
 - Subject is lowercase English, imperative verb phrase, no trailing period; keep it within 72 characters.
 - One commit does one thing; the subject must match the content.
-- A breaking change uses the Conventional Commits breaking marker in the title, for example `feat!: replace the system settings route`. The migration details belong in the pull request or task summary, never in the commit body.
+- Mark a breaking change with `!` immediately after the type, for example `feat!: replace the system settings route`. The migration details belong in the pull request or task summary, never in the commit body.
 
 ## Pre-commit checklist
 
