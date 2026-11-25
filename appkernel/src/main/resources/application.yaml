@@ -58,6 +58,49 @@ spring:
 
 pudans:
   work-dir: ${PUDANS_WORK_DIR:${user.home}/.pudans}
+  memory:
+    reme:
+      enabled: ${REME_MEMORY_ENABLED:false}
+      api-base-url: ${REME_MEMORY_API_BASE_URL:}
+      timeout: ${REME_MEMORY_TIMEOUT:60s}
+      top-k: ${REME_MEMORY_TOP_K:5}
+      max-context-chars: ${REME_MEMORY_MAX_CONTEXT_CHARS:8000}
+      workspace-prefix: ${REME_MEMORY_WORKSPACE_PREFIX:pudans}
+  ai:
+    credential-key-file: keys/ai-channel.key
+    connect-timeout: 5s
+    response-timeout: 20s
+    reservation-ttl: 15m
+    default-timeout-ms: 30000
+  sandbox:
+    enabled: ${PUDANS_SANDBOX_ENABLED:${AGENTRUN_SANDBOX_ENABLED:false}}
+    provider: ${PUDANS_SANDBOX_PROVIDER:${AGENTRUN_SANDBOX_PROVIDER:agentrun}}
+    api-key: ${AGENTRUN_SANDBOX_API_KEY:}
+    account-id: ${AGENTRUN_SANDBOX_ACCOUNT_ID:}
+    region: ${AGENTRUN_SANDBOX_REGION:}
+    data-plane-base-url: ${AGENTRUN_SANDBOX_DATA_PLANE_BASE_URL:}
+    template: ${AGENTRUN_SANDBOX_TEMPLATE:}
+    mcp-server-url: ${AGENTRUN_SANDBOX_MCP_SERVER_URL:}
+    workspace-root: ${AGENTRUN_SANDBOX_WORKSPACE_ROOT:/home/agentscope/workspace}
+    default-ttl: ${AGENTRUN_SANDBOX_DEFAULT_TTL:30m}
+    max-ttl-seconds: ${AGENTRUN_SANDBOX_MAX_TTL_SECONDS:86400}
+    lease-ttl: ${AGENTRUN_SANDBOX_LEASE_TTL:10m}
+    default-exec-timeout-seconds: ${AGENTRUN_SANDBOX_EXEC_TIMEOUT_SECONDS:120}
+    max-output-bytes: ${AGENTRUN_SANDBOX_MAX_OUTPUT_BYTES:65536}
+    max-file-bytes: ${AGENTRUN_SANDBOX_MAX_FILE_BYTES:524288}
+    connect-timeout-seconds: ${AGENTRUN_SANDBOX_CONNECT_TIMEOUT_SECONDS:30}
+    read-timeout-seconds: ${AGENTRUN_SANDBOX_READ_TIMEOUT_SECONDS:120}
+    max-retries: ${AGENTRUN_SANDBOX_MAX_RETRIES:3}
+    snapshot-ttl: ${AGENTRUN_SANDBOX_SNAPSHOT_TTL:7d}
+    e2b:
+      api-key: ${E2B_SANDBOX_API_KEY:}
+      api-base-url: ${E2B_SANDBOX_API_BASE_URL:https://api.e2b.app}
+      domain: ${E2B_SANDBOX_DOMAIN:e2b.app}
+      template: ${E2B_SANDBOX_TEMPLATE:base}
+      workspace-root: ${E2B_SANDBOX_WORKSPACE_ROOT:/home/user}
+      run-user: ${E2B_SANDBOX_RUN_USER:user}
+      persistence-mode: ${E2B_SANDBOX_PERSISTENCE_MODE:TAR}
+      snapshot-retention: ${E2B_SANDBOX_SNAPSHOT_RETENTION:0}
   live:
     resolve:
       connect-timeout: 5s
