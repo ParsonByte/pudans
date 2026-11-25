@@ -5,17 +5,18 @@ import cn.tolim.pudans.core.ai.protocol.AiChatProtocolRequest;
 import cn.tolim.pudans.core.ai.protocol.AiProtocol;
 import cn.tolim.pudans.core.ai.protocol.AiProtocolProfile;
 import cn.tolim.pudans.core.ai.protocol.AiProtocolProfiles;
-import io.agentscope.core.model.ExecutionConfig;
-import io.agentscope.core.model.GenerateOptions;
-import io.agentscope.core.model.Model;
-import io.agentscope.extensions.model.anthropic.AnthropicChatModel;
+import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MessagesProtocol implements AiChatProtocol {
 
     private static final MessagesProfile STANDARD = new StandardMessagesProfile();
+
+    private static final String ANTHROPIC_VERSION = "2023-06-01";
 
     @Override
     public AiProtocol protocol() {
@@ -29,7 +30,7 @@ public class MessagesProtocol implements AiChatProtocol {
 
     @Override
     public String requestPath() {
-        return "/messages";
+        return "/v1/messages";
     }
 
     @Override
@@ -38,31 +39,26 @@ public class MessagesProtocol implements AiChatProtocol {
     }
 
     @Override
-    public Model create(AiChatProtocolRequest request, AiProtocolProfile profile) {
+    public StreamingChatModel create(
+            AiChatProtocolRequest request, AiProtocolProfile profile) {
         var resolved = AiProtocolProfiles.resolve(profile, MessagesProfile.class, STANDARD);
-        var options = GenerateOptions.builder()
-                .executionConfig(ExecutionConfig.builder()
-                        .timeout(Duration.ofMillis(request.timeoutMs()))
-                        .build())
-                .additionalHeaders(resolved.additionalHeaders(request.headers()))
-                .additionalBodyParams(resolved.additionalBodyParams(request.additionalBodyParams()));
+        var headers = new LinkedHashMap<>(resolved.additionalHeaders(request.headers()));
+        if (resolved.authentication() == MessagesProfile.Authentication.BEARER) {
+            headers.put("Authorization", "Bearer " + request.apiKey());
+        }
+        var builder = AnthropicStreamingChatModel.builder()
+                .baseUrl(request.baseUrl())
+                .apiKey(request.apiKey())
+                .version(ANTHROPIC_VERSION)
+                .modelName(request.modelId())
+                .customHeaders(headers)
+                .customParameters(resolved.additionalBodyParams(request.additionalBodyParams()))
+                .timeout(Duration.ofMillis(request.timeoutMs()))
+                .returnThinking(true)
+                .sendThinking(true);
         var maxTokens = resolved.maxOutputTokens(request.maxOutputTokens());
         if (maxTokens != null && maxTokens > 0) {
-            options.maxTokens(maxTokens);
-        }
-        var builder = AnthropicChatModel.builder()
-                .baseUrl(request.baseUrl())
-                .modelName(request.modelId())
-                .stream(resolved.stream())
-                .formatter(resolved.formatter())
-                .defaultOptions(options.build());
-        if (resolved.authentication() == MessagesProfile.Authentication.BEARER) {
-            builder.authToken(request.apiKey());
-        } else {
-            builder.apiKey(request.apiKey());
-        }
-        if (request.contextWindow() != null && request.contextWindow() > 0) {
-            builder.contextWindowSize(request.contextWindow());
+            builder.maxTokens(maxTokens);
         }
         resolved.customize(builder);
         return builder.build();

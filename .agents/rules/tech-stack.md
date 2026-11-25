@@ -51,27 +51,21 @@
 
 ## Backend AI dependencies
 
-AgentScope Java is the only allowed AI runtime and embedding library. It must stay behind the `core/agent/runtime`, `core/agent/sandbox` and `core/ai/embedding` boundaries.
+LangChain4j is the only allowed AI runtime, model and embedding library. It must stay behind the `core/agent/runtime`, `core/agent/sandbox`, `core/agent/memory` and `core/ai` boundaries.
 
-- AgentScope Java is the required agent runtime. Use `io.agentscope:agentscope-core`, `io.agentscope:agentscope-harness`, `io.agentscope:agentscope-extensions-model-openai`, `io.agentscope:agentscope-extensions-model-anthropic`, `io.agentscope:agentscope-extensions-model-dashscope`, `io.agentscope:agentscope-extensions-rag-simple`, `io.agentscope:agentscope-extensions-reme`, `io.agentscope:agentscope-extensions-sandbox-agentrun` and `io.agentscope:agentscope-extensions-sandbox-e2b` at `2.0.5`. The version targets Java 17 and runs on Java 25 with Spring Boot `4.2.0-RC2`.
-- AgentScope must enter the `appkernel` runtime classpath through the project dependency declarations. Its OkHttp 5 requests must be resolved to the single project OkHttp `4.12.0` line so `com.upyun:java-sdk:4.2.3` can keep using `okhttp3.internal.Util`; the compatibility test must prove AgentScope, OpenAI, Anthropic, DashScope, RAG, ReMe, AgentRun, E2B, Harness and UpYun load together.
-- Exclude `org.xerial:sqlite-jdbc`, `com.squareup.okhttp3:okhttp-jvm` and the RAG extension's unused JDBC, document-reader and vector-client dependencies globally in `appkernel`; AgentScope dependencies stay plain `api`/`implementation(libs.*)` declarations without repeated per-dependency blocks.
-- Force every `com.squareup.okhttp3:okhttp` request to the project `4.12.0` line; do not exclude `okhttp` from AgentScope because the global rule and the single direct dependency resolve to the same `4.12.0` artifact.
-- Do not add `agentscope-extensions-postgresql` or any JDBC state store; use project R2DBC repositories or Redis leases.
-- Do not add `agentscope-extensions-cos`; object storage uses the project `com.qcloud:cos_api:5.6.283` client and `CosStorageDriver`.
-- The Messages protocol uses `agentscope-extensions-model-anthropic`; the Anthropic SDK base URL is derived from the provider Messages URL so DeepSeek, MiniMax and DashScope compatible endpoints keep their `/v1/messages` path.
-- The chat-completions runtime uses `agentscope-extensions-model-dashscope` for DashScope channels; the extension's `DashScopeChatModel` owns native text and multimodal routing, thinking/search flags, tool calls, structured-output fallback and DashScope base-URL resolution.
-- The DashScope extension transitively supplies `com.alibaba:dashscope-sdk-java`; the platform BOM pins that transitive SDK to `2.23.7` for the native media adapter. The adapter stays behind `core/creation/provider`, every SDK call runs on `Schedulers.boundedElastic()`, and its OkHttp `4.12.0` request line resolves to the project OkHttp version.
+- LangChain4j is the required AI runtime. Use `dev.langchain4j:langchain4j`, `langchain4j-open-ai`, `langchain4j-anthropic`, `langchain4j-mcp` and `langchain4j-community-dashscope` at the versions managed by `dev.langchain4j:langchain4j-bom` `1.23.0` (`1.23.0-beta33` for the MCP and community modules). The platform BOM imports the LangChain4j BOM and constrains the two beta modules.
+- Do not add another AI SDK, agent framework or embedding library. Chat protocols, the agent loop, embeddings, memory extraction and tool execution use LangChain4j types.
+- The Chat Completions protocol uses `OpenAiStreamingChatModel`, the Messages protocol uses `AnthropicStreamingChatModel`, the Responses protocol uses `OpenAiResponsesStreamingChatModel` and provider profiles customize the LangChain4j builders. Protocol packages expose only `StreamingChatModel`; SDK request and response types stay inside the protocol implementation.
+- LangChain4j model transports use the JDK HTTP client internally. That client belongs to the model adapters and is not the project HTTP client; project code keeps using the single WebClient gateway (`AiProviderHttp`) and OkHttp only for the vendor sandbox transports.
+- Embedding uses `OpenAiEmbeddingModel` for OpenAI-compatible channels and `QwenEmbeddingModel` from `langchain4j-community-dashscope` for DashScope channels. `MemoryEmbeddings` subscribes embedding calls on `Schedulers.boundedElastic()` because the SDKs are synchronous.
+- `langchain4j-community-dashscope` transitively supplies `com.alibaba:dashscope-sdk-java`; the platform BOM pins that transitive SDK to `2.23.7`.
 - Model discovery reads only provider-returned model identifiers, display names and model type. Context/output limits, modalities, capabilities and parameter metadata are not imported or inferred; no external model catalog is bundled or merged.
 - The DashScope catalog is Qwen-only: channel discovery keeps `qwen*`, `qwq*`, `qvq*`, `text-embedding-*` and `multimodal-embedding-*`; third-party and non-Qwen families are filtered out.
-- Embedding uses the AgentScope RAG extension's `EmbeddingModel` with `DashScopeTextEmbedding` for DashScope channels and `OpenAITextEmbedding` for OpenAI-compatible channels. The 2.0.5 implementations call their SDK synchronously, so `MemoryEmbeddings` must subscribe on `Schedulers.boundedElastic()`.
-- The RAG extension is used for embedding only. Its `PgVectorStore`, Qdrant, Milvus, Elasticsearch, document readers and extra HTTP clients are excluded and must not be used; vector persistence stays in project R2DBC and pgvector.
-- ReMe uses `agentscope-extensions-reme` through the application-level memory boundary. It is enabled only by `pudans.memory.reme.enabled`, uses a hashed owner/workspace namespace and cannot fail a completed Agent run when recall or write-back is unavailable.
-- E2B uses `agentscope-extensions-sandbox-e2b` behind `SandboxGateway`. It is enabled only by `pudans.sandbox.provider=e2b` plus complete E2B configuration; AgentRun remains the default provider.
-- Do not add LangChain4j or `langchain4j-pgvector`.
-- Skills, Protocol and Redis extensions are not baseline dependencies. Add one only with a wired business path and a transport that follows the R2DBC-only, single-HTTP-client and reactive rules; `agentscope-extensions-postgresql` is JDBC and remains prohibited.
+- Do not add `langchain4j-pgvector`, Qdrant, Milvus or Elasticsearch storage adapters; vector persistence stays in project R2DBC and pgvector.
+- ReMe is reached through the application-level memory boundary using the project JSON WebClient gateway. It is enabled only by `pudans.memory.reme.enabled`, uses a hashed owner/workspace namespace and cannot fail a completed Agent run when recall or write-back is unavailable.
+- Sandbox vendors stay behind `SandboxGateway`. AgentRun uses the project data-plane client plus `langchain4j-mcp` streamable HTTP for `process_exec_cmd`; E2B uses the project platform client and the envd Connect JSON process stream. Both are enabled only by `pudans.sandbox.enabled` plus complete provider configuration; AgentRun remains the default provider and E2B supports TAR workspace persistence only.
 - Keep the Spring Boot-managed Jackson 2 line (`2.21.8`); do not introduce a second Jackson 2 version or a second application JSON library.
-- No AI dependency may add a second primary HTTP client or a blocking database path. AgentScope internal OkHttp is not the project HTTP client.
+- No AI dependency may add a second primary HTTP client or a blocking database path. LangChain4j internal transports are not the project HTTP client.
 
 ## Verification
 

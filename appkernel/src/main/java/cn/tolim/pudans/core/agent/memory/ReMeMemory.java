@@ -1,13 +1,7 @@
 package cn.tolim.pudans.core.agent.memory;
 
+import cn.tolim.pudans.core.ai.provider.AiProviderHttp;
 import cn.tolim.pudans.infra.utils.Digests;
-import io.agentscope.core.memory.reme.ReMeAddRequest;
-import io.agentscope.core.memory.reme.ReMeClient;
-import io.agentscope.core.memory.reme.ReMeMessage;
-import io.agentscope.core.memory.reme.ReMeSearchRequest;
-import io.agentscope.core.memory.reme.ReMeSearchResponse;
-import io.agentscope.core.memory.reme.ReMeTrajectory;
-import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -22,17 +16,20 @@ public class ReMeMemory {
 
     private final ReMeMemoryProperties properties;
 
-    private final ReMeClient suppliedClient;
+    private final AiProviderHttp http;
 
-    private volatile ReMeClient ownedClient;
+    private final ReMeMemoryClient suppliedClient;
+
+    private volatile ReMeMemoryClient ownedClient;
 
     @Autowired
-    public ReMeMemory(ReMeMemoryProperties properties) {
-        this(properties, null);
+    public ReMeMemory(ReMeMemoryProperties properties, AiProviderHttp http) {
+        this(properties, http, null);
     }
 
-    ReMeMemory(ReMeMemoryProperties properties, ReMeClient suppliedClient) {
+    ReMeMemory(ReMeMemoryProperties properties, AiProviderHttp http, ReMeMemoryClient suppliedClient) {
         this.properties = properties;
+        this.http = http;
         this.suppliedClient = suppliedClient;
     }
 
@@ -41,11 +38,7 @@ public class ReMeMemory {
             return Mono.just("");
         }
         return Mono.defer(() -> client()
-                        .search(ReMeSearchRequest.builder()
-                                .workspaceId(workspace(ownerId, workspaceId))
-                                .query(query)
-                                .topK(properties.normalizedTopK())
-                                .build())
+                        .search(workspace(ownerId, workspaceId), query, properties.normalizedTopK())
                         .map(this::recallText)
                         .defaultIfEmpty(""))
                 .onErrorResume(error -> {
@@ -59,28 +52,17 @@ public class ReMeMemory {
         if (!properties.configured()) {
             return Mono.empty();
         }
-        var messages = new ArrayList<ReMeMessage>();
+        var messages = new ArrayList<ReMeMemoryClient.Message>();
         if (StringUtils.hasText(userText)) {
-            messages.add(ReMeMessage.builder()
-                    .role("user")
-                    .content(userText.trim())
-                    .build());
+            messages.add(new ReMeMemoryClient.Message("user", userText.trim()));
         }
         if (StringUtils.hasText(assistantText)) {
-            messages.add(ReMeMessage.builder()
-                    .role("assistant")
-                    .content(assistantText.trim())
-                    .build());
+            messages.add(new ReMeMemoryClient.Message("assistant", assistantText.trim()));
         }
         if (messages.isEmpty()) {
             return Mono.empty();
         }
-        var request = ReMeAddRequest.builder()
-                .workspaceId(workspace(ownerId, workspaceId))
-                .trajectories(List.of(
-                        ReMeTrajectory.builder().messages(List.copyOf(messages)).build()))
-                .build();
-        return Mono.defer(() -> client().add(request))
+        return Mono.defer(() -> client().add(workspace(ownerId, workspaceId), List.copyOf(messages)))
                 .then()
                 .onErrorResume(error -> {
                     log.warn("ReMe 长期记忆写入失败：{}", error.getMessage());
@@ -88,35 +70,33 @@ public class ReMeMemory {
                 });
     }
 
-    private ReMeClient client() {
+    private ReMeMemoryClient client() {
         if (suppliedClient != null) {
             return suppliedClient;
         }
         if (ownedClient == null) {
             synchronized (this) {
                 if (ownedClient == null) {
-                    ownedClient = new ReMeClient(
-                            properties.getApiBaseUrl().trim(), properties.normalizedTimeout());
+                    ownedClient = new ReMeMemoryClient(
+                            http, properties.getApiBaseUrl().trim(), properties.normalizedTimeout());
                 }
             }
         }
         return ownedClient;
     }
 
-    private String recallText(ReMeSearchResponse response) {
-        if (response == null || Boolean.FALSE.equals(response.getSuccess())) {
+    private String recallText(ReMeMemoryClient.Answer response) {
+        if (response == null || !response.success()) {
             return "";
         }
-        var answer = response.getAnswer();
+        var answer = response.answer();
         var text = StringUtils.hasText(answer)
                 ? answer.trim()
-                : response.getMemories() == null
-                        ? ""
-                        : response.getMemories().stream()
-                                .filter(StringUtils::hasText)
-                                .map(String::trim)
-                                .reduce((left, right) -> left + "\n" + right)
-                                .orElse("");
+                : response.memories().stream()
+                        .filter(StringUtils::hasText)
+                        .map(String::trim)
+                        .reduce((left, right) -> left + "\n" + right)
+                        .orElse("");
         var limit = properties.normalizedMaxContextChars();
         return text.length() <= limit ? text : text.substring(0, limit);
     }
@@ -124,13 +104,5 @@ public class ReMeMemory {
     private String workspace(String ownerId, String workspaceId) {
         var digest = Digests.sha256Hex(ownerId + "\0" + workspaceId);
         return properties.getWorkspacePrefix().trim() + ":" + digest;
-    }
-
-    @PreDestroy
-    void shutdown() {
-        var client = ownedClient;
-        if (client != null) {
-            client.shutdown();
-        }
     }
 }

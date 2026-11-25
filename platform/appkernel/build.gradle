@@ -14,6 +14,7 @@ javaPlatform {
 
 dependencies {
     api platform(SpringBootPlugin.BOM_COORDINATES)
+    api platform(libs.langchain4j.bom)
 
     constraints {
         api libs.bundles.apache
@@ -23,16 +24,9 @@ dependencies {
         api libs.webauthn4j
         api libs.guava
         api libs.json.patch
-        api libs.agentscope.core
-        api libs.agentscope.harness
-        api libs.agentscope.extensions.model.anthropic
-        api libs.agentscope.extensions.model.dashscope
-        api libs.agentscope.extensions.model.openai
-        api libs.agentscope.extensions.rag.simple
-        api libs.agentscope.extensions.reme
-        api libs.agentscope.extensions.sandbox.agentrun
-        api libs.agentscope.extensions.sandbox.e2b
-        // DashScope 扩展传递引入 SDK，平台约束固定原生媒体适配使用的版本。
+        api libs.langchain4j.mcp
+        api libs.langchain4j.community.dashscope
+        // DashScope 模块传递引入 SDK，平台约束固定该 SDK 的版本。
         api libs.dashscope.sdk.java
         api libs.okhttp
         api libs.bundles.resilience4j

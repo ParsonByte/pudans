@@ -27,24 +27,8 @@ configurations {
 }
 
 configurations.configureEach {
-    exclude group: 'org.xerial', module: 'sqlite-jdbc'
+    // 华为 OBS SDK 会传递引入 Kotlin 多平台的 okhttp-jvm，与 UpYun 依赖的 OkHttp 4 线冲突。
     exclude group: 'com.squareup.okhttp3', module: 'okhttp-jvm'
-    exclude group: 'org.postgresql', module: 'postgresql'
-    exclude group: 'com.pgvector', module: 'pgvector'
-    exclude group: 'io.qdrant'
-    exclude group: 'io.milvus'
-    exclude group: 'co.elastic.clients'
-    exclude group: 'org.apache.httpcomponents.client5'
-    exclude group: 'org.apache.httpcomponents.core5'
-    exclude group: 'org.apache.pdfbox'
-    exclude group: 'org.apache.poi'
-    exclude group: 'org.apache.tika'
-    exclude group: 'io.agentscope', module: 'agentscope-extensions-model-ollama'
-    resolutionStrategy.eachDependency { details ->
-        if (details.requested.group == 'com.squareup.okhttp3' && details.requested.name == 'okhttp') {
-            details.useVersion libs.versions.okhttp.get()
-        }
-    }
 }
 
 dependencies {
@@ -74,6 +58,11 @@ dependencies {
         'net.bytebuddy:byte-buddy',
         libs.apache.commons.lang3,
         libs.apache.commons.io,
+        libs.langchain4j,
+        libs.langchain4j.open.ai,
+        libs.langchain4j.anthropic,
+        libs.langchain4j.mcp,
+        libs.langchain4j.community.dashscope,
         libs.webauthn4j,
         libs.guava,
         libs.json.patch,
@@ -113,15 +102,6 @@ dependencies {
     sharedDeps.each { d ->
         add('implementation', d)
     }
-    api libs.agentscope.core
-    api libs.agentscope.harness
-    api libs.agentscope.extensions.model.anthropic
-    api libs.agentscope.extensions.model.dashscope
-    api libs.agentscope.extensions.model.openai
-    api libs.agentscope.extensions.rag.simple
-    api libs.agentscope.extensions.reme
-    api libs.agentscope.extensions.sandbox.agentrun
-    api libs.agentscope.extensions.sandbox.e2b
     add('annotationProcessor', libs.therapi.runtime.javadoc.scribe)
     add('compileOnly', 'org.projectlombok:lombok')
     add('annotationProcessor', 'org.projectlombok:lombok')

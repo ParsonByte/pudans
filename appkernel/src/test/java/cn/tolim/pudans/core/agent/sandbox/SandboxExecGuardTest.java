@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 
 class SandboxExecGuardTest {
 
-    private static final String WORKSPACE_ROOT = "/home/agentscope/workspace";
+    private static final String WORKSPACE_ROOT = "/home/pudans/workspace";
 
     private SandboxProperties properties;
 

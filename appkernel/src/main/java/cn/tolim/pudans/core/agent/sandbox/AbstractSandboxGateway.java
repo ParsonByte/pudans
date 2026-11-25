@@ -1,27 +1,19 @@
 package cn.tolim.pudans.core.agent.sandbox;
 
 import cn.tolim.pudans.infra.utils.Digests;
-import io.agentscope.harness.agent.sandbox.Sandbox;
-import io.agentscope.harness.agent.sandbox.SandboxClient;
-import io.agentscope.harness.agent.sandbox.SandboxClientOptions;
-import io.agentscope.harness.agent.sandbox.SandboxException;
-import io.agentscope.harness.agent.sandbox.SandboxState;
-import io.agentscope.harness.agent.sandbox.WorkspaceSpec;
-import io.agentscope.harness.agent.sandbox.snapshot.NoopSnapshotSpec;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @Slf4j
-abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements SandboxGateway {
+abstract class AbstractSandboxGateway implements SandboxGateway {
 
     private static final int FILE_CHUNK_BYTES = 128 * 1024;
 
@@ -29,19 +21,14 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
 
     protected final SandboxProperties properties;
 
-    private final Function<O, SandboxClient<O>> clients;
+    private final SandboxClient client;
 
-    private final Map<UUID, ActiveSandbox<O>> active = new ConcurrentHashMap<>();
+    private final Map<UUID, SandboxSession> active = new ConcurrentHashMap<>();
 
-    protected HarnessSandboxGateway(
-            SandboxProperties properties, Function<O, SandboxClient<O>> clients) {
+    protected AbstractSandboxGateway(SandboxProperties properties, SandboxClient client) {
         this.properties = properties;
-        this.clients = clients;
+        this.client = client;
     }
-
-    protected abstract O options(String template, String region);
-
-    protected abstract String providerSandboxId(SandboxState state);
 
     protected abstract String configuredWorkspaceRoot();
 
@@ -66,7 +53,7 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
     public Mono<Execution> exec(ExecCommand command) {
         return Mono.fromCallable(() -> execBlocking(command))
                 .subscribeOn(Schedulers.boundedElastic())
-                .onErrorResume(SandboxException.ExecTimeoutException.class, error -> Mono.error(
+                .onErrorResume(SandboxSession.ExecTimeoutException.class, error -> Mono.error(
                         new ExecTimeout("沙箱命令执行超时。", error)))
                 .onErrorResume(this::failure);
     }
@@ -75,17 +62,17 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
     @Override
     public Mono<InputStream> persistWorkspace(UUID sandboxId, String providerState) {
         return Mono.fromCallable(() -> {
-                    var sandbox = activeSandbox(sandboxId, providerState);
-                    if (!sandbox.sandbox().isRunning()) {
-                        sandbox.sandbox().start();
+                    var session = activeSession(sandboxId, providerState);
+                    if (!session.isRunning()) {
+                        session.start();
                     }
-                    return sandbox.sandbox().persistWorkspace();
+                    return session.persistWorkspace();
                 })
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(this::failure);
     }
 
-    // 恢复已停止的供应商沙箱，并使用沙箱记录中的模板和地域重建客户端。
+    // 恢复已停止的供应商沙箱，并使用状态中的模板和地域重建会话。
     @Override
     public Mono<Resumed> resume(ResumeCommand command) {
         return Mono.fromCallable(() -> resumeBlocking(command))
@@ -117,9 +104,9 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
     @Override
     public Mono<Void> stop(UUID sandboxId, String providerState) {
         return Mono.fromCallable(() -> {
-                    var sandbox = activeSandbox(sandboxId, providerState);
-                    sandbox.sandbox().stop();
-                    return sandbox;
+                    var session = activeSession(sandboxId, providerState);
+                    session.stop();
+                    return true;
                 })
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(this::failure)
@@ -130,11 +117,11 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
     @Override
     public Mono<Void> destroy(UUID sandboxId, String providerState) {
         return Mono.fromCallable(() -> {
-                    var sandbox = active.get(sandboxId);
-                    if (sandbox == null) {
-                        sandbox = resumed(sandboxId, providerState);
+                    var session = active.get(sandboxId);
+                    if (session == null) {
+                        session = resumed(providerState);
                     }
-                    sandbox.sandbox().shutdown();
+                    session.shutdown();
                     active.remove(sandboxId);
                     return true;
                 })
@@ -144,36 +131,25 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
     }
 
     private Created createBlocking(CreateCommand command) throws Exception {
-        var options = options(command.template(), command.region());
-        var client = clients.apply(options);
-        var workspace = new WorkspaceSpec();
-        workspace.setRoot(configuredWorkspaceRoot());
-        workspace.setEnvironment(Map.of());
-        var sandbox = client.create(workspace, new NoopSnapshotSpec(), options);
+        var session = client.create(
+                configuredWorkspaceRoot(), command.template(), command.region());
         try {
-            sandbox.start();
-            var state = sandbox.getState();
-            var providerState = client.serializeState(state);
-            active.put(
-                    command.sandboxId(),
-                    new ActiveSandbox<>(client, sandbox, providerState));
+            session.start();
+            active.put(command.sandboxId(), session);
             return new Created(
-                    providerSandboxId(state), providerState, workspaceRoot(state));
+                    session.providerSandboxId(), session.providerState(), session.workspaceRoot());
         } catch (Exception error) {
-            shutdownQuietly(sandbox);
+            shutdownQuietly(session);
             throw error;
         }
     }
 
     private Execution execBlocking(ExecCommand command) throws Exception {
-        var sandbox = activeSandbox(command.sandboxId(), command.providerState());
-        if (!sandbox.sandbox().isRunning()) {
-            sandbox.sandbox().start();
+        var session = activeSession(command.sandboxId(), command.providerState());
+        if (!session.isRunning()) {
+            session.start();
         }
-        return run(
-                sandbox.sandbox(),
-                command(command.workdir(), command.command()),
-                command.timeoutSeconds());
+        return run(session, command.command(), command.workdir(), command.timeoutSeconds());
     }
 
     private Resumed resumeBlocking(ResumeCommand command) throws Exception {
@@ -183,26 +159,12 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
                     "沙箱缺少可恢复的供应商状态。",
                     null);
         }
-        var sandbox = active.get(command.sandboxId());
-        if (sandbox == null) {
-            var resumed = resumed(
-                    command.sandboxId(),
-                    command.providerState(),
-                    command.template(),
-                    command.region());
-            var previous = active.putIfAbsent(command.sandboxId(), resumed);
-            sandbox = previous == null ? resumed : previous;
+        var session = activeSession(command.sandboxId(), command.providerState());
+        if (!session.isRunning()) {
+            session.start();
         }
-        if (!sandbox.sandbox().isRunning()) {
-            sandbox.sandbox().start();
-        }
-        var state = sandbox.sandbox().getState();
-        var providerState = sandbox.client().serializeState(state);
-        active.put(
-                command.sandboxId(),
-                new ActiveSandbox<>(sandbox.client(), sandbox.sandbox(), providerState));
         return new Resumed(
-                providerSandboxId(state), providerState, workspaceRoot(state));
+                session.providerSandboxId(), session.providerState(), session.workspaceRoot());
     }
 
     private void uploadBlocking(UploadCommand command) throws Exception {
@@ -212,65 +174,59 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
         if (command.content().length > properties.normalizedMaxFileBytes()) {
             throw new Failure("sandbox-file-too-large", "上传文件大小超过限制。", null);
         }
-        var sandbox = activeSandbox(
-                command.sandboxId(),
-                command.providerState(),
-                command.template(),
-                command.region());
+        var session = activeSession(command.sandboxId(), command.providerState());
         var temp = "/tmp/pudans-upload-" + command.sandboxId() + ".b64";
         var directory = parent(command.path());
         var encoded = Base64.getEncoder().encodeToString(command.content());
         try {
             requireSuccess(
-                    run(sandbox.sandbox(), "mkdir -p "
+                    run(session, "mkdir -p "
                             + shellQuote(directory)
                             + " && rm -f "
                             + shellQuote(command.path())
                             + " "
-                            + shellQuote(temp), 30),
+                            + shellQuote(temp), null, 30),
                     "sandbox-file-write-failed");
             for (var offset = 0; offset < encoded.length(); offset += 4_000) {
                 var chunk = encoded.substring(offset, Math.min(encoded.length(), offset + 4_000));
                 requireSuccess(
-                        run(sandbox.sandbox(), "printf '%s' "
+                        run(session, "printf '%s' "
                                 + shellQuote(chunk)
                                 + " >> "
-                                + shellQuote(temp), FILE_TIMEOUT_SECONDS),
+                                + shellQuote(temp), null, FILE_TIMEOUT_SECONDS),
                         "sandbox-file-write-failed");
             }
             requireSuccess(
-                    run(sandbox.sandbox(), "base64 -d "
+                    run(session, "base64 -d "
                             + shellQuote(temp)
                             + " > "
                             + shellQuote(command.path())
                             + " && rm -f "
-                            + shellQuote(temp), FILE_TIMEOUT_SECONDS),
+                            + shellQuote(temp), null, FILE_TIMEOUT_SECONDS),
                     "sandbox-file-write-failed");
             var actual = run(
-                            sandbox.sandbox(),
+                            session,
                             "sha256sum " + shellQuote(command.path()) + " | cut -d' ' -f1",
+                            null,
                             FILE_TIMEOUT_SECONDS)
                     .stdout();
             if (actual == null || !command.sha256().equalsIgnoreCase(actual.trim())) {
-                run(sandbox.sandbox(), "rm -f " + shellQuote(command.path()), 30);
+                run(session, "rm -f " + shellQuote(command.path()), null, 30);
                 throw new Failure("sandbox-file-integrity", "上传文件摘要校验失败。", null);
             }
         } catch (Exception error) {
-            runQuietly(sandbox.sandbox(), "rm -f " + shellQuote(temp));
+            runQuietly(session, "rm -f " + shellQuote(temp));
             throw error;
         }
     }
 
     private Downloaded downloadBlocking(DownloadCommand command) throws Exception {
-        var sandbox = activeSandbox(
-                command.sandboxId(),
-                command.providerState(),
-                command.template(),
-                command.region());
+        var session = activeSession(command.sandboxId(), command.providerState());
         var size = run(
-                        sandbox.sandbox(),
+                        session,
                         "test -f " + shellQuote(command.path())
                                 + " && wc -c < " + shellQuote(command.path()),
+                        null,
                         30)
                 .stdout();
         if (size == null || !StringUtils.hasText(size)) {
@@ -289,11 +245,12 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
         var chunks = (int) ((total + FILE_CHUNK_BYTES - 1) / FILE_CHUNK_BYTES);
         for (var index = 0; index < chunks; index++) {
             var execution = run(
-                    sandbox.sandbox(),
+                    session,
                     "dd if=" + shellQuote(command.path())
                             + " bs=" + FILE_CHUNK_BYTES
                             + " skip=" + index
                             + " count=1 2>/dev/null | base64 | tr -d '\\n'",
+                    null,
                     FILE_TIMEOUT_SECONDS);
             requireSuccess(execution, "sandbox-file-read-failed");
             if (execution.truncated()) {
@@ -308,54 +265,29 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
         return new Downloaded(content, Digests.sha256Hex(content));
     }
 
-    private ActiveSandbox<O> activeSandbox(UUID sandboxId, String providerState) throws Exception {
-        return activeSandbox(sandboxId, providerState, null, null);
-    }
-
-    private ActiveSandbox<O> activeSandbox(
-            UUID sandboxId, String providerState, String template, String region) throws Exception {
+    private SandboxSession activeSession(UUID sandboxId, String providerState) {
         var existing = active.get(sandboxId);
         if (existing != null) {
             return existing;
         }
-        var resumed = resumed(sandboxId, providerState, template, region);
+        var resumed = resumed(providerState);
         var previous = active.putIfAbsent(sandboxId, resumed);
         return previous == null ? resumed : previous;
     }
 
-    private ActiveSandbox<O> resumed(UUID sandboxId, String providerState) {
-        return resumed(sandboxId, providerState, null, null);
+    private SandboxSession resumed(String providerState) {
+        return client.resume(providerState);
     }
 
-    private ActiveSandbox<O> resumed(
-            UUID sandboxId, String providerState, String template, String region) {
-        var options = options(template, region);
-        var client = clients.apply(options);
-        var state = client.deserializeState(providerState);
-        var sandbox = client.resume(state);
-        return new ActiveSandbox<>(client, sandbox, providerState);
+    private Execution run(
+            SandboxSession session, String command, String workdir, int timeoutSeconds)
+            throws Exception {
+        return session.exec(null, command(workdir, command), timeoutSeconds);
     }
 
-    private Execution run(Sandbox sandbox, String command, int timeoutSeconds) throws Exception {
+    private void runQuietly(SandboxSession session, String command) {
         try {
-            var result = sandbox.exec(null, command, timeoutSeconds);
-            return new Execution(
-                    result.exitCode(),
-                    result.stdout(),
-                    result.stderr(),
-                    result.truncated());
-        } catch (SandboxException.ExecException error) {
-            return new Execution(
-                    error.getExitCode(),
-                    error.getStdout(),
-                    error.getStderr(),
-                    false);
-        }
-    }
-
-    private void runQuietly(Sandbox sandbox, String command) {
-        try {
-            run(sandbox, command, 30);
+            run(session, command, null, 30);
         } catch (Exception error) {
             log.warn("清理 {} 沙箱临时文件失败：{}", providerLabel(), error.getMessage());
         }
@@ -372,22 +304,9 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
         return separator <= 0 ? "/" : path.substring(0, separator);
     }
 
-    protected String workspaceRoot(SandboxState state) {
-        var workspace = state == null ? null : state.getWorkspaceSpec();
-        return workspace != null && StringUtils.hasText(workspace.getRoot())
-                ? workspace.getRoot()
-                : configuredWorkspaceRoot();
-    }
-
     private <T> Mono<T> failure(Throwable error) {
         if (error instanceof Failure || error instanceof ExecTimeout) {
             return Mono.error(error);
-        }
-        if (error instanceof SandboxException.SandboxConfigurationException) {
-            return Mono.error(new Failure(
-                    "sandbox-provider-not-configured",
-                    providerLabel() + " 沙箱供应商配置无效。",
-                    error));
         }
         log.warn("{} 沙箱供应商调用失败：{}", providerLabel(), error.getMessage());
         return Mono.error(new Failure(
@@ -396,9 +315,9 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
                 error));
     }
 
-    private void shutdownQuietly(Sandbox sandbox) {
+    private void shutdownQuietly(SandboxSession session) {
         try {
-            sandbox.shutdown();
+            session.shutdown();
         } catch (Exception error) {
             log.warn("清理未完成创建的 {} 沙箱失败：{}", providerLabel(), error.getMessage());
         }
@@ -415,9 +334,4 @@ abstract class HarnessSandboxGateway<O extends SandboxClientOptions> implements 
     private static String shellQuote(String value) {
         return "'" + value.replace("'", "'\"'\"'") + "'";
     }
-
-    private record ActiveSandbox<O extends SandboxClientOptions>(
-            SandboxClient<O> client,
-            Sandbox sandbox,
-            String providerState) {}
 }

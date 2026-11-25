@@ -340,7 +340,7 @@ class SandboxEndpointTest {
     void uploadsAMultipartFileAndAuditsOnlyItsMetadata() {
         var content = "hello".getBytes(StandardCharsets.UTF_8);
         var result = new SandboxFileResult(
-                "/home/agentscope/workspace/notes/a.txt",
+                "/home/pudans/workspace/notes/a.txt",
                 content.length,
                 Digests.sha256Hex(content));
         when(identity.resolve(any())).thenReturn(Mono.just(ALICE));
@@ -577,7 +577,7 @@ class SandboxEndpointTest {
                 "default-template",
                 "cn-shanghai",
                 status,
-                "/home/agentscope/workspace",
+                "/home/pudans/workspace",
                 NOW.plusSeconds(1_800),
                 NOW,
                 NOW,

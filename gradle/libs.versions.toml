@@ -15,7 +15,8 @@ jsonassert = '2.0-rc1'
 larksuite-oapi = '2.8.7'
 java-semver = '0.10.2'
 bouncycastle = '1.83'
-agentscope = '2.0.5'
+langchain4j = '1.23.0'
+langchain4j-beta = '1.23.0-beta33'
 dashscope-sdk = '2.23.7'
 okhttp = '4.12.0'
 aws-sdk = '2.59.3'
@@ -54,15 +55,12 @@ jsonassert = { module = 'org.skyscreamer:jsonassert', version.ref = 'jsonassert'
 larksuite-oapi = { module = 'com.larksuite.oapi:oapi-sdk', version.ref = 'larksuite-oapi' }
 java-semver = { module = 'com.github.zafarkhaja:java-semver', version.ref = 'java-semver' }
 bouncycastle-bcprov = { module = 'org.bouncycastle:bcprov-jdk18on', version.ref = 'bouncycastle' }
-agentscope-core = { module = 'io.agentscope:agentscope-core', version.ref = 'agentscope' }
-agentscope-harness = { module = 'io.agentscope:agentscope-harness', version.ref = 'agentscope' }
-agentscope-extensions-model-anthropic = { module = 'io.agentscope:agentscope-extensions-model-anthropic', version.ref = 'agentscope' }
-agentscope-extensions-model-dashscope = { module = 'io.agentscope:agentscope-extensions-model-dashscope', version.ref = 'agentscope' }
-agentscope-extensions-model-openai = { module = 'io.agentscope:agentscope-extensions-model-openai', version.ref = 'agentscope' }
-agentscope-extensions-rag-simple = { module = 'io.agentscope:agentscope-extensions-rag-simple', version.ref = 'agentscope' }
-agentscope-extensions-reme = { module = 'io.agentscope:agentscope-extensions-reme', version.ref = 'agentscope' }
-agentscope-extensions-sandbox-agentrun = { module = 'io.agentscope:agentscope-extensions-sandbox-agentrun', version.ref = 'agentscope' }
-agentscope-extensions-sandbox-e2b = { module = 'io.agentscope:agentscope-extensions-sandbox-e2b', version.ref = 'agentscope' }
+langchain4j-bom = { module = 'dev.langchain4j:langchain4j-bom', version.ref = 'langchain4j' }
+langchain4j = { module = 'dev.langchain4j:langchain4j' }
+langchain4j-open-ai = { module = 'dev.langchain4j:langchain4j-open-ai' }
+langchain4j-anthropic = { module = 'dev.langchain4j:langchain4j-anthropic' }
+langchain4j-mcp = { module = 'dev.langchain4j:langchain4j-mcp', version.ref = 'langchain4j-beta' }
+langchain4j-community-dashscope = { module = 'dev.langchain4j:langchain4j-community-dashscope', version.ref = 'langchain4j-beta' }
 dashscope-sdk-java = { module = 'com.alibaba:dashscope-sdk-java', version.ref = 'dashscope-sdk' }
 okhttp = { module = 'com.squareup.okhttp3:okhttp', version.ref = 'okhttp' }
 aws-sdk-s3 = { module = 'software.amazon.awssdk:s3', version.ref = 'aws-sdk' }

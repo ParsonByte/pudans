@@ -15,7 +15,8 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.agent.memory.MemoryVectorSpaceEntity;
 import cn.tolim.pudans.infra.r2dbc.agent.memory.MemoryVectorSpaceRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.AiChannelModelRepository;
-import io.agentscope.core.embedding.openai.OpenAITextEmbedding;
+import dev.langchain4j.community.model.dashscope.QwenEmbeddingModel;
+import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -69,9 +71,26 @@ class MemoryEmbeddingModelsTest {
 
         StepVerifier.create(embeddingModels.defaultSpace("workspace"))
                 .assertNext(result -> {
-                    assertThat(result.embeddingModel()).isInstanceOf(OpenAITextEmbedding.class);
-                    assertThat(result.embeddingModel().getDimensions()).isEqualTo(1536);
+                    assertThat(result.embeddingModel()).isInstanceOf(OpenAiEmbeddingModel.class);
+                    assertThat(ReflectionTestUtils.getField(result.embeddingModel(), "modelName"))
+                            .isEqualTo("text-embedding-v4");
+                    assertThat(ReflectionTestUtils.getField(result.embeddingModel(), "dimensions"))
+                            .isEqualTo(1536);
                 })
+                .verifyComplete();
+    }
+
+    @Test
+    void buildsDashScopeEmbeddingForDashScopeChannels() {
+        var model = model();
+        var space = space(model.id(), 1024);
+        var channelModel = channelModel(model.id());
+        var channel = channel(channelModel.channelId(), "dashscope");
+        stubRoute(model, space, channelModel, channel);
+
+        StepVerifier.create(embeddingModels.defaultSpace("workspace"))
+                .assertNext(result -> assertThat(result.embeddingModel())
+                        .isInstanceOf(QwenEmbeddingModel.class))
                 .verifyComplete();
     }
 

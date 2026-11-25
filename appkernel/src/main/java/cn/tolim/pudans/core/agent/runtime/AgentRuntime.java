@@ -11,6 +11,6 @@ public interface AgentRuntime {
     // 请求运行中的 Agent 停止继续执行并返回是否存在活动句柄。
     Mono<Boolean> cancel(AgentRunContext context);
 
-    // 将审批决定交回同一实例持有的 AgentScope 运行态并返回是否恢复。
+    // 将审批决定交回同一实例持有的运行态并返回是否恢复。
     Mono<Boolean> resume(AgentRunContext context, UUID approvalId, boolean approved);
 }

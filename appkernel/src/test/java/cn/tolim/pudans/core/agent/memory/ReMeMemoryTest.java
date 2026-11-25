@@ -2,14 +2,13 @@ package cn.tolim.pudans.core.agent.memory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.agentscope.core.memory.reme.ReMeAddRequest;
-import io.agentscope.core.memory.reme.ReMeClient;
-import io.agentscope.core.memory.reme.ReMeSearchRequest;
-import io.agentscope.core.memory.reme.ReMeSearchResponse;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +24,7 @@ import reactor.test.StepVerifier;
 class ReMeMemoryTest {
 
     @Mock
-    ReMeClient client;
+    ReMeMemoryClient client;
 
     private ReMeMemoryProperties properties;
 
@@ -40,7 +39,7 @@ class ReMeMemoryTest {
         properties.setTimeout(Duration.ofSeconds(20));
         properties.setTopK(5);
         properties.setMaxContextChars(120);
-        memory = new ReMeMemory(properties, client);
+        memory = new ReMeMemory(properties, null, client);
     }
 
     @Test
@@ -58,40 +57,36 @@ class ReMeMemoryTest {
 
     @Test
     void recallsTheAnswerInAnIsolatedWorkspace() {
-        var response = new ReMeSearchResponse();
-        response.setSuccess(true);
-        response.setAnswer("生产环境使用蓝绿发布。");
-
-        when(client.search(any())).thenReturn(Mono.just(response));
+        when(client.search(anyString(), eq("发布策略"), eq(5)))
+                .thenReturn(Mono.just(new ReMeMemoryClient.Answer("生产环境使用蓝绿发布。", true, List.of())));
 
         StepVerifier.create(memory.recall("alice", "workspace-a", "发布策略"))
                 .expectNext("生产环境使用蓝绿发布。")
                 .verifyComplete();
 
-        var request = ArgumentCaptor.forClass(ReMeSearchRequest.class);
-        verify(client).search(request.capture());
-        assertThat(request.getValue().getWorkspaceId())
+        var workspace = ArgumentCaptor.forClass(String.class);
+        verify(client).search(workspace.capture(), eq("发布策略"), eq(5));
+        assertThat(workspace.getValue())
                 .startsWith("pudans:")
                 .isNotEqualTo("pudans:alice:workspace-a");
-        assertThat(request.getValue().getQuery()).isEqualTo("发布策略");
-        assertThat(request.getValue().getTopK()).isEqualTo(5);
     }
 
     @Test
     void recordsOnlyTheRealUserAndAssistantMessages() {
-        when(client.add(any()))
-                .thenReturn(Mono.just(new io.agentscope.core.memory.reme.ReMeAddResponse()));
+        when(client.add(anyString(), any()))
+                .thenReturn(Mono.just(new ReMeMemoryClient.Answer("", true, List.of())));
 
         StepVerifier.create(memory.record(
                         "alice", "workspace-a", "生产环境使用蓝绿发布。", "已记录发布约束。"))
                 .verifyComplete();
 
-        var request = ArgumentCaptor.forClass(ReMeAddRequest.class);
-        verify(client).add(request.capture());
-        assertThat(request.getValue().getWorkspaceId()).startsWith("pudans:");
-        assertThat(request.getValue().getTrajectories()).hasSize(1);
-        assertThat(request.getValue().getTrajectories().getFirst().getMessages())
-                .extracting(message -> message.getRole() + ":" + message.getContent())
+        var workspace = ArgumentCaptor.forClass(String.class);
+        @SuppressWarnings("unchecked")
+        var messages = ArgumentCaptor.forClass((Class<List<ReMeMemoryClient.Message>>) (Class<?>) List.class);
+        verify(client).add(workspace.capture(), messages.capture());
+        assertThat(workspace.getValue()).startsWith("pudans:");
+        assertThat(messages.getValue())
+                .extracting(message -> message.role() + ":" + message.content())
                 .containsExactly(
                         "user:生产环境使用蓝绿发布。",
                         "assistant:已记录发布约束。");
@@ -99,7 +94,8 @@ class ReMeMemoryTest {
 
     @Test
     void degradesToNoRecallWhenTheServerFails() {
-        when(client.search(any())).thenReturn(Mono.error(new IllegalStateException("unreachable")));
+        when(client.search(anyString(), anyString(), anyInt()))
+                .thenReturn(Mono.error(new IllegalStateException("unreachable")));
 
         StepVerifier.create(memory.recall("alice", "workspace-a", "发布策略"))
                 .expectNext("")
@@ -108,16 +104,11 @@ class ReMeMemoryTest {
 
     @Test
     void usesTheMemoryFragmentsWhenNoAggregateAnswerExists() {
-        var first = new ReMeSearchResponse.MemoryItem();
-        first.setContent("发布前必须完成快照。");
-        var second = new ReMeSearchResponse.MemoryItem();
-        second.setContent("回滚窗口为十五分钟。");
-        var metadata = new ReMeSearchResponse.Metadata();
-        metadata.setMemoryList(List.of(first, second));
-        var response = new ReMeSearchResponse();
-        response.setSuccess(true);
-        response.setMetadata(metadata);
-        when(client.search(any())).thenReturn(Mono.just(response));
+        when(client.search(anyString(), anyString(), anyInt()))
+                .thenReturn(Mono.just(new ReMeMemoryClient.Answer(
+                        "",
+                        true,
+                        List.of("发布前必须完成快照。", "回滚窗口为十五分钟。"))));
 
         StepVerifier.create(memory.recall("alice", "workspace-a", "发布约束"))
                 .expectNext("发布前必须完成快照。\n回滚窗口为十五分钟。")

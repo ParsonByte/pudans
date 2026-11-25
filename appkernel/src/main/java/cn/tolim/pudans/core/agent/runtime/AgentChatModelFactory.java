@@ -11,7 +11,7 @@ import cn.tolim.pudans.core.ai.protocol.chatcompletions.StandardChatCompletionsP
 import cn.tolim.pudans.core.ai.provider.AiProvider;
 import cn.tolim.pudans.core.ai.provider.AiProviders;
 import cn.tolim.pudans.infra.exception.ApiException;
-import io.agentscope.core.model.Model;
+import dev.langchain4j.model.chat.StreamingChatModel;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -33,13 +33,13 @@ public class AgentChatModelFactory {
 
     private final AiProviders providers;
 
-    // 依据真实渠道协议构建 AgentScope 聊天模型。
-    public Model create(AgentModelRoute route) {
+    // 依据真实渠道协议构建 LangChain4j 流式聊天模型。
+    public StreamingChatModel create(AgentModelRoute route) {
         return create(route, null);
     }
 
     // 把运行级推理开关交给协议配置映射为渠道参数。
-    public Model create(AgentModelRoute route, String reasoning) {
+    public StreamingChatModel create(AgentModelRoute route, String reasoning) {
         var channel = route.channel();
         var upstream = requiredText(
                 route.channelModel().upstreamModelKey(), "上游模型标识不能为空。");
@@ -67,18 +67,11 @@ public class AgentChatModelFactory {
             AiProtocol protocol,
             Map<String, Object> bodyParams) {
         var channel = route.channel();
-        var structured = supports(route.model(), "structured_output");
         var baseUrl = switch (protocol) {
             case CHAT_COMPLETIONS -> provider.chatCompletionsBaseUrl(channel.baseUrl());
             case MESSAGES -> provider.anthropicBaseUrl(channel.baseUrl());
             case RESPONSES -> provider.responsesBaseUrl(channel.baseUrl());
             case SYSTEM_ONE -> provider.systemOneBaseUrl(channel.baseUrl());
-        };
-        var path = switch (protocol) {
-            case CHAT_COMPLETIONS -> "/chat/completions";
-            case MESSAGES -> provider.messagesPath();
-            case RESPONSES -> provider.responsesPath();
-            case SYSTEM_ONE -> provider.systemOnePath();
         };
         var headers = switch (protocol) {
             case CHAT_COMPLETIONS -> Map.<String, String>of();
@@ -91,13 +84,9 @@ public class AgentChatModelFactory {
                 upstream,
                 apiKey,
                 baseUrl,
-                path,
                 headers,
                 timeoutMs(channel),
-                contextWindow(route.model()),
                 route.model().maxOutputTokens(),
-                structured,
-                structured && supports(route.model(), "tools"),
                 protocol == AiProtocol.CHAT_COMPLETIONS ? bodyParams : Map.of());
     }
 
@@ -120,12 +109,6 @@ public class AgentChatModelFactory {
             throw unsupported(fallback.get());
         }
         return fallback.get();
-    }
-
-    private static Integer contextWindow(AiModel model) {
-        return model.contextWindow() != null && model.contextWindow() > 0
-                ? model.contextWindow()
-                : null;
     }
 
     private static boolean supports(AiModel model, String feature) {

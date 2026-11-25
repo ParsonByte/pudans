@@ -4,11 +4,17 @@ import cn.tolim.pudans.core.ai.protocol.AiChatProtocol;
 import cn.tolim.pudans.core.ai.protocol.AiChatProtocolRequest;
 import cn.tolim.pudans.core.ai.protocol.AiProtocol;
 import cn.tolim.pudans.core.ai.protocol.AiProtocolProfile;
-import io.agentscope.core.model.Model;
+import cn.tolim.pudans.core.ai.protocol.AiProtocolProfiles;
+import dev.langchain4j.http.client.jdk.JdkHttpClient;
+import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.openai.OpenAiResponsesStreamingChatModel;
+import java.time.Duration;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ResponsesProtocol implements AiChatProtocol {
+
+    private static final ResponsesProfile STANDARD = new StandardResponsesProfile();
 
     @Override
     public AiProtocol protocol() {
@@ -31,7 +37,20 @@ public class ResponsesProtocol implements AiChatProtocol {
     }
 
     @Override
-    public Model create(AiChatProtocolRequest request, AiProtocolProfile profile) {
-        return new OpenAiResponsesModel(request, profile);
+    public StreamingChatModel create(
+            AiChatProtocolRequest request, AiProtocolProfile profile) {
+        var resolved = AiProtocolProfiles.resolve(profile, ResponsesProfile.class, STANDARD);
+        var builder = OpenAiResponsesStreamingChatModel.builder()
+                .baseUrl(request.baseUrl())
+                .apiKey(request.apiKey())
+                .modelName(request.modelId())
+                .customHeaders(resolved.additionalHeaders(request.headers()))
+                .httpClientBuilder(JdkHttpClient.builder()
+                        .readTimeout(Duration.ofMillis(request.timeoutMs())));
+        if (request.maxOutputTokens() != null && request.maxOutputTokens() > 0) {
+            builder.maxOutputTokens(request.maxOutputTokens());
+        }
+        resolved.customize(builder);
+        return builder.build();
     }
 }

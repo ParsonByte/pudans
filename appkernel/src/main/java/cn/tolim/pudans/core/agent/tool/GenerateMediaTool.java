@@ -6,9 +6,10 @@ import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.utils.Digests;
 import cn.tolim.pudans.infra.utils.RequestIdentity;
-import io.agentscope.core.agent.RuntimeContext;
-import io.agentscope.core.tool.Tool;
-import io.agentscope.core.tool.ToolParam;
+import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.model.chat.request.json.JsonArraySchema;
+import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
+import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,53 +30,51 @@ public class GenerateMediaTool {
 
     private final GenerationTasks tasks;
 
-    @Tool(
-            name = NAME,
-            description = "Create a real image or video generation task. Returns the persisted task id and status.",
-            readOnly = false,
-            concurrencySafe = false)
-    public Mono<Map<String, Object>> generateMedia(
-            @ToolParam(
-                            name = "media_type",
-                            required = true,
-                            description = "Media type: image or video.")
-                    String mediaType,
-            @ToolParam(
-                            name = "operation",
-                            required = false,
-                            description = "Generation operation, defaults to text.")
-                    String operation,
-            @ToolParam(
-                            name = "model_id",
-                            required = true,
-                            description = "Catalog model UUID for the requested media type.")
-                    String modelId,
-            @ToolParam(
-                            name = "prompt",
-                            required = true,
-                            description = "Complete generation prompt.")
-                    String prompt,
-            @ToolParam(
-                            name = "settings",
-                            required = false,
-                            description = "Model-specific generation settings.")
-                    Map<String, Object> settings,
-            @ToolParam(
-                            name = "input_asset_ids",
-                            required = false,
-                            description = "Existing asset ids used as references.")
-                    List<String> inputAssetIds,
-            RuntimeContext runtimeContext) {
+    // 向聊天模型声明真实的媒体生成工具参数。
+    public ToolSpecification specification() {
+        return ToolSpecification.builder()
+                .name(NAME)
+                .description(
+                        "Create a real image or video generation task. Returns the persisted task id and status.")
+                .parameters(JsonObjectSchema.builder()
+                        .addStringProperty("media_type", "Media type: image or video.")
+                        .addStringProperty("operation", "Generation operation, defaults to text.")
+                        .addStringProperty(
+                                "model_id",
+                                "Catalog model UUID for the requested media type.")
+                        .addStringProperty("prompt", "Complete generation prompt.")
+                        .addProperty(
+                                "settings",
+                                JsonObjectSchema.builder()
+                                        .description("Model-specific generation settings.")
+                                        .additionalProperties(true)
+                                        .build())
+                        .addProperty(
+                                "input_asset_ids",
+                                JsonArraySchema.builder()
+                                        .description("Existing asset ids used as references.")
+                                        .items(JsonStringSchema.builder().build())
+                                        .build())
+                        .required("media_type", "model_id", "prompt")
+                        .build())
+                .build();
+    }
+
+    // 使用真实生成任务服务执行工具并把任务摘要返回给模型。
+    public Mono<Map<String, Object>> execute(
+            AgentToolContext toolContext, Map<String, Object> arguments) {
         return Mono.defer(() -> {
-            var toolContext = runtimeContext == null
-                    ? null
-                    : runtimeContext.get(AgentToolContext.class);
             if (toolContext == null) {
                 return Mono.error(new ApiException(
                         HttpStatus.CONFLICT,
                         "agent-tool-context-missing",
                         "生成工具缺少运行上下文。"));
             }
+            var values = arguments == null ? Map.<String, Object>of() : arguments;
+            var mediaType = string(values.get("media_type"));
+            var operation = string(values.get("operation"));
+            var modelId = string(values.get("model_id"));
+            var prompt = string(values.get("prompt"));
             if (!StringUtils.hasText(mediaType)
                     || !StringUtils.hasText(modelId)
                     || !StringUtils.hasText(prompt)) {
@@ -96,17 +95,13 @@ public class GenerateMediaTool {
             var resolvedOperation = StringUtils.hasText(operation)
                     ? operation.trim()
                     : DEFAULT_OPERATION;
-            Map<String, Object> resolvedSettings = settings == null
-                    ? new LinkedHashMap<>()
-                    : new LinkedHashMap<>(settings);
-            List<String> resolvedAssets = inputAssetIds == null ? List.of() : inputAssetIds;
             var request = new GenerationTaskStartRequest(
                     mediaType.trim(),
                     resolvedOperation,
                     model,
                     prompt.trim(),
-                    resolvedSettings,
-                    resolvedAssets,
+                    settings(values.get("settings")),
+                    assetIds(values.get("input_asset_ids")),
                     toolContext.sessionId(),
                     toolContext.runId(),
                     null,
@@ -120,6 +115,30 @@ public class GenerateMediaTool {
                             idempotencyKey(toolContext, request))
                     .map(result -> summary(result.task()));
         });
+    }
+
+    private static Map<String, Object> settings(Object value) {
+        if (!(value instanceof Map<?, ?> map)) {
+            return new LinkedHashMap<>();
+        }
+        var settings = new LinkedHashMap<String, Object>();
+        map.forEach((key, item) -> settings.put(String.valueOf(key), item));
+        return settings;
+    }
+
+    private static List<String> assetIds(Object value) {
+        if (!(value instanceof List<?> values)) {
+            return List.of();
+        }
+        return values.stream()
+                .map(GenerateMediaTool::string)
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .toList();
+    }
+
+    private static String string(Object value) {
+        return value == null ? "" : value.toString();
     }
 
     private static String idempotencyKey(

@@ -1,9 +1,7 @@
 package cn.tolim.pudans.core.ai.protocol.messages;
 
 import cn.tolim.pudans.core.ai.protocol.AiProtocolProfile;
-import io.agentscope.extensions.model.anthropic.AnthropicChatModel;
-import io.agentscope.extensions.model.anthropic.formatter.AnthropicBaseFormatter;
-import io.agentscope.extensions.model.anthropic.formatter.AnthropicChatFormatter;
+import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -20,10 +18,6 @@ public interface MessagesProfile extends AiProtocolProfile {
 
     default Authentication authentication() {
         return Authentication.API_KEY;
-    }
-
-    default AnthropicBaseFormatter formatter() {
-        return new AnthropicChatFormatter();
     }
 
     default Map<String, String> additionalHeaders(Map<String, String> headers) {
@@ -46,9 +40,5 @@ public interface MessagesProfile extends AiProtocolProfile {
         return requested;
     }
 
-    default boolean stream() {
-        return true;
-    }
-
-    default void customize(AnthropicChatModel.Builder builder) {}
+    default void customize(AnthropicStreamingChatModel.AnthropicStreamingChatModelBuilder builder) {}
 }

@@ -33,6 +33,22 @@ public class AiProviderHttp {
                 .build();
     }
 
+    // 无凭据 JSON 调用供同子系统内的真实服务复用同一 WebClient。
+    public Mono<String> postJson(
+            URI uri, Map<String, String> headers, Object body, Duration timeout) {
+        return exchange(
+                webClient
+                        .post()
+                        .uri(uri)
+                        .headers(requestHeaders -> {
+                            if (headers != null) {
+                                headers.forEach(requestHeaders::set);
+                            }
+                        })
+                        .bodyValue(body),
+                timeout);
+    }
+
     public Mono<String> getJson(
             URI uri, Map<String, String> credentials, Duration timeout) {
         var apiKey = apiKey(credentials);

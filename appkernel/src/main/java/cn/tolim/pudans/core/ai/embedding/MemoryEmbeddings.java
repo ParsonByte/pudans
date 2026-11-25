@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.embedding;
 
 import cn.tolim.pudans.infra.exception.ApiException;
-import io.agentscope.core.message.TextBlock;
+import dev.langchain4j.data.embedding.Embedding;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -19,25 +19,20 @@ public class MemoryEmbeddings {
                     "memory-embedding-model-not-configured",
                     "Embedding 模型尚未配置。"));
         }
-        return space.embeddingModel()
-                .embed(TextBlock.builder().text(text).build())
+        return Mono.fromCallable(() -> space.embeddingModel().embed(text))
                 .subscribeOn(Schedulers.boundedElastic())
-                .map(MemoryEmbeddings::toFloat)
+                .map(response -> vector(response.content()))
                 .map(vector -> validateDimension(vector, space.vectorSpace().getDimension()));
     }
 
-    private static float[] toFloat(double[] values) {
-        if (values == null) {
+    private static float[] vector(Embedding embedding) {
+        if (embedding == null || embedding.vector() == null) {
             throw new ApiException(
                     HttpStatus.BAD_GATEWAY,
                     "memory-embedding-response-invalid",
                     "Embedding 服务没有返回向量。");
         }
-        var vector = new float[values.length];
-        for (var index = 0; index < values.length; index++) {
-            vector[index] = (float) values[index];
-        }
-        return vector;
+        return embedding.vector();
     }
 
     private static float[] validateDimension(float[] vector, int expected) {

@@ -181,7 +181,7 @@ class SandboxEventsTest {
                 "default",
                 "cn-shanghai",
                 status,
-                "/home/agentscope/workspace",
+                "/home/pudans/workspace",
                 NOW.plusSeconds(3600),
                 NOW,
                 NOW,

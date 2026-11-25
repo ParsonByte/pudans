@@ -31,7 +31,7 @@
 ## Prohibited
 
 - Do not introduce JDBC, `JdbcTemplate`, JPA, Hibernate, MyBatis, jOOQ or any blocking database access.
-- Do not use a JDBC-based AI persistence or vector store adapter, including `agentscope-extensions-postgresql` and LangChain4j `PgVectorEmbeddingStore`.
+- Do not use a JDBC-based AI persistence or vector store adapter, including LangChain4j `PgVectorEmbeddingStore`.
 - Do not add Flyway, Liquibase or any database migration framework.
 - Do not write SQL strings, text-block SQL or `DatabaseClient.sql(...)` in an endpoint, service, controller, reconciler or filter.
 - Do not add `.sql` files, including `schema.sql`, `data.sql`, date-named migration scripts or vendor-specific schema files.
