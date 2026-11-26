@@ -178,7 +178,7 @@ export function SecretsView() {
     };
     const columns: TableProps<SecretRow>["columns"] = [
         {
-            cell: ({ row }) => <CopyableIdentifier value={row.name} />,
+            cell: ({ row }) => <CopyableIdentifier mask value={row.name} />,
             colKey: "name",
             title: "名称",
             width: 220,

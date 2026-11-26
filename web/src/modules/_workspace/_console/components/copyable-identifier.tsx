@@ -23,7 +23,7 @@ const quietCopyClassName = [
     "hover:[&_button]:opacity-100 [&_button:focus-visible]:opacity-100 max-lg:[&_button]:opacity-100",
 ].join(" ");
 
-// mask 打开后长标识只显示首尾，复制仍使用完整值。
+// 长标识只显示首尾并保留复制入口，短标识显示全文；复制图标始终在值右侧。
 export function CopyableIdentifier({ className, display, emptyText, mask, quiet, value }: CopyableIdentifierProps) {
     if (!value) {
         return <EmptyValue text={emptyText} />;
@@ -31,19 +31,18 @@ export function CopyableIdentifier({ className, display, emptyText, mask, quiet,
 
     const inline = Boolean(mask) || Boolean(display);
     const content = mask ? maskIdentifier(value) : (display ?? value);
+    const layoutClassName = inline
+        ? ["inline-flex max-w-full items-center gap-1", mask ? "font-mono text-xs" : ""].join(" ")
+        : "block max-w-full font-mono text-xs";
 
-    // 复制入口固定排在值的右侧，长值在剩余宽度内截断。
+    // 复制图标紧跟值右侧，单元格按值宽度参与布局，不会被挤成几个字符。
     return (
-        <span
-            className={`inline-flex max-w-full min-w-0 items-center gap-1 align-middle ${mask || !inline ? "font-mono text-xs" : ""} ${quiet ? quietCopyClassName : ""} ${className ?? ""}`}
+        <Typography.Text
+            className={[layoutClassName, quiet ? quietCopyClassName : "", className ?? ""].join(" ")}
+            copyable={{ text: value, tooltipProps: quiet ? { content: "复制" } : undefined }}
+            ellipsis={inline ? false : { row: 1, tooltipProps: { content: value } }}
         >
-            <Typography.Text
-                className={`min-w-0 ${inline ? "inline-flex items-center" : ""}`}
-                copyable={{ text: value, tooltipProps: quiet ? { content: "复制" } : undefined }}
-                ellipsis={inline ? false : { row: 1, tooltipProps: { content: value } }}
-            >
-                {content}
-            </Typography.Text>
-        </span>
+            {content}
+        </Typography.Text>
     );
 }
