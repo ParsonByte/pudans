@@ -311,7 +311,7 @@ export function LiveSourcesView() {
     return (
         <>
             <div className="flex min-w-0 flex-col gap-4">
-                <PageBreadcrumb current="直播源" parents={["直播监控"]} />
+                <PageBreadcrumb current="直播源" parents={["媒体监控"]} />
                 <ConsolePageOverview
                     actions={
                         <>
