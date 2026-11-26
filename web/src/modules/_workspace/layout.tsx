@@ -7,13 +7,18 @@ import { useRouter } from "next/navigation";
 import { apiClient } from "@pudans-dev/api-client";
 import { Button, Loading } from "tdesign-react";
 
-import { AppShell, type AppShellGroup, type AppShellItem } from "@/components/layouts";
+import { AppShell, type AppShellGroup, type AppShellGroupChild, type AppShellItem } from "@/components/layouts";
 import { type DynamicMenuGroup, type DynamicMenuSelection, useDynamicMenu } from "@/composables/useDynamicMenu";
 import { HOME_WORKSPACE_KEY } from "@/composables/workspace-navigation";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { IndexQuotaIndicator } from "@/modules/_workspace/_index/components/index-quota-indicator";
 import { IndexSidebar } from "@/modules/_workspace/_index/components/index-sidebar";
 import { setWorkspaceCollapsed, useWorkspaceStore } from "@/stores/_workspace";
+
+const CONSOLE_WORKSPACE_KEY = "console";
+const DANS_MENU_GROUP_KEY = "dans";
+const LIVE_MENU_GROUP_KEY = "live";
+const MORE_MENU_GROUP_KEY = "more";
 
 type WorkspaceLayoutProps = {
     children: ReactNode;
@@ -50,21 +55,73 @@ function buildMenuItems(group: DynamicMenuGroup): AppShellItem[] {
     }));
 }
 
-function buildNavigation(groups: DynamicMenuGroup[], selection?: DynamicMenuSelection): WorkspaceNavigationState {
+function buildHeaderGroups(workspace: string, groups: DynamicMenuGroup[]): AppShellGroup[] {
+    const isConsole = workspace === CONSOLE_WORKSPACE_KEY;
+    const topLevelGroups = isConsole
+        ? groups.filter((group) => group.key !== DANS_MENU_GROUP_KEY && group.key !== LIVE_MENU_GROUP_KEY)
+        : groups;
+    const headerGroups: AppShellGroup[] = topLevelGroups.map((group) => ({
+        href: group.items[0]?.path,
+        key: group.key,
+        label: group.label,
+    }));
+
+    if (!isConsole) {
+        return headerGroups;
+    }
+
+    const dansGroup = groups.find((group) => group.key === DANS_MENU_GROUP_KEY);
+    const dansHref = dansGroup?.items[0]?.path;
+    const liveGroup = groups.find((group) => group.key === LIVE_MENU_GROUP_KEY);
+    const liveHref = liveGroup?.items[0]?.path;
+    const children: AppShellGroupChild[] = [];
+
+    if (dansGroup && dansHref) {
+        children.push({
+            href: dansHref,
+            key: dansGroup.key,
+            label: dansGroup.label,
+        });
+    }
+
+    if (liveGroup && liveHref) {
+        children.push({
+            href: liveHref,
+            key: liveGroup.key,
+            label: liveGroup.label,
+        });
+    }
+
+    if (children.length === 0) {
+        return headerGroups;
+    }
+
+    headerGroups.push({
+        children,
+        key: MORE_MENU_GROUP_KEY,
+        label: "更多",
+    });
+
+    return headerGroups;
+}
+
+function buildNavigation(
+    workspace: string,
+    groups: DynamicMenuGroup[],
+    selection?: DynamicMenuSelection,
+): WorkspaceNavigationState {
     const activeGroup = selection?.group.key;
     const activeItem = selection ? menuItemKey(selection.group, selection.item.itemKey) : undefined;
+    const headerGroups = buildHeaderGroups(workspace, groups);
 
     return {
-        activeGroup,
+        activeGroup:
+            workspace === CONSOLE_WORKSPACE_KEY &&
+            (activeGroup === DANS_MENU_GROUP_KEY || activeGroup === LIVE_MENU_GROUP_KEY)
+                ? MORE_MENU_GROUP_KEY
+                : activeGroup,
         activeItem,
-        groups:
-            groups.length > 1
-                ? groups.map((group) => ({
-                      href: group.items[0]?.path,
-                      key: group.key,
-                      label: group.label,
-                  }))
-                : [],
+        groups: headerGroups.length > 1 || headerGroups.some((group) => group.children?.length) ? headerGroups : [],
         items: selection?.group ? buildMenuItems(selection.group) : [],
     };
 }
@@ -77,8 +134,8 @@ function WorkspaceLayoutContent({ children, workspace }: WorkspaceLayoutProps) {
     const reportedNavigation = useRef<string | undefined>(undefined);
     const sidebar = workspace === HOME_WORKSPACE_KEY ? IndexSidebar : undefined;
     const navigation = useMemo(
-        () => buildNavigation(dynamicMenu.groups, dynamicMenu.selection),
-        [dynamicMenu.groups, dynamicMenu.selection],
+        () => buildNavigation(workspace, dynamicMenu.groups, dynamicMenu.selection),
+        [dynamicMenu.groups, dynamicMenu.selection, workspace],
     );
 
     useEffect(() => {

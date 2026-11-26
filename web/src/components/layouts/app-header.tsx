@@ -13,7 +13,7 @@ import type { AppShellGroup } from "./app-shell-types";
 import { SIDE_NAVIGATION_ID } from "./app-shell-types";
 import { AppSwitcher } from "./app-switcher";
 
-const { HeadMenu, MenuItem } = Menu;
+const { HeadMenu, MenuItem, SubMenu } = Menu;
 
 type AppHeaderProps = {
     actions?: ReactNode;
@@ -63,6 +63,7 @@ export function AppHeader({
         <header className="app-shell__header">
             <nav aria-label="工作区切换">
                 <HeadMenu
+                    expandType="popup"
                     logo={
                         <div className="app-shell__brand-group">
                             <AppSwitcher />
@@ -77,6 +78,30 @@ export function AppHeader({
                     value={activeGroup}
                 >
                     {groups.map((group) => {
+                        if (group.children?.length) {
+                            return (
+                                <SubMenu
+                                    key={group.key}
+                                    popupProps={{ overlayStyle: { fontWeight: "normal" } }}
+                                    title={group.label}
+                                    value={group.key}
+                                >
+                                    {group.children.map((child) => (
+                                        <MenuItem
+                                            href={child.href}
+                                            key={child.key}
+                                            onClick={({ e }) => {
+                                                navigateWithMenuLink(e, child.href, onNavigate);
+                                            }}
+                                            value={child.key}
+                                        >
+                                            {child.label}
+                                        </MenuItem>
+                                    ))}
+                                </SubMenu>
+                            );
+                        }
+
                         const href = group.href;
 
                         return (

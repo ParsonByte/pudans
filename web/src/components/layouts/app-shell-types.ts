@@ -1,5 +1,12 @@
 export type AppShellGroup = {
+    children?: AppShellGroupChild[];
     href?: string;
+    key: string;
+    label: string;
+};
+
+export type AppShellGroupChild = {
+    href: string;
     key: string;
     label: string;
 };
