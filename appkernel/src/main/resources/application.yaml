@@ -47,7 +47,7 @@ spring:
   webflux:
     multipart:
       max-in-memory-size: 256KB
-      max-disk-usage-per-part: 100MB
+      max-disk-usage-per-part: 512MB
   http:
     codecs:
       max-in-memory-size: 10MB

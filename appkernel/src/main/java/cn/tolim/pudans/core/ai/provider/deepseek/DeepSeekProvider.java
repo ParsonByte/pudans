@@ -215,6 +215,10 @@ public class DeepSeekProvider implements AiProvider {
         values.put("provider", PROVIDER);
         values.put("model", model.id());
         values.put("source", "provider");
+        var description = description(model.id());
+        if (description != null) {
+            values.put("description", description);
+        }
         if (StringUtils.hasText(model.ownedBy())) {
             values.put("ownedBy", model.ownedBy().trim());
         }
@@ -226,6 +230,19 @@ public class DeepSeekProvider implements AiProvider {
             values.put("apiCapabilities", Map.copyOf(model.apiCapabilities()));
         }
         return Map.copyOf(values);
+    }
+
+    // 模型列表不返回介绍，按官方模型说明补充。
+    private static String description(String modelId) {
+        var value = modelId.toLowerCase(Locale.ROOT);
+        if (value.contains("flash")) {
+            return "DeepSeek 高性价比对话模型，支持深度思考、工具调用、"
+                    + "图像理解与长上下文。";
+        }
+        if (value.contains("pro")) {
+            return "DeepSeek 旗舰推理模型，支持深度思考、工具调用与长上下文。";
+        }
+        return null;
     }
 
     private static Map<String, Object> effort(Map<String, Object> effort) {

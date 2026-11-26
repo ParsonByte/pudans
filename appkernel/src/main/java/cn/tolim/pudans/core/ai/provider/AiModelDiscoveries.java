@@ -114,7 +114,7 @@ public class AiModelDiscoveries {
         return new AiDiscoveredModel(
                 model.modelId(),
                 model.displayName(),
-                null,
+                text(model.catalog().get("description")),
                 modelType.value(),
                 protocol,
                 List.of(protocol),
@@ -128,6 +128,10 @@ public class AiModelDiscoveries {
                 model.source(),
                 catalogStatus(model),
                 imported == null ? null : imported.id());
+    }
+
+    private static String text(Object value) {
+        return value instanceof String text && !text.isBlank() ? text : null;
     }
 
     private static String defaultProtocol(AiModelType modelType) {

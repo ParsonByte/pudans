@@ -11,6 +11,7 @@ import cn.tolim.pudans.core.ai.provider.AiProviderAuth;
 import cn.tolim.pudans.core.ai.provider.AiProvider;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttp;
 import cn.tolim.pudans.core.ai.provider.AiProviders;
+import cn.tolim.pudans.core.ai.provider.minimax.MiniMaxProvider;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
 import cn.tolim.pudans.infra.r2dbc.ai.AiChannelEntity;
@@ -70,6 +71,32 @@ class AiChannelProbeTest {
     }
 
     @Test
+    void acceptsAManuallyAddedMediaModelMissingFromTheLanguageList() {
+        var channel = channel("minimax", "messages");
+        channel.setBaseUrl("https://api.minimax.cn");
+        var credentials = Map.of("apiKey", "secret");
+        var provider = new MiniMaxProvider(http);
+        when(providers.builtIn("minimax")).thenReturn(Optional.of(provider));
+        when(providers.require("minimax")).thenReturn(provider);
+        when(http.getResponse(
+                        eq(URI.create("https://api.minimax.cn/v1/models")),
+                        eq(credentials),
+                        any(Duration.class)))
+                .thenReturn(Mono.just(new AiProviderHttp.UpstreamResponse(
+                        200,
+                        "{\"object\":\"list\",\"data\":[{\"id\":\"MiniMax-M3\"}]}",
+                        "request-media")));
+
+        StepVerifier.create(probe().test(channel, credentials, "MiniMax-H3"))
+                .assertNext(result -> {
+                    assertThat(result.success()).isTrue();
+                    assertThat(result.statusCode()).isEqualTo(200);
+                    assertThat(result.requestId()).isEqualTo("request-media");
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void failsWhenTheRequestedModelIsMissingFromTheProviderCatalog() {
         var channel = channel("deepseek", "messages");
         var credentials = Map.of("apiKey", "secret");
@@ -77,6 +104,7 @@ class AiChannelProbeTest {
         when(providers.require("deepseek")).thenReturn(provider);
         when(provider.modelsUrl("https://api.deepseek.com"))
                 .thenReturn("https://api.deepseek.com/models");
+        when(provider.verifiesModelInList("deepseek-v4-pro")).thenReturn(true);
         when(http.getResponse(any(URI.class), eq(credentials), any(Duration.class)))
                 .thenReturn(Mono.just(new AiProviderHttp.UpstreamResponse(
                         200,

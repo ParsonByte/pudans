@@ -250,6 +250,47 @@ public class AiProviderHttp {
                 "request");
     }
 
+    public Flux<DataBuffer> getBinaryStream(
+            URI uri,
+            Map<String, String> credentials,
+            Map<String, String> headers,
+            Duration timeout,
+            AiProviderAuth auth) {
+        var apiKey = apiKey(credentials);
+        if (apiKey == null) {
+            return Flux.error(missingCredentialsError());
+        }
+        return webClient
+                .get()
+                .uri(uri)
+                .headers(requestHeaders -> applyAuth(requestHeaders, apiKey, headers, auth))
+                .exchangeToFlux(response -> {
+                    if (response.statusCode().is2xxSuccessful()) {
+                        return response.bodyToFlux(DataBuffer.class);
+                    }
+                    return response.releaseBody()
+                            .thenMany(Flux.error(new ApiException(
+                                    HttpStatus.BAD_GATEWAY,
+                                    "ai-provider-request-http-error",
+                                    "供应商接口返回 HTTP "
+                                            + response.statusCode().value()
+                                            + "。")));
+                })
+                .timeout(timeout == null ? responseTimeout() : timeout)
+                .onErrorMap(WebClientRequestException.class, error -> new ApiException(
+                        HttpStatus.BAD_GATEWAY,
+                        "ai-provider-request-unreachable",
+                        "无法连接供应商接口。",
+                        error))
+                .onErrorMap(
+                        java.util.concurrent.TimeoutException.class,
+                        error -> new ApiException(
+                                HttpStatus.GATEWAY_TIMEOUT,
+                                "ai-provider-request-timeout",
+                                "供应商接口请求超时。",
+                                error));
+    }
+
     public Flux<DataBuffer> postBinaryJsonStream(
             URI uri,
             Map<String, String> credentials,

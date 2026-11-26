@@ -16,15 +16,16 @@ import cn.tolim.pudans.contract.ai.dto.AiSearchRequest;
 import cn.tolim.pudans.contract.ai.dto.AiSearchResponse;
 import cn.tolim.pudans.contract.ai.dto.AiSpeechRequest;
 import cn.tolim.pudans.contract.ai.dto.AiTranscriptionResult;
+import cn.tolim.pudans.core.ai.provider.AiCapabilityGateway;
 import cn.tolim.pudans.core.ai.provider.AiProviderAuth;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttp;
+import cn.tolim.pudans.core.ai.provider.AiProviderMultipart;
+import cn.tolim.pudans.core.ai.provider.AiSpeech;
+import cn.tolim.pudans.core.ai.provider.AiTranscriptionOptions;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.AiChannelEntity;
-import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -32,11 +33,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -47,7 +45,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
-public class DeepSeekGateway {
+public class DeepSeekGateway implements AiCapabilityGateway {
 
     private static final String ANTHROPIC_VERSION = "2023-06-01";
 
@@ -86,6 +84,12 @@ public class DeepSeekGateway {
         this.provider = provider;
     }
 
+    @Override
+    public String provider() {
+        return provider.descriptor().provider();
+    }
+
+    @Override
     public Mono<AiFile> uploadFile(
             AiChannelEntity channel,
             Map<String, String> credentials,
@@ -95,15 +99,15 @@ public class DeepSeekGateway {
             Path content,
             Long expiresAfterSeconds) {
         var normalizedPurpose = requiredChoice(purpose, FILE_PURPOSES, "文件用途");
-        var normalizedFilename = filename(filename);
-        if (empty(content)) {
+        var normalizedFilename = AiProviderMultipart.filename(filename);
+        if (AiProviderMultipart.empty(content)) {
             return Mono.error(invalid("上传文件不能为空。"));
         }
         validateExpiry(expiresAfterSeconds);
         var parts = new LinkedMultiValueMap<String, Object>();
         parts.add("purpose", normalizedPurpose);
         addExpiry(parts, expiresAfterSeconds);
-        parts.add("file", filePart(normalizedFilename, contentType, content));
+        parts.add("file", AiProviderMultipart.filePart(normalizedFilename, contentType, content));
         return http.postMultipart(
                         URI.create(provider.filesUrl(channel.getBaseUrl())),
                         credentials,
@@ -144,6 +148,7 @@ public class DeepSeekGateway {
                 .map(body -> parse(body, AiFilePage.class));
     }
 
+    @Override
     public Mono<AiFile> retrieveFile(
             AiChannelEntity channel,
             Map<String, String> credentials,
@@ -153,6 +158,16 @@ public class DeepSeekGateway {
                 .map(body -> parse(body, AiFile.class));
     }
 
+    @Override
+    public Flux<DataBuffer> downloadFile(
+            AiChannelEntity channel, Map<String, String> credentials, String fileId) {
+        return Flux.error(new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "ai-provider-file-content-unsupported",
+                "该渠道不支持文件内容下载。"));
+    }
+
+    @Override
     public Mono<AiFileDeletion> deleteFile(
             AiChannelEntity channel,
             Map<String, String> credentials,
@@ -173,8 +188,8 @@ public class DeepSeekGateway {
         var normalizedPurpose = purpose == null
                 ? null
                 : requiredChoice(purpose, FILE_PURPOSES, "文件用途");
-        var normalizedFilename = filename(filename);
-        if (empty(content)) {
+        var normalizedFilename = AiProviderMultipart.filename(filename);
+        if (AiProviderMultipart.empty(content)) {
             return Mono.error(invalid("上传文件不能为空。"));
         }
         validateExpiry(expiresAfterSeconds);
@@ -183,7 +198,7 @@ public class DeepSeekGateway {
             parts.add("purpose", normalizedPurpose);
         }
         addExpiry(parts, expiresAfterSeconds);
-        parts.add("file", filePart(normalizedFilename, contentType, content));
+        parts.add("file", AiProviderMultipart.filePart(normalizedFilename, contentType, content));
         return http.postMultipart(
                         URI.create(anthropicFilesUrl(channel)),
                         credentials,
@@ -316,11 +331,11 @@ public class DeepSeekGateway {
             String contentType,
             Path content) {
         var normalizedPurpose = requiredChoice(purpose, OCR_PURPOSES, "OCR 识别方式");
-        if (empty(content)) {
+        if (AiProviderMultipart.empty(content)) {
             return Mono.error(invalid("OCR 文件不能为空。"));
         }
         var parts = new LinkedMultiValueMap<String, Object>();
-        parts.add("file", filePart(filename(filename), contentType, content));
+        parts.add("file", AiProviderMultipart.filePart(AiProviderMultipart.filename(filename), contentType, content));
         parts.add("purpose", normalizedPurpose);
         return http.postMultipart(
                         URI.create(provider.toolsUrl(channel.getBaseUrl(), "ocr")),
@@ -331,7 +346,8 @@ public class DeepSeekGateway {
                 .map(DeepSeekGateway::ocrResult);
     }
 
-    public Mono<DeepSeekSpeech> synthesize(
+    @Override
+    public Mono<AiSpeech> synthesize(
             AiChannelEntity channel,
             Map<String, String> credentials,
             AiSpeechRequest request) {
@@ -357,7 +373,7 @@ public class DeepSeekGateway {
         if (jsonBytes(body) > MAX_TTS_BODY_BYTES) {
             return Mono.error(invalid("语音合成请求体不能超过 64 KiB。"));
         }
-        return Mono.just(new DeepSeekSpeech(
+        return Mono.just(new AiSpeech(
                 "pcm".equals(format) ? "audio/pcm" : "audio/wav",
                 http.postBinaryJsonStream(
                         URI.create(provider.toolsUrl(channel.getBaseUrl(), "tts")),
@@ -367,17 +383,26 @@ public class DeepSeekGateway {
                         timeout(channel))));
     }
 
+    @Override
     public Mono<AiTranscriptionResult> transcribe(
             AiChannelEntity channel,
             Map<String, String> credentials,
             String filename,
             String contentType,
-            Path content) {
-        if (empty(content)) {
+            Path content,
+            AiTranscriptionOptions options) {
+        if (options != null
+                && (options.modelOrNull() != null
+                        || options.languageOrNull() != null
+                        || options.responseFormatOrNull() != null
+                        || options.timestampLevelOrNull() != null)) {
+            return Mono.error(invalid("该渠道不支持语音识别模型、语言或返回格式参数。"));
+        }
+        if (AiProviderMultipart.empty(content)) {
             return Mono.error(invalid("音频文件不能为空。"));
         }
         var parts = new LinkedMultiValueMap<String, Object>();
-        parts.add("file", filePart(filename(filename), contentType, content));
+        parts.add("file", AiProviderMultipart.filePart(AiProviderMultipart.filename(filename), contentType, content));
         return http.postMultipart(
                         URI.create(provider.toolsUrl(channel.getBaseUrl(), "asr")),
                         credentials,
@@ -628,55 +653,12 @@ public class DeepSeekGateway {
         return Map.copyOf(headers);
     }
 
-    private static HttpEntity<FileSystemResource> filePart(
-            String filename, String contentType, Path content) {
-        var resource = new FileSystemResource(content) {
-            @Override
-            public String getFilename() {
-                return filename;
-            }
-        };
-        var headers = new HttpHeaders();
-        headers.setContentType(contentType(contentType));
-        return new HttpEntity<>(resource, headers);
-    }
-
-    private static boolean empty(Path content) {
-        if (content == null) {
-            return true;
-        }
-        try {
-            return !Files.isRegularFile(content) || Files.size(content) == 0;
-        } catch (IOException error) {
-            return true;
-        }
-    }
-
     private static int jsonBytes(Object value) {
         try {
             return JsonUtils.mapper().writeValueAsBytes(value).length;
         } catch (Exception error) {
             throw invalid("语音合成请求无法序列化。");
         }
-    }
-
-    private static MediaType contentType(String value) {
-        if (!StringUtils.hasText(value)) {
-            return MediaType.APPLICATION_OCTET_STREAM;
-        }
-        try {
-            return MediaType.parseMediaType(value);
-        } catch (RuntimeException error) {
-            return MediaType.APPLICATION_OCTET_STREAM;
-        }
-    }
-
-    private static String filename(String value) {
-        var filename = StringUtils.hasText(value) ? value.trim() : "file";
-        if (filename.getBytes(StandardCharsets.UTF_8).length > 512) {
-            throw invalid("文件名不能超过 512 字节。");
-        }
-        return filename;
     }
 
     private Duration timeout(AiChannelEntity channel) {

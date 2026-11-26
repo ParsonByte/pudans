@@ -179,7 +179,10 @@ class DeepSeekProviderTest {
                             .containsEntry("provider", "deepseek")
                             .containsEntry("model", "deepseek-flash")
                             .containsEntry("source", "provider")
-                            .containsEntry("ownedBy", "deepseek");
+                            .containsEntry("ownedBy", "deepseek")
+                            .containsEntry(
+                                    "description",
+                                    "DeepSeek 高性价比对话模型，支持深度思考、工具调用、图像理解与长上下文。");
                     assertThat(flash.catalog().get("effort"))
                             .isEqualTo(Map.of(
                                     "supportedLevels", List.of("low", "high", "max"),
@@ -191,6 +194,10 @@ class DeepSeekProviderTest {
 
                     var pro = models.get(1);
                     assertThat(pro.modelId()).isEqualTo("deepseek-v4-pro");
+                    assertThat(pro.catalog())
+                            .containsEntry(
+                                    "description",
+                                    "DeepSeek 旗舰推理模型，支持深度思考、工具调用与长上下文。");
                     assertThat(pro.inputModalities()).containsExactly("text");
                     assertThat(pro.features()).containsExactly("reasoning");
                 })
