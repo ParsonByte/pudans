@@ -26,6 +26,7 @@ import type { AiChannel, AiChannelModel, AiModel, AiProviderDescriptor } from ".
 import {
     MODEL_FEATURE_LABELS,
     MODEL_TABS,
+    MODEL_TYPE_LABELS,
     type ModelTab,
     formatTokenLimit,
     modelFeatures,
@@ -65,6 +66,10 @@ const FEATURE_ICONS = {
     image: ImageIcon,
     video: VideoIcon,
     audio: AudioIcon,
+    "image-generation": ImageIcon,
+    "video-generation": VideoIcon,
+    "audio-generation": AudioIcon,
+    asr: AudioIcon,
 } as const;
 
 type ModelRowData = {
@@ -129,6 +134,7 @@ function ModelRow({
     const modalities = modelModalities(row.model);
     const type = modelTypeOf(row.model);
     const upstream = row.route.upstreamModelKey ?? "—";
+    const upstreamVisible = upstream !== "—";
 
     const toggle = async (value: boolean | string) => {
         if (typeof value !== "boolean") {
@@ -150,9 +156,13 @@ function ModelRow({
             <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <span className="truncate text-sm font-medium">{modelName(row)}</span>
-                    <Tag size="small" variant="light">
-                        <span className="font-mono">{upstream}</span>
-                    </Tag>
+                    {upstreamVisible ? (
+                        <Tooltip content="上游模型标识">
+                            <Tag size="small" variant="light">
+                                <span className="font-mono">{upstream}</span>
+                            </Tag>
+                        </Tooltip>
+                    ) : null}
                     <Tooltip content="修改模型">
                         <Button
                             aria-label={`修改 ${modelName(row)}`}
@@ -164,13 +174,18 @@ function ModelRow({
                         />
                     </Tooltip>
                 </div>
+                {row.model?.description ? (
+                    <p className="m-0 mt-1 line-clamp-1 text-xs text-[var(--td-text-color-secondary)]">
+                        {row.model.description}
+                    </p>
+                ) : null}
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--td-text-color-placeholder)]">
                     {features.map((feature) => (
                         <span key={feature}>{MODEL_FEATURE_LABELS[feature] ?? feature}</span>
                     ))}
                     {modalities.input.length > 0 ? <span>输入 {modalities.input.join("/")}</span> : null}
                     {modalities.output.length > 0 ? <span>输出 {modalities.output.join("/")}</span> : null}
-                    {type !== "chat" ? <span>{type}</span> : null}
+                    {type !== "chat" && features.length === 0 ? <span>{MODEL_TYPE_LABELS[type] ?? type}</span> : null}
                 </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
