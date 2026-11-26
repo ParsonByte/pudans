@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BrowseGalleryIcon, RefreshIcon, ViewListIcon } from "tdesign-icons-react";
-import { Button, Card, Empty, Pagination, RadioGroup, Skeleton, Tabs } from "tdesign-react";
+import { BrowseGalleryIcon, RefreshIcon, UploadIcon, ViewListIcon } from "tdesign-icons-react";
+import { Button, Card, Empty, Pagination, RadioGroup, Skeleton } from "tdesign-react";
 import type { PaginationProps } from "tdesign-react";
 
 import { ScrollArea, SectionCard, confirmGlobalDialog } from "@/components/ui";
@@ -29,6 +29,7 @@ import { StorageFileDetailsModal } from "./components/storage-file-details-modal
 import { StorageFilesGallery } from "./components/storage-files-gallery";
 import { StorageFilesMetricGrid } from "./components/storage-files-metric-grid";
 import { StorageFilesTable } from "./components/storage-files-table";
+import { StorageUploadDialog } from "./components/storage-upload-dialog";
 import {
     STORAGE_FILES_DOWNLOAD_URL_QUERY_ROOT,
     STORAGE_FILES_LIST_QUERY_ROOT,
@@ -40,6 +41,7 @@ import {
     storageFileDownloadUrlQueryOptions,
     storageFileName,
 } from "./composables/_storage-files";
+import { useStorageUploads } from "./composables/_storage-upload";
 
 type FileStateAction = "purge" | "restore" | "trash";
 type FileStateChange = {
@@ -63,11 +65,13 @@ export function StorageFilesView() {
         { permissions: sessionQuery.data?.uiPermissions },
         STORAGE_FILE_PERMISSIONS.view,
     );
+    const canCreate = can(STORAGE_FILE_PERMISSIONS.create);
     const canDelete = can(STORAGE_FILE_PERMISSIONS.delete);
     const canDownload = can(STORAGE_FILE_PERMISSIONS.download);
     const canPurge = can(STORAGE_FILE_PERMISSIONS.purge);
     const canRestore = can(STORAGE_FILE_PERMISSIONS.restore);
     const [activeTab, setActiveTab] = useState<StorageFilesTab>("active");
+    const [uploadOpen, setUploadOpen] = useState(false);
     const [storedViewMode, setViewMode] = useLocalStorage<StorageFilesViewMode>(STORAGE_FILES_VIEW_MODE_KEY, "gallery");
     const viewMode = storedViewMode === "list" ? "list" : "gallery";
     const [selected, setSelected] = useState<StorageFile>();
@@ -152,6 +156,7 @@ export function StorageFilesView() {
         void queryClient.invalidateQueries({ queryKey: STORAGE_FILES_TOTAL_QUERY_ROOT });
         void queryClient.invalidateQueries({ queryKey: STORAGE_FILES_DOWNLOAD_URL_QUERY_ROOT });
     };
+    const uploads = useStorageUploads({ onCompleted: refreshFiles });
     const handleDownload = async (file: StorageFile) => {
         if (!canDownload) {
             return;
@@ -321,9 +326,16 @@ export function StorageFilesView() {
             <div className="flex min-w-0 flex-col gap-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <PageBreadcrumb current="存储文件" parents={["存储"]} />
-                    <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refreshFiles} variant="outline">
-                        刷新
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refreshFiles} variant="outline">
+                            刷新
+                        </Button>
+                        {canCreate ? (
+                            <Button icon={<UploadIcon />} onClick={() => setUploadOpen(true)} theme="primary">
+                                上传文件
+                            </Button>
+                        ) : null}
+                    </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
                     <StorageFilesMetricGrid
@@ -333,43 +345,47 @@ export function StorageFilesView() {
                         trashedTotal={trashedTotalQuery.data?.total}
                     />
                 </div>
-                <Tabs
-                    action={
-                        <RadioGroup
-                            onChange={(value) => setViewMode(value === "list" ? "list" : "gallery")}
-                            options={[
-                                {
-                                    label: (
-                                        <span className="inline-flex items-center gap-1.5">
-                                            <BrowseGalleryIcon />
-                                            图片
-                                        </span>
-                                    ),
-                                    value: "gallery",
-                                },
-                                {
-                                    label: (
-                                        <span className="inline-flex items-center gap-1.5">
-                                            <ViewListIcon />
-                                            列表
-                                        </span>
-                                    ),
-                                    value: "list",
-                                },
-                            ]}
-                            size="small"
-                            theme="button"
-                            value={viewMode}
-                            variant="default-filled"
-                        />
-                    }
-                    list={[
-                        { label: "文件", panel: renderFilesPanel("active"), value: "active" },
-                        { label: "回收站", panel: renderFilesPanel("trashed"), value: "trashed" },
-                    ]}
-                    onChange={(value) => setActiveTab(value === "trashed" ? "trashed" : "active")}
-                    value={activeTab}
-                />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <RadioGroup
+                        className="w-fit"
+                        onChange={(value) => setActiveTab(value === "trashed" ? "trashed" : "active")}
+                        options={[
+                            { label: "文件", value: "active" },
+                            { label: "回收站", value: "trashed" },
+                        ]}
+                        theme="button"
+                        value={activeTab}
+                        variant="default-filled"
+                    />
+                    <RadioGroup
+                        onChange={(value) => setViewMode(value === "list" ? "list" : "gallery")}
+                        options={[
+                            {
+                                label: (
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <BrowseGalleryIcon />
+                                        图片
+                                    </span>
+                                ),
+                                value: "gallery",
+                            },
+                            {
+                                label: (
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <ViewListIcon />
+                                        列表
+                                    </span>
+                                ),
+                                value: "list",
+                            },
+                        ]}
+                        size="small"
+                        theme="button"
+                        value={viewMode}
+                        variant="default-filled"
+                    />
+                </div>
+                {renderFilesPanel(activeTab)}
             </div>
             <StorageFileDetailsModal
                 canPreview={canDownload}
@@ -377,6 +393,7 @@ export function StorageFilesView() {
                 onClose={() => setSelected(undefined)}
                 open={Boolean(selected)}
             />
+            <StorageUploadDialog onClose={() => setUploadOpen(false)} open={uploadOpen} uploads={uploads} />
         </>
     );
 }

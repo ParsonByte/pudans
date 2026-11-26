@@ -46,7 +46,11 @@ export function StorageFilesTable({
                         <Typography.Text ellipsis={{ row: 1, tooltipProps: { content: displayName } }} strong>
                             {displayName}
                         </Typography.Text>
-                        <CopyableIdentifier className="text-[11px]" value={row.metadata.name} />
+                        <CopyableIdentifier
+                            className="text-[11px]"
+                            display={<span className="min-w-0 truncate">{row.metadata.name}</span>}
+                            value={row.metadata.name}
+                        />
                     </div>
                 );
             },
