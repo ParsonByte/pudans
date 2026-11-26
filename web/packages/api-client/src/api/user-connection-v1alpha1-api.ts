@@ -22,6 +22,8 @@ import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObj
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS, type RequestArgs, BaseAPI, RequiredError, operationServerMap } from '../base';
 // @ts-ignore
+import type { JsonPatchInner } from '../models';
+// @ts-ignore
 import type { OidcAuthorizeUrlVo } from '../models';
 // @ts-ignore
 import type { OidcBindRequest } from '../models';
@@ -79,6 +81,46 @@ export const UserConnectionV1alpha1ApiAxiosParamCreator = function (configuratio
             };
         },
         /**
+         * Create UserConnection
+         * @param {UserConnection} [userConnection] Fresh userconnection
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createUserConnection: async (userConnection?: UserConnection, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/userconnections`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(userConnection, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Build the OIDC authorization URL used to bind an external identity.
          * @param {string} registrationId
          * @param {string} redirectUri
@@ -114,6 +156,47 @@ export const UserConnectionV1alpha1ApiAxiosParamCreator = function (configuratio
             if (redirectUri !== undefined) {
                 localVarQueryParameter['redirectUri'] = redirectUri;
             }
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Get UserConnection
+         * @param {string} name Name of userconnection
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getUserConnection: async (name: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'name' is not null or undefined
+            assertParamExists('getUserConnection', 'name', name)
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/userconnections/{name}`
+                .replace('{name}', encodeURIComponent(String(name)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
             localVarHeaderParameter['Accept'] = '*/*';
 
@@ -226,6 +309,50 @@ export const UserConnectionV1alpha1ApiAxiosParamCreator = function (configuratio
             };
         },
         /**
+         * Patch UserConnection
+         * @param {string} name Name of userconnection
+         * @param {Array<JsonPatchInner>} [jsonPatchInner]
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        patchUserConnection: async (name: string, jsonPatchInner?: Array<JsonPatchInner>, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'name' is not null or undefined
+            assertParamExists('patchUserConnection', 'name', name)
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/userconnections/{name}`
+                .replace('{name}', encodeURIComponent(String(name)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PATCH', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Content-Type'] = 'application/json-patch+json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(jsonPatchInner, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Remove an identity binding. Rejected if it is the only sign-in method.
          * @param {string} name Name of userconnection
          * @param {*} [options] Override http request option.
@@ -266,6 +393,50 @@ export const UserConnectionV1alpha1ApiAxiosParamCreator = function (configuratio
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * Update UserConnection
+         * @param {string} name Name of userconnection
+         * @param {UserConnection} [userConnection] Updated userconnection
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateUserConnection: async (name: string, userConnection?: UserConnection, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'name' is not null or undefined
+            assertParamExists('updateUserConnection', 'name', name)
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/userconnections/{name}`
+                .replace('{name}', encodeURIComponent(String(name)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(userConnection, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -288,6 +459,18 @@ export const UserConnectionV1alpha1ApiFp = function(configuration?: Configuratio
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Create UserConnection
+         * @param {UserConnection} [userConnection] Fresh userconnection
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async createUserConnection(userConnection?: UserConnection, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserConnection>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.createUserConnection(userConnection, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserConnectionV1alpha1Api.createUserConnection']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * Build the OIDC authorization URL used to bind an external identity.
          * @param {string} registrationId
          * @param {string} redirectUri
@@ -298,6 +481,18 @@ export const UserConnectionV1alpha1ApiFp = function(configuration?: Configuratio
             const localVarAxiosArgs = await localVarAxiosParamCreator.getOidcAuthorizeUrl(registrationId, redirectUri, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UserConnectionV1alpha1Api.getOidcAuthorizeUrl']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Get UserConnection
+         * @param {string} name Name of userconnection
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getUserConnection(name: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserConnection>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getUserConnection(name, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserConnectionV1alpha1Api.getUserConnection']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -328,6 +523,19 @@ export const UserConnectionV1alpha1ApiFp = function(configuration?: Configuratio
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Patch UserConnection
+         * @param {string} name Name of userconnection
+         * @param {Array<JsonPatchInner>} [jsonPatchInner]
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async patchUserConnection(name: string, jsonPatchInner?: Array<JsonPatchInner>, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserConnection>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.patchUserConnection(name, jsonPatchInner, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserConnectionV1alpha1Api.patchUserConnection']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * Remove an identity binding. Rejected if it is the only sign-in method.
          * @param {string} name Name of userconnection
          * @param {*} [options] Override http request option.
@@ -337,6 +545,19 @@ export const UserConnectionV1alpha1ApiFp = function(configuration?: Configuratio
             const localVarAxiosArgs = await localVarAxiosParamCreator.unbindConnection(name, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UserConnectionV1alpha1Api.unbindConnection']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Update UserConnection
+         * @param {string} name Name of userconnection
+         * @param {UserConnection} [userConnection] Updated userconnection
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async updateUserConnection(name: string, userConnection?: UserConnection, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserConnection>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.updateUserConnection(name, userConnection, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserConnectionV1alpha1Api.updateUserConnection']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
@@ -358,6 +579,15 @@ export const UserConnectionV1alpha1ApiFactory = function (configuration?: Config
             return localVarFp.bindOidcIdentity(requestParameters.oidcBindRequest, options).then((request) => request(axios, basePath));
         },
         /**
+         * Create UserConnection
+         * @param {UserConnectionV1alpha1ApiCreateUserConnectionRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        createUserConnection(requestParameters: UserConnectionV1alpha1ApiCreateUserConnectionRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<UserConnection> {
+            return localVarFp.createUserConnection(requestParameters.userConnection, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Build the OIDC authorization URL used to bind an external identity.
          * @param {UserConnectionV1alpha1ApiGetOidcAuthorizeUrlRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -365,6 +595,15 @@ export const UserConnectionV1alpha1ApiFactory = function (configuration?: Config
          */
         getOidcAuthorizeUrl(requestParameters: UserConnectionV1alpha1ApiGetOidcAuthorizeUrlRequest, options?: RawAxiosRequestConfig): AxiosPromise<OidcAuthorizeUrlVo> {
             return localVarFp.getOidcAuthorizeUrl(requestParameters.registrationId, requestParameters.redirectUri, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Get UserConnection
+         * @param {UserConnectionV1alpha1ApiGetUserConnectionRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getUserConnection(requestParameters: UserConnectionV1alpha1ApiGetUserConnectionRequest, options?: RawAxiosRequestConfig): AxiosPromise<UserConnection> {
+            return localVarFp.getUserConnection(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
          * List the current user\'s identity bindings (Feishu, OIDC and Passkeys).
@@ -384,6 +623,15 @@ export const UserConnectionV1alpha1ApiFactory = function (configuration?: Config
             return localVarFp.listOidcProviders(options).then((request) => request(axios, basePath));
         },
         /**
+         * Patch UserConnection
+         * @param {UserConnectionV1alpha1ApiPatchUserConnectionRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        patchUserConnection(requestParameters: UserConnectionV1alpha1ApiPatchUserConnectionRequest, options?: RawAxiosRequestConfig): AxiosPromise<UserConnection> {
+            return localVarFp.patchUserConnection(requestParameters.name, requestParameters.jsonPatchInner, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Remove an identity binding. Rejected if it is the only sign-in method.
          * @param {UserConnectionV1alpha1ApiUnbindConnectionRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -391,6 +639,15 @@ export const UserConnectionV1alpha1ApiFactory = function (configuration?: Config
          */
         unbindConnection(requestParameters: UserConnectionV1alpha1ApiUnbindConnectionRequest, options?: RawAxiosRequestConfig): AxiosPromise<void> {
             return localVarFp.unbindConnection(requestParameters.name, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Update UserConnection
+         * @param {UserConnectionV1alpha1ApiUpdateUserConnectionRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        updateUserConnection(requestParameters: UserConnectionV1alpha1ApiUpdateUserConnectionRequest, options?: RawAxiosRequestConfig): AxiosPromise<UserConnection> {
+            return localVarFp.updateUserConnection(requestParameters.name, requestParameters.userConnection, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -403,12 +660,32 @@ export interface UserConnectionV1alpha1ApiBindOidcIdentityRequest {
 }
 
 /**
+ * Request parameters for createUserConnection operation in UserConnectionV1alpha1Api.
+ */
+export interface UserConnectionV1alpha1ApiCreateUserConnectionRequest {
+    /**
+     * Fresh userconnection
+     */
+    readonly userConnection?: UserConnection
+}
+
+/**
  * Request parameters for getOidcAuthorizeUrl operation in UserConnectionV1alpha1Api.
  */
 export interface UserConnectionV1alpha1ApiGetOidcAuthorizeUrlRequest {
     readonly registrationId: string
 
     readonly redirectUri: string
+}
+
+/**
+ * Request parameters for getUserConnection operation in UserConnectionV1alpha1Api.
+ */
+export interface UserConnectionV1alpha1ApiGetUserConnectionRequest {
+    /**
+     * Name of userconnection
+     */
+    readonly name: string
 }
 
 /**
@@ -442,6 +719,18 @@ export interface UserConnectionV1alpha1ApiListMyConnectionsRequest {
 }
 
 /**
+ * Request parameters for patchUserConnection operation in UserConnectionV1alpha1Api.
+ */
+export interface UserConnectionV1alpha1ApiPatchUserConnectionRequest {
+    /**
+     * Name of userconnection
+     */
+    readonly name: string
+
+    readonly jsonPatchInner?: Array<JsonPatchInner>
+}
+
+/**
  * Request parameters for unbindConnection operation in UserConnectionV1alpha1Api.
  */
 export interface UserConnectionV1alpha1ApiUnbindConnectionRequest {
@@ -449,6 +738,21 @@ export interface UserConnectionV1alpha1ApiUnbindConnectionRequest {
      * Name of userconnection
      */
     readonly name: string
+}
+
+/**
+ * Request parameters for updateUserConnection operation in UserConnectionV1alpha1Api.
+ */
+export interface UserConnectionV1alpha1ApiUpdateUserConnectionRequest {
+    /**
+     * Name of userconnection
+     */
+    readonly name: string
+
+    /**
+     * Updated userconnection
+     */
+    readonly userConnection?: UserConnection
 }
 
 /**
@@ -466,6 +770,16 @@ export class UserConnectionV1alpha1Api extends BaseAPI {
     }
 
     /**
+     * Create UserConnection
+     * @param {UserConnectionV1alpha1ApiCreateUserConnectionRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public createUserConnection(requestParameters: UserConnectionV1alpha1ApiCreateUserConnectionRequest = {}, options?: RawAxiosRequestConfig) {
+        return UserConnectionV1alpha1ApiFp(this.configuration).createUserConnection(requestParameters.userConnection, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * Build the OIDC authorization URL used to bind an external identity.
      * @param {UserConnectionV1alpha1ApiGetOidcAuthorizeUrlRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -473,6 +787,16 @@ export class UserConnectionV1alpha1Api extends BaseAPI {
      */
     public getOidcAuthorizeUrl(requestParameters: UserConnectionV1alpha1ApiGetOidcAuthorizeUrlRequest, options?: RawAxiosRequestConfig) {
         return UserConnectionV1alpha1ApiFp(this.configuration).getOidcAuthorizeUrl(requestParameters.registrationId, requestParameters.redirectUri, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Get UserConnection
+     * @param {UserConnectionV1alpha1ApiGetUserConnectionRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getUserConnection(requestParameters: UserConnectionV1alpha1ApiGetUserConnectionRequest, options?: RawAxiosRequestConfig) {
+        return UserConnectionV1alpha1ApiFp(this.configuration).getUserConnection(requestParameters.name, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -495,6 +819,16 @@ export class UserConnectionV1alpha1Api extends BaseAPI {
     }
 
     /**
+     * Patch UserConnection
+     * @param {UserConnectionV1alpha1ApiPatchUserConnectionRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public patchUserConnection(requestParameters: UserConnectionV1alpha1ApiPatchUserConnectionRequest, options?: RawAxiosRequestConfig) {
+        return UserConnectionV1alpha1ApiFp(this.configuration).patchUserConnection(requestParameters.name, requestParameters.jsonPatchInner, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * Remove an identity binding. Rejected if it is the only sign-in method.
      * @param {UserConnectionV1alpha1ApiUnbindConnectionRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -502,5 +836,15 @@ export class UserConnectionV1alpha1Api extends BaseAPI {
      */
     public unbindConnection(requestParameters: UserConnectionV1alpha1ApiUnbindConnectionRequest, options?: RawAxiosRequestConfig) {
         return UserConnectionV1alpha1ApiFp(this.configuration).unbindConnection(requestParameters.name, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Update UserConnection
+     * @param {UserConnectionV1alpha1ApiUpdateUserConnectionRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public updateUserConnection(requestParameters: UserConnectionV1alpha1ApiUpdateUserConnectionRequest, options?: RawAxiosRequestConfig) {
+        return UserConnectionV1alpha1ApiFp(this.configuration).updateUserConnection(requestParameters.name, requestParameters.userConnection, options).then((request) => request(this.axios, this.basePath));
     }
 }

@@ -13,10 +13,14 @@
  */
 
 
+// May contain unused imports in some cases
+// @ts-ignore
+import type { Gateway } from './gateway';
 
 export interface PatSpec {
     'description'?: string;
     'expiresAt'?: string;
+    'gateway'?: Gateway;
     /**
      * Master key version used to sign this token.
      */

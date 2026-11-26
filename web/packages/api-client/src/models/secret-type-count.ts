@@ -14,6 +14,9 @@
 
 
 
+/**
+ * Per-type totals sorted by count and type.
+ */
 export interface SecretTypeCount {
     /**
      * Secret count.
