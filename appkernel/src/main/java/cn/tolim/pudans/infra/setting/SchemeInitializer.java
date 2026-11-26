@@ -23,6 +23,7 @@ import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.storage.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.StorageRoute;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.extension.contract.ConfigMap;
@@ -190,11 +191,17 @@ class SchemeInitializer implements SmartLifecycle {
                     .indexFunc(file -> file.getSpec().getUploadExpiresAt()));
         });
 
+        schemeManager.register(StorageRoute.class, is -> is.add(
+                IndexSpecs.<StorageRoute, String>single("spec.policyName", String.class)
+                        .indexFunc(route -> route.getSpec().getPolicyName())));
+
         schemeManager.register(LiveSource.class, is -> {
             is.add(IndexSpecs.<LiveSource, Boolean>single("spec.enabled", Boolean.class)
                     .indexFunc(source -> source.getSpec().isEnabled()));
             is.add(IndexSpecs.<LiveSource, String>single("spec.roomId", String.class)
                     .indexFunc(source -> source.getSpec().getRoomId()));
+            is.add(IndexSpecs.<LiveSource, String>single("spec.storagePolicy", String.class)
+                    .indexFunc(source -> source.getSpec().getStoragePolicy()));
             is.add(IndexSpecs.<LiveSource, LiveSourceState>single("status.state", LiveSourceState.class)
                     .indexFunc(source -> source.getStatus().getState()));
             is.add(IndexSpecs.<LiveSource, Boolean>single("status.live", Boolean.class)
@@ -208,6 +215,8 @@ class SchemeInitializer implements SmartLifecycle {
         schemeManager.register(LiveRecording.class, is -> {
             is.add(IndexSpecs.<LiveRecording, String>single("spec.sourceName", String.class)
                     .indexFunc(recording -> recording.getSpec().getSourceName()));
+            is.add(IndexSpecs.<LiveRecording, String>single("spec.storagePolicy", String.class)
+                    .indexFunc(recording -> recording.getSpec().getStoragePolicy()));
             is.add(IndexSpecs.<LiveRecording, LiveRecordingState>single(
                             "status.state", LiveRecordingState.class)
                     .indexFunc(recording -> recording.getStatus().getState()));
