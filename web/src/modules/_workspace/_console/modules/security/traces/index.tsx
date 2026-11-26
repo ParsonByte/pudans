@@ -398,6 +398,7 @@ export function TracesView() {
                 footer={false}
                 onClose={() => setSelectedSession(undefined)}
                 open={Boolean(selectedSession)}
+                style={{ height: "calc(100dvh - 96px)" }}
                 title={`用户会话 · ${selectedSession?.username ?? maskIdentifier(selectedSession?.uid)}`}
                 width={1120}
             >
@@ -414,9 +415,10 @@ export function TracesView() {
                         type="network-error"
                     />
                 ) : (
-                    <div className="pr-3">
+                    <div className="flex min-h-0 flex-1 flex-col pr-3">
                         <TraceWaterfall
                             key={detailQuery.data?.session?.sessionId}
+                            layout="dialog"
                             session={detailQuery.data?.session ?? selectedSession}
                             steps={detailQuery.data?.steps}
                         />
