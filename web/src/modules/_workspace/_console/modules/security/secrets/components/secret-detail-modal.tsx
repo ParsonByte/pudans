@@ -16,6 +16,8 @@ type SecretDetailModalProps = {
 };
 
 export function SecretDetailModal({ item, onClose }: SecretDetailModalProps) {
+    const token = useDesignTokens();
+
     return (
         <GlobalDialog
             footer={false}
@@ -25,7 +27,7 @@ export function SecretDetailModal({ item, onClose }: SecretDetailModalProps) {
                 <span className="flex flex-wrap items-center gap-2">
                     密钥详情 · {item?.name ?? "未命名"}
                     <Tag theme="primary" variant="light">
-                        只写不读
+                        值只写不读
                     </Tag>
                 </span>
             }
@@ -58,6 +60,9 @@ export function SecretDetailModal({ item, onClose }: SecretDetailModalProps) {
                             { label: "创建时间", value: formatDateTime(item.creationTimestamp) },
                         ]}
                     />
+                    <div className="text-xs leading-5" style={{ color: token.colorTextTertiary }}>
+                        data 与 stringData 的值均为只写字段，任何接口都不会返回明文，此处仅展示键名。
+                    </div>
                     <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
                         <KeyGroup
                             emptyText="没有文本键"

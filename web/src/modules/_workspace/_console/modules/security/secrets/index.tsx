@@ -286,19 +286,27 @@ export function SecretsView() {
                 variant="default-filled"
             />
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12" hidden={activeTab !== "overview"}>
-                <SecretMetricGrid loading={catalogQuery.isPending} summary={summary} />
-                <div className="md:col-span-2 xl:col-span-7">
-                    <SectionCard title="密钥规模排行">
-                        <SecretKeyProfile items={items} />
-                    </SectionCard>
+            {activeTab === "overview" ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+                    <div
+                        className="text-xs leading-5 md:col-span-2 xl:col-span-12"
+                        style={{ color: token.colorTextTertiary }}
+                    >
+                        指标与类型分布基于全部密钥；密钥规模排行仅统计当前筛选页。
+                    </div>
+                    <SecretMetricGrid loading={catalogQuery.isPending} summary={summary} />
+                    <div className="md:col-span-2 xl:col-span-7">
+                        <SectionCard title="当前页密钥规模">
+                            <SecretKeyProfile items={items} />
+                        </SectionCard>
+                    </div>
+                    <div className="md:col-span-2 xl:col-span-5">
+                        <SectionCard title="密钥类型分布">
+                            <SecretTypeChart types={summary?.types} />
+                        </SectionCard>
+                    </div>
                 </div>
-                <div className="md:col-span-2 xl:col-span-5">
-                    <SectionCard title="密钥类型分布">
-                        <SecretTypeChart types={summary?.types} />
-                    </SectionCard>
-                </div>
-            </div>
+            ) : null}
 
             <div hidden={activeTab !== "catalog"}>
                 <SectionCard title="密钥目录">
