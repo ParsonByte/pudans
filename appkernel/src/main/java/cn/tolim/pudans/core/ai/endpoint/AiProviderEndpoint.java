@@ -36,6 +36,6 @@ public class AiProviderEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> list(ServerRequest request) {
-        return ServerResponse.ok().body(providers.list(), AiProviderDescriptor.class);
+        return ServerResponse.ok().bodyValue(providers.list());
     }
 }

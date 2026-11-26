@@ -36,7 +36,7 @@ public class AiPriceRuleEndpoint implements CustomEndpoint {
                 .GET("/aipricerules", this::list, builder -> builder.operationId("listAiPriceRules")
                         .description("List AI model and MCP price rules.")
                         .tag(TAG)
-                        .response(responseBuilder().responseCode("200").description("Price rules")))
+                        .response(responseBuilder().responseCode("200").implementationArray(AiPriceRule.class)))
                 .POST("/aipricerules", this::create, builder -> builder.operationId("createAiPriceRule")
                         .description("Create a non-overlapping AI price rule.")
                         .tag(TAG)
