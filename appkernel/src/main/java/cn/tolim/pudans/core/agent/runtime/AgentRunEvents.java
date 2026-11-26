@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -61,6 +62,7 @@ public class AgentRunEvents {
 
     private final Clock clock;
 
+    @Autowired
     public AgentRunEvents(AiEventStreams streams) {
         this(streams, DEFAULT_PING_INTERVAL, Clock.systemUTC());
     }
