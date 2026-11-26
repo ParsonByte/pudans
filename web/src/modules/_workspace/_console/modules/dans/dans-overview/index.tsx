@@ -114,9 +114,9 @@ export function DansOverviewView() {
                 >
                     <div className="flex flex-col gap-3 text-sm">
                         <p className="m-0 text-[var(--td-text-color-secondary)]">
-                            模型渠道、路由、计费和能力目录统一由 AI 配置与目录接口提供。
+                            AI 服务商、路由、计费和能力目录统一由 AI 配置与目录接口提供。
                         </p>
-                        <DansShortcut href={DANS_MENU_PATHS.aiChannels} label="模型渠道" />
+                        <DansShortcut href={DANS_MENU_PATHS.aiChannels} label="AI 服务商" />
                         <DansShortcut href={DANS_MENU_PATHS.aiModels} label="模型与路由" />
                         <DansShortcut href={DANS_MENU_PATHS.modelPlaza} label="模型广场" />
                         <DansShortcut href={DANS_MENU_PATHS.aiBilling} label="计费与配额" />

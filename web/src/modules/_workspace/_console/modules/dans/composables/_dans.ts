@@ -1,6 +1,47 @@
-import { axiosInstance } from "@pudans-dev/api-client";
+import {
+    type AiChannelCreateRequest,
+    type AiChannelModelCreateRequest,
+    type AiChannelModelUpdateRequest,
+    type AiChannelUpdateRequest,
+    type AiModelCreateRequest,
+    type AiModelUpdateRequest,
+    type AiChannel as ApiAiChannel,
+    type AiChannelModel as ApiAiChannelModel,
+    type AiChannelTestResult as ApiAiChannelTestResult,
+    type AiDefaultModel as ApiAiDefaultModel,
+    type AiModel as ApiAiModel,
+    type AiModelImportResult as ApiAiModelImportResult,
+    type AiPriceRule as ApiAiPriceRule,
+    type AiProviderDescriptor as ApiAiProviderDescriptor,
+    type AiQuotaAssignment as ApiAiQuotaAssignment,
+    type AiQuotaPlan as ApiAiQuotaPlan,
+    type AiToolDescriptor as ApiAiToolDescriptor,
+    type CatalogEntry as ApiCatalogEntry,
+    apiClient,
+    axiosInstance,
+} from "@pudans-dev/api-client";
 
 const API_ROOT = "/apis/api.pudans.tolim.cn/v1alpha1";
+
+type JsonObject = Record<string, unknown>;
+type AiChannelInput = Omit<AiChannelCreateRequest, "config"> & { config?: JsonObject };
+type AiChannelUpdateInput = Omit<AiChannelUpdateRequest, "config"> & { config?: JsonObject };
+type AiModelCreateInput = Omit<AiModelCreateRequest, "capabilities" | "parameterSchema"> & {
+    capabilities?: JsonObject;
+    parameterSchema?: JsonObject;
+};
+type AiModelUpdateInput = Omit<AiModelUpdateRequest, "capabilities" | "parameterSchema"> & {
+    capabilities?: JsonObject;
+    parameterSchema?: JsonObject;
+};
+type AiChannelModelInput = Omit<AiChannelModelCreateRequest, "parameterOverrides" | "providerMetadata"> & {
+    parameterOverrides?: JsonObject;
+    providerMetadata?: JsonObject;
+};
+type AiChannelModelUpdateInput = Omit<AiChannelModelUpdateRequest, "parameterOverrides" | "providerMetadata"> & {
+    parameterOverrides?: JsonObject;
+    providerMetadata?: JsonObject;
+};
 
 type CollectionResponse<T> = T[] | { items?: T[] };
 
@@ -9,106 +50,22 @@ type PageResponse<T> = {
     nextCursor?: string;
 };
 
-export type AiChannel = {
-    baseUrl?: string;
-    credentialConfigured?: boolean;
-    credentialStatus?: Record<string, unknown>;
-    id: string;
-    maxConcurrency?: number;
-    protocol?: string;
-    provider?: string;
-    rateLimit?: number;
-    status?: string;
-    timeoutMs?: number;
-    updatedAt?: string;
-    weight?: number;
-    workspaceId?: string;
+export type AiChannel = ApiAiChannel & { id: string };
+export type AiModel = ApiAiModel & { id: string };
+export type AiChannelModel = ApiAiChannelModel & { id: string };
+export type AiProviderDescriptor = ApiAiProviderDescriptor & {
+    displayName: string;
+    logoUrl?: string;
+    provider: string;
 };
-
-export type AiModel = {
-    capabilities?: Record<string, unknown>;
-    contextWindow?: number;
-    description?: string;
-    displayName?: string;
-    id: string;
-    logicalName?: string;
-    maxOutputTokens?: number;
-    status?: string;
-    updatedAt?: string;
-};
-
-export type AiChannelModel = {
-    channelId?: string;
-    enabled?: boolean;
-    id: string;
-    modelId?: string;
-    priority?: number;
-    upstreamModelKey?: string;
-    updatedAt?: string;
-    weight?: number;
-};
-
-export type AiDefaultModel = {
-    capability?: string;
-    id: string;
-    modelId?: string;
-    updatedAt?: string;
-    workspaceId?: string;
-};
-
-export type AiToolDescriptor = {
-    description?: string;
-    enabled?: boolean;
-    key: string;
-    label?: string;
-};
-
-export type AiPriceRule = {
-    baseCredits?: number;
-    effectiveFrom?: string;
-    effectiveTo?: string;
-    id: string;
-    mcpToolKey?: string;
-    minimumCredits?: number;
-    modelId?: string;
-    pricingMode?: string;
-    quotaBucket?: string;
-    targetKey?: string;
-    targetType?: string;
-    unit?: string;
-    unitCredits?: number;
-};
-
-export type AiQuotaPlan = {
-    displayName?: string;
-    fiveHourCredits?: number;
-    id: string;
-    name?: string;
-    status?: string;
-    weeklyCredits?: number;
-};
-
-export type AiQuotaAssignment = {
-    effectiveFrom?: string;
-    effectiveTo?: string;
-    id: string;
-    planId?: string;
-    status?: string;
-    subjectId?: string;
-    subjectType?: string;
-};
-
-export type CatalogEntry = {
-    catalogKind?: string;
-    description?: string;
-    enabled?: boolean;
-    entryKey?: string;
-    id: string;
-    label?: string;
-    sortOrder?: number;
-    validFrom?: string;
-    validTo?: string;
-};
+export type AiChannelTestResult = ApiAiChannelTestResult & { success: boolean };
+export type AiModelImportResult = ApiAiModelImportResult & { channelId: string };
+export type AiDefaultModel = ApiAiDefaultModel & { id: string };
+export type AiToolDescriptor = ApiAiToolDescriptor & { key: string };
+export type AiPriceRule = ApiAiPriceRule & { id: string };
+export type AiQuotaPlan = ApiAiQuotaPlan & { id: string };
+export type AiQuotaAssignment = ApiAiQuotaAssignment & { id: string };
+export type CatalogEntry = ApiCatalogEntry & { id: string };
 
 export type AgentSession = {
     createdAt?: string;
@@ -287,31 +244,112 @@ async function getPage<T>(path: string, params?: Record<string, unknown>): Promi
 }
 
 export async function listAiChannels(): Promise<AiChannel[]> {
-    return getCollection<AiChannel>("/aichannels/-/all");
+    return (await apiClient.aiChannel.listAllAiChannels()).data as AiChannel[];
+}
+
+export async function listWorkspaceAiChannels(): Promise<AiChannel[]> {
+    return (await apiClient.aiChannel.listAiChannels()).data as AiChannel[];
+}
+
+export async function createAiChannel(input: AiChannelInput): Promise<AiChannel> {
+    return (
+        await apiClient.aiChannel.createAiChannel({
+            aiChannelCreateRequest: input as unknown as AiChannelCreateRequest,
+        })
+    ).data as AiChannel;
+}
+
+export async function updateAiChannel(name: string, input: AiChannelUpdateInput): Promise<AiChannel> {
+    return (
+        await apiClient.aiChannel.updateAiChannel({
+            aiChannelUpdateRequest: input as unknown as AiChannelUpdateRequest,
+            name,
+        })
+    ).data as AiChannel;
+}
+
+export async function testAiChannel(name: string, model?: string): Promise<AiChannelTestResult> {
+    return (
+        await apiClient.aiChannel.testAiChannel({
+            aiChannelTestRequest: { model },
+            name,
+        })
+    ).data as AiChannelTestResult;
+}
+
+export async function importAiChannelModels(name: string, modelKeys?: string[]): Promise<AiModelImportResult> {
+    return (
+        await apiClient.aiChannel.importAiChannelModels({
+            aiModelImportRequest: { modelKeys: modelKeys ?? [] },
+            name,
+        })
+    ).data as AiModelImportResult;
+}
+
+export async function listAiProviders(): Promise<AiProviderDescriptor[]> {
+    return (await apiClient.aiProvider.listAiProviders()).data as AiProviderDescriptor[];
 }
 
 export async function listAiModels(): Promise<AiModel[]> {
-    return getCollection<AiModel>("/aimodels");
+    return (await apiClient.aiModel.listAiModels()).data as AiModel[];
+}
+
+export async function createAiModel(input: AiModelCreateInput): Promise<AiModel> {
+    return (
+        await apiClient.aiModel.createAiModel({
+            aiModelCreateRequest: input as unknown as AiModelCreateRequest,
+        })
+    ).data as AiModel;
+}
+
+export async function updateAiModel(name: string, input: AiModelUpdateInput): Promise<AiModel> {
+    return (
+        await apiClient.aiModel.updateAiModel({
+            aiModelUpdateRequest: input as unknown as AiModelUpdateRequest,
+            name,
+        })
+    ).data as AiModel;
+}
+
+export async function deleteAiModel(name: string): Promise<void> {
+    await apiClient.aiModel.deleteAiModel({ name });
 }
 
 export async function listAiChannelModels(): Promise<AiChannelModel[]> {
-    return getCollection<AiChannelModel>("/aichannelmodels");
+    return (await apiClient.aiChannelModel.listAiChannelModels()).data as AiChannelModel[];
+}
+
+export async function createAiChannelModel(input: AiChannelModelInput): Promise<AiChannelModel> {
+    return (
+        await apiClient.aiChannelModel.createAiChannelModel({
+            aiChannelModelCreateRequest: input as unknown as AiChannelModelCreateRequest,
+        })
+    ).data as AiChannelModel;
+}
+
+export async function updateAiChannelModel(name: string, input: AiChannelModelUpdateInput): Promise<AiChannelModel> {
+    return (
+        await apiClient.aiChannelModel.updateAiChannelModel({
+            aiChannelModelUpdateRequest: input as unknown as AiChannelModelUpdateRequest,
+            name,
+        })
+    ).data as AiChannelModel;
 }
 
 export async function listAiDefaultModels(): Promise<AiDefaultModel[]> {
-    return getCollection<AiDefaultModel>("/aidefaultmodels/-/all");
+    return (await apiClient.aiDefaultModel.listAllAiDefaultModels()).data as AiDefaultModel[];
 }
 
 export async function listAiPriceRules(): Promise<AiPriceRule[]> {
-    return getCollection<AiPriceRule>("/aipricerules");
+    return (await apiClient.aiPriceRule.listAiPriceRules()).data as AiPriceRule[];
 }
 
 export async function listAiQuotaPlans(): Promise<AiQuotaPlan[]> {
-    return getCollection<AiQuotaPlan>("/aiquotaplans");
+    return (await apiClient.aiQuotaPlan.listAiQuotaPlans()).data as AiQuotaPlan[];
 }
 
 export async function listAiQuotaAssignments(): Promise<AiQuotaAssignment[]> {
-    return getCollection<AiQuotaAssignment>("/aiquotaassignments");
+    return (await apiClient.aiQuotaAssignment.listAiQuotaAssignments()).data as AiQuotaAssignment[];
 }
 
 export async function listCatalogEntries(kind?: string): Promise<CatalogEntry[]> {

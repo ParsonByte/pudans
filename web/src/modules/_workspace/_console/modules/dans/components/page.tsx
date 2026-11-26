@@ -15,6 +15,7 @@ type DansPageProps = {
     metrics?: ConsoleOverviewMetric[];
     scopeNote?: string;
     section: string;
+    showOverview?: boolean;
     title: string;
 };
 
@@ -26,12 +27,15 @@ export function DansPage({
     metrics = [],
     scopeNote,
     section,
+    showOverview = true,
     title,
 }: DansPageProps) {
     return (
         <div className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
             <PageBreadcrumb current={title} parents={["DANS 管控", section]} />
-            <ConsolePageOverview actions={actions} icon={icon} metrics={metrics} title={title} />
+            {showOverview ? (
+                <ConsolePageOverview actions={actions} icon={icon} metrics={metrics} title={title} />
+            ) : null}
             {description ? <p className="m-0 text-sm text-[var(--td-text-color-secondary)]">{description}</p> : null}
             {scopeNote ? <Alert message={scopeNote} theme="warning" /> : null}
             {children}
