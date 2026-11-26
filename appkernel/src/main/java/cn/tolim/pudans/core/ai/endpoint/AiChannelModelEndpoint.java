@@ -36,7 +36,7 @@ public class AiChannelModelEndpoint implements CustomEndpoint {
                 .GET("/aichannelmodels", this::list, builder -> builder.operationId("listAiChannelModels")
                         .description("List AI channel to model mappings.")
                         .tag(TAG)
-                        .response(responseBuilder().responseCode("200").description("AI channel models")))
+                        .response(responseBuilder().responseCode("200").implementationArray(AiChannelModel.class)))
                 .POST("/aichannelmodels", this::create, builder -> builder.operationId("createAiChannelModel")
                         .description("Create an AI channel to model mapping.")
                         .tag(TAG)

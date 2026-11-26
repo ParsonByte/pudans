@@ -36,7 +36,7 @@ public class AiQuotaPlanEndpoint implements CustomEndpoint {
                 .GET("/aiquotaplans", this::list, builder -> builder.operationId("listAiQuotaPlans")
                         .description("List AI quota plans.")
                         .tag(TAG)
-                        .response(responseBuilder().responseCode("200").description("Quota plans")))
+                        .response(responseBuilder().responseCode("200").implementationArray(AiQuotaPlan.class)))
                 .POST("/aiquotaplans", this::create, builder -> builder.operationId("createAiQuotaPlan")
                         .description("Create an AI quota plan with fixed five-hour and weekly windows.")
                         .tag(TAG)

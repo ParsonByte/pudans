@@ -36,7 +36,7 @@ public class AiModelEndpoint implements CustomEndpoint {
                 .GET("/aimodels", this::list, builder -> builder.operationId("listAiModels")
                         .description("List AI logical models and their parameter schemas.")
                         .tag(TAG)
-                        .response(responseBuilder().responseCode("200").description("AI models")))
+                        .response(responseBuilder().responseCode("200").implementationArray(AiModel.class)))
                 .POST("/aimodels", this::create, builder -> builder.operationId("createAiModel")
                         .description("Create an AI logical model.")
                         .tag(TAG)

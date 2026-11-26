@@ -36,7 +36,7 @@ public class AiCatalogEntryEndpoint implements CustomEndpoint {
                 .GET("/catalogentries", this::list, builder -> builder.operationId("listCatalogEntries")
                         .description("List catalog entries, optionally filtered by catalog kind.")
                         .tag(TAG)
-                        .response(responseBuilder().responseCode("200").description("Catalog entries")))
+                        .response(responseBuilder().responseCode("200").implementationArray(CatalogEntry.class)))
                 .POST("/catalogentries", this::create, builder -> builder.operationId("createCatalogEntry")
                         .description("Create a catalog entry.")
                         .tag(TAG)
