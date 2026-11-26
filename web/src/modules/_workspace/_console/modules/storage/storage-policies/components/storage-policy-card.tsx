@@ -1,6 +1,16 @@
 "use client";
 
-import { BrowseIcon, DeleteIcon, FolderOpenIcon, MoreIcon, ServerIcon } from "tdesign-icons-react";
+import {
+    BrowseIcon,
+    DeleteIcon,
+    EditIcon,
+    FolderOpenIcon,
+    LinkIcon,
+    LoginIcon,
+    MoreIcon,
+    ServerIcon,
+    SettingIcon,
+} from "tdesign-icons-react";
 import { Button, Card, Dropdown, Tag, Tooltip } from "tdesign-react";
 import type { DropdownOption } from "tdesign-react";
 
@@ -16,13 +26,26 @@ import {
 } from "../composables/_storage-policies";
 
 type StoragePolicyCardProps = {
+    onCors?: () => void;
     onDelete?: () => void;
     onDetails: () => void;
+    onEdit?: () => void;
+    onOAuth?: () => void;
+    onTest?: () => void;
     pending: boolean;
     policy: StoragePolicy;
 };
 
-export function StoragePolicyCard({ onDelete, onDetails, pending, policy }: StoragePolicyCardProps) {
+export function StoragePolicyCard({
+    onCors,
+    onDelete,
+    onDetails,
+    onEdit,
+    onOAuth,
+    onTest,
+    pending,
+    policy,
+}: StoragePolicyCardProps) {
     const token = useDesignTokens();
     const type = storagePolicyTypeMeta(policy.spec.type);
     const TypeIcon = type.icon;
@@ -39,6 +62,38 @@ export function StoragePolicyCard({ onDelete, onDetails, pending, policy }: Stor
         },
     ];
 
+    if (onEdit) {
+        actions.push({
+            content: "编辑",
+            prefixIcon: <EditIcon size={16} />,
+            value: "edit",
+        });
+    }
+
+    if (onTest) {
+        actions.push({
+            content: "测试连接",
+            prefixIcon: <LinkIcon size={16} />,
+            value: "test",
+        });
+    }
+
+    if (onOAuth) {
+        actions.push({
+            content: "OneDrive 授权",
+            prefixIcon: <LoginIcon size={16} />,
+            value: "oauth",
+        });
+    }
+
+    if (onCors) {
+        actions.push({
+            content: "跨域配置",
+            prefixIcon: <SettingIcon size={16} />,
+            value: "cors",
+        });
+    }
+
     if (onDelete) {
         actions.push({
             content: "删除",
@@ -51,6 +106,14 @@ export function StoragePolicyCard({ onDelete, onDetails, pending, policy }: Stor
     const handleAction = (item: DropdownOption) => {
         if (item.value === "details") {
             onDetails();
+        } else if (item.value === "edit") {
+            onEdit?.();
+        } else if (item.value === "test") {
+            onTest?.();
+        } else if (item.value === "oauth") {
+            onOAuth?.();
+        } else if (item.value === "cors") {
+            onCors?.();
         } else if (item.value === "delete") {
             onDelete?.();
         }
@@ -102,7 +165,11 @@ export function StoragePolicyCard({ onDelete, onDetails, pending, policy }: Stor
             </div>
 
             <div className="mt-3 min-w-0">
-                <CopyableIdentifier value={policy.metadata.name} />
+                <CopyableIdentifier
+                    className="[&_button]:shrink-0"
+                    display={<span className="min-w-0 truncate font-mono text-xs">{policy.metadata.name}</span>}
+                    value={policy.metadata.name}
+                />
             </div>
 
             {location ? (

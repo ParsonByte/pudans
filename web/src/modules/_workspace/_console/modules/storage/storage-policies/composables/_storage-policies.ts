@@ -2,12 +2,24 @@ import type { ComponentType } from "react";
 
 import { CloudIcon, HardDriveIcon } from "tdesign-icons-react";
 
-import type { StoragePolicy, StoragePolicyType } from "../../../../composables/_storage";
+import type { StorageCapability, StoragePolicy, StoragePolicyType } from "../../../../composables/_storage";
+
+export const STORAGE_CAPABILITY_LABELS: Record<StorageCapability, string> = {
+    CORS_CONFIGURABLE: "可配置跨域",
+    DIRECT_UPLOAD: "浏览器直传",
+    MULTIPART_UPLOAD: "分片上传",
+    PRESIGNED_PARTS: "分片预签名",
+    PRESIGNED_SOURCE: "直链下载",
+    PROXY_REQUIRED: "必须中转",
+    RANGE_READ: "范围读取",
+};
 
 export const STORAGE_POLICY_PERMISSIONS = {
     create: "storage:create",
     delete: "storage:delete",
     manage: "storage:manage",
+    oauth: "storage:oauth",
+    test: "storage:test",
     update: "storage:update",
     view: "storage:view",
 } as const;
@@ -15,6 +27,8 @@ export const STORAGE_POLICY_PERMISSIONS = {
 export const STORAGE_POLICIES_QUERY_ROOT = ["console", "storage-policies"] as const;
 export const STORAGE_POLICIES_QUERY_KEY = [...STORAGE_POLICIES_QUERY_ROOT, "all"] as const;
 export const STORAGE_POLICY_TYPES_QUERY_KEY = [...STORAGE_POLICIES_QUERY_ROOT, "types"] as const;
+export const STORAGE_ROUTES_QUERY_KEY = [...STORAGE_POLICIES_QUERY_ROOT, "routes"] as const;
+export const STORAGE_ROUTE_PURPOSES_QUERY_KEY = [...STORAGE_POLICIES_QUERY_ROOT, "route-purposes"] as const;
 export const STORAGE_POLICY_LIST_SIZE = 1000;
 export const STORAGE_POLICY_TYPE_ORDER: StoragePolicyType[] = [
     "local",
@@ -50,6 +64,28 @@ const STORAGE_POLICY_TYPES: Record<string, StoragePolicyTypeMeta> = {
     s3: { group: "object", icon: CloudIcon, label: "S3" },
     upyun: { group: "object", icon: CloudIcon, label: "又拍云" },
 };
+
+const STORAGE_ROUTE_PURPOSE_META: Record<string, { description: string; label: string }> = {
+    creation_result: {
+        description: "生成任务归档结果文件时写入绑定的存储策略；未绑定时回退到默认策略。",
+        label: "生成结果",
+    },
+    sandbox_snapshot: {
+        description: "沙箱快照归档时写入绑定的存储策略；必须显式绑定，不会回退默认策略。",
+        label: "沙箱快照",
+    },
+};
+
+export function storageRoutePurposeMeta(purpose?: string | null): { description: string; label: string } {
+    const normalized = purpose?.trim();
+
+    return (
+        (normalized ? STORAGE_ROUTE_PURPOSE_META[normalized] : undefined) ?? {
+            description: "该用途的存储路由配置。",
+            label: normalized || "未知用途",
+        }
+    );
+}
 
 export function storagePolicyTypeMeta(type?: string | null): StoragePolicyTypeMeta {
     const normalized = type?.trim().toLowerCase();
@@ -106,6 +142,13 @@ export function storagePolicyMegabytesToBytes(megabytes?: number | null): number
         return 0;
     }
     return Math.round(megabytes * MEBIBYTE);
+}
+
+export function storagePolicyBytesToMegabytes(bytes?: number | null): number {
+    if (!bytes || bytes <= 0) {
+        return 0;
+    }
+    return Math.round((bytes / MEBIBYTE) * 10) / 10;
 }
 
 export function parseStoragePolicyFileTypes(value?: string | null): string[] {
