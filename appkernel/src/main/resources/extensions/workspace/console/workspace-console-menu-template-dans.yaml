@@ -1,0 +1,330 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-overview
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS"
+    rbac.authorization.pudans.tolim.cn/display-name: "DANS 概览查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.dans-overview"
+    rbac.authorization.pudans.tolim.cn/ui-component: "dans-overview"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "DANS 概览"
+    rbac.authorization.pudans.tolim.cn/ui-description: "汇总 AI、Agent 与创作资源状态。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:layout-dashboard"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "总览"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:layout-dashboard"
+    rbac.authorization.pudans.tolim.cn/ui-order: "50"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["dans:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [
+        "role-template-view-all-ai-channels",
+        "role-template-view-ai-quota",
+        "role-template-view-ai-catalog",
+        "role-template-view-all-agent-sessions",
+        "role-template-view-all-agent-sandboxes",
+        "role-template-view-all-memory-jobs",
+        "role-template-view-all-generation-tasks",
+        "role-template-view-all-creation-assets",
+        "role-template-use-index-content"
+      ]
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-ai-channels
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 模型渠道查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.ai-channels"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-channels"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "模型渠道"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看模型渠道、凭据状态、连通配置与并发限制。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:database"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "AI"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:database"
+    rbac.authorization.pudans.tolim.cn/ui-order: "100"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-channels:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-ai-channels" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-ai-models
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 模型与路由查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.ai-models"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-models"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "模型与路由"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看逻辑模型、渠道映射与各能力默认模型。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:waypoints"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "AI"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:database"
+    rbac.authorization.pudans.tolim.cn/ui-order: "110"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-models:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-ai-default-models" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-ai-billing
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 计费与配额查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.ai-billing"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-billing"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "计费与配额"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看价格规则、配额计划和主体配额分配。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:tags"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "AI"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:database"
+    rbac.authorization.pudans.tolim.cn/ui-order: "120"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-billing:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-ai-config", "role-template-view-ai-quota" ]
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-ai-catalog
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 能力目录查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.ai-catalog"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-catalog"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "能力目录"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看聊天、创作、工具、记忆、沙箱与探索目录项。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:file-cog"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "AI"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:database"
+    rbac.authorization.pudans.tolim.cn/ui-order: "130"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-catalog:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-ai-catalog" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-model-plaza
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "模型广场查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.model-plaza"
+    rbac.authorization.pudans.tolim.cn/ui-component: "model-plaza"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "模型广场"
+    rbac.authorization.pudans.tolim.cn/ui-description: "浏览平台模型能力、上下文、渠道覆盖与默认路由。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:waypoints"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "AI"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:database"
+    rbac.authorization.pudans.tolim.cn/ui-order: "140"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["model-plaza:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-ai-default-models" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-agent-sessions
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "Agent 会话与运行查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.agent-sessions"
+    rbac.authorization.pudans.tolim.cn/ui-component: "agent-sessions"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "会话与运行"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看 Agent 会话消息与运行状态。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:terminal"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "Agent"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:terminal"
+    rbac.authorization.pudans.tolim.cn/ui-order: "200"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["agent-sessions:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-agent-sessions" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-agent-sandboxes
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "Agent 沙箱查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.agent-sandboxes"
+    rbac.authorization.pudans.tolim.cn/ui-component: "agent-sandboxes"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "沙箱"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看沙箱实例、运行状态、资源与过期时间。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:terminal"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "Agent"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:terminal"
+    rbac.authorization.pudans.tolim.cn/ui-order: "210"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["agent-sandboxes:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-agent-sandboxes" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-agent-memory
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "Agent 记忆与理解查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.agent-memory"
+    rbac.authorization.pudans.tolim.cn/ui-component: "agent-memory"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "记忆与理解"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看记忆池审核、提取任务、向量空间与理解状态。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:history"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "Agent"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:terminal"
+    rbac.authorization.pudans.tolim.cn/ui-order: "220"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["agent-memory:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-memory-jobs" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-creation-tasks
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS Creation"
+    rbac.authorization.pudans.tolim.cn/display-name: "创作生成任务查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.creation-tasks"
+    rbac.authorization.pudans.tolim.cn/ui-component: "creation-tasks"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "生成任务"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看生成任务、执行状态、失败原因与结果资产。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:video"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "创作"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:video"
+    rbac.authorization.pudans.tolim.cn/ui-order: "300"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["creation-tasks:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-force-cancel-generation-tasks" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-creation-assets
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS Creation"
+    rbac.authorization.pudans.tolim.cn/display-name: "创作资产与主体查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.creation-assets"
+    rbac.authorization.pudans.tolim.cn/ui-component: "creation-assets"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "资产与主体"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看资产目录、来源、文件与主体资料。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:folder-open"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "创作"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:video"
+    rbac.authorization.pudans.tolim.cn/ui-order: "310"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["creation-assets:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-creation-assets" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-dans-creation-content
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS Creation"
+    rbac.authorization.pudans.tolim.cn/display-name: "创作内容运营查看"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.creation-content"
+    rbac.authorization.pudans.tolim.cn/ui-component: "creation-content"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "内容运营"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看平台作品、模板与创作活动。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:scroll-text"
+    rbac.authorization.pudans.tolim.cn/ui-group: "DANS 管控"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "dans"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "创作"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:video"
+    rbac.authorization.pudans.tolim.cn/ui-order: "320"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["creation-content:view"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [
+        "role-template-view-all-creation-content",
+        "role-template-approve-creation-content",
+        "role-template-reject-creation-content",
+        "role-template-publish-creation-content",
+        "role-template-unpublish-creation-content"
+      ]
+rules: []

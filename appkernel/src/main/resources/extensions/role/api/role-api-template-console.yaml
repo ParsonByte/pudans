@@ -65,7 +65,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-label: "直播录制"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看直播录制记录，支持下载、停止与重试。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:video-camera"
-    rbac.authorization.pudans.tolim.cn/ui-group: "直播监控"
+    rbac.authorization.pudans.tolim.cn/ui-group: "媒体监控"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "live"
     rbac.authorization.pudans.tolim.cn/ui-order: "330"
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["liverecordings:view"]'
@@ -128,7 +128,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-label: "直播源"
     rbac.authorization.pudans.tolim.cn/ui-description: "管理抖音直播源，跟踪开播状态与自动录制。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:video-camera"
-    rbac.authorization.pudans.tolim.cn/ui-group: "直播监控"
+    rbac.authorization.pudans.tolim.cn/ui-group: "媒体监控"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "live"
     rbac.authorization.pudans.tolim.cn/ui-order: "320"
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["livesources:view"]'
