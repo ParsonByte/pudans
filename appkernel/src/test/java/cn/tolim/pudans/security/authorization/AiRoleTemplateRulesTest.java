@@ -60,10 +60,51 @@ class AiRoleTemplateRulesTest {
         assertAllowed(role, HttpMethod.PUT, API_PREFIX + "/aidefaultmodels/chat");
         assertAllowed(role, HttpMethod.POST, API_PREFIX + "/aichannels/channel-1/-/test");
         assertAllowed(role, HttpMethod.POST, API_PREFIX + "/aichannels/channel-1/-/models");
+        for (var operation : List.of(
+                "files",
+                "anthropic-files",
+                "search",
+                "fetch",
+                "ocr",
+                "tts",
+                "asr",
+                "fim",
+                "chat-completions",
+                "messages",
+                "responses")) {
+            assertAllowed(
+                    role,
+                    HttpMethod.POST,
+                    API_PREFIX + "/aichannels/channel-1/-/" + operation);
+        }
+        assertAllowed(
+                role,
+                HttpMethod.DELETE,
+                API_PREFIX + "/aichannels/channel-1/-/files/file-1");
+        assertAllowed(
+                role,
+                HttpMethod.DELETE,
+                API_PREFIX + "/aichannels/channel-1/-/anthropic-files/file-1");
         assertAllowed(
                 "role-template-view-ai-config",
                 HttpMethod.GET,
                 API_PREFIX + "/aichannels/channel-1/-/models");
+        assertAllowed(
+                "role-template-view-ai-config",
+                HttpMethod.GET,
+                API_PREFIX + "/aichannels/channel-1/-/files");
+        assertAllowed(
+                "role-template-view-ai-config",
+                HttpMethod.GET,
+                API_PREFIX + "/aichannels/channel-1/-/files/file-1");
+        assertAllowed(
+                "role-template-view-ai-config",
+                HttpMethod.GET,
+                API_PREFIX + "/aichannels/channel-1/-/anthropic-files");
+        assertAllowed(
+                "role-template-view-ai-config",
+                HttpMethod.GET,
+                API_PREFIX + "/aichannels/channel-1/-/balance");
         assertAllowed(
                 "role-template-view-ai-config",
                 HttpMethod.GET,
