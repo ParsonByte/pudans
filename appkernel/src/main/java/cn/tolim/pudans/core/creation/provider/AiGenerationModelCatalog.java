@@ -141,7 +141,7 @@ public class AiGenerationModelCatalog implements GenerationModelCatalog {
         }
         var id = normalize(model.logicalName() + " " + model.displayName());
         if (mediaType == GenerationTask.MediaType.IMAGE) {
-            if (id.contains("edit") || id.contains("qwen-image-2") || id.contains("qwen-image-3")) {
+            if (id.contains("edit")) {
                 return Set.of(
                         GenerationTask.Operation.TEXT,
                         GenerationTask.Operation.EDIT,
