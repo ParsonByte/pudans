@@ -59,6 +59,8 @@
     "react-highlight-words": "^1.0.0",
     "react-hook-form": "^7.92.0",
     "react-markdown": "^10.1.0",
+    "reicon-brands": "^1.0.2",
+    "reicon-react": "^1.2.6",
     "remark-gfm": "^4.0.1",
     "shiki": "^4.6.0",
     "tdesign-icons-react": "^0.6.12",
