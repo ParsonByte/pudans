@@ -4,12 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.setting.MailSettings;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 import cn.tolim.pudans.security.authentication.AuthenticationConnectionTester;
+import cn.tolim.pudans.setting.SiteAssets;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,8 +19,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -35,11 +42,14 @@ class ParameterSettingEndpointTest {
     @Mock
     AuthenticationConnectionTester connectionTester;
 
+    @Mock
+    SiteAssets siteAssets;
+
     private WebTestClient webTestClient;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new ParameterSettingEndpoint(parameterGroups, mailSettings, connectionTester);
+        var endpoint = new ParameterSettingEndpoint(parameterGroups, mailSettings, connectionTester, siteAssets);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -176,6 +186,68 @@ class ParameterSettingEndpointTest {
                 .exchange()
                 .expectStatus()
                 .isBadRequest();
+    }
+
+    @Test
+    void siteAssetUploadReturnsTheAbsoluteUrl() {
+        var url = "https://pudans.example.com/apis/api.pudans.tolim.cn/v1alpha1/site-assets/logoDark-abc.png";
+        when(siteAssets.store(eq("logoDark"), any(FilePart.class), any(HttpRequest.class)))
+                .thenReturn(Mono.just(url));
+        var multipart = new MultipartBodyBuilder();
+        multipart.part("field", "logoDark");
+        multipart.part("file", new ByteArrayResource("png".getBytes()))
+                .filename("logo.png")
+                .contentType(MediaType.IMAGE_PNG);
+
+        webTestClient
+                .post()
+                .uri("/parameter-settings/site/-/assets")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(multipart.build()))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.url")
+                .isEqualTo(url);
+
+        verify(siteAssets).store(eq("logoDark"), any(FilePart.class), any(HttpRequest.class));
+    }
+
+    @Test
+    void siteAssetUploadRejectsAMissingField() {
+        var multipart = new MultipartBodyBuilder();
+        multipart.part("file", new ByteArrayResource("png".getBytes()))
+                .filename("logo.png")
+                .contentType(MediaType.IMAGE_PNG);
+
+        webTestClient
+                .post()
+                .uri("/parameter-settings/site/-/assets")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(multipart.build()))
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+
+        verifyNoInteractions(siteAssets);
+    }
+
+    @Test
+    void siteAssetUploadRejectsAMissingFile() {
+        var multipart = new MultipartBodyBuilder();
+        multipart.part("field", "favicon");
+
+        webTestClient
+                .post()
+                .uri("/parameter-settings/site/-/assets")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(multipart.build()))
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+
+        verifyNoInteractions(siteAssets);
     }
 
     private static ObjectNode siteNode() {
