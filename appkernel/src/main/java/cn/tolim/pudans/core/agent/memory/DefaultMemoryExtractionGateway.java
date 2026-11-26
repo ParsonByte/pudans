@@ -85,7 +85,7 @@ public class DefaultMemoryExtractionGateway implements MemoryExtractionGateway {
     }
 
     // 复用流式聊天模型并按增量拼接真实响应文本。
-    private static Mono<String> collect(StreamingChatModel model, String transcript) {
+    static Mono<String> collect(StreamingChatModel model, String transcript) {
         var request = ChatRequest.builder()
                 .messages(
                         SystemMessage.from(SYSTEM_PROMPT),
@@ -108,7 +108,12 @@ public class DefaultMemoryExtractionGateway implements MemoryExtractionGateway {
 
                 @Override
                 public void onCompleteResponse(ChatResponse response) {
-                    sink.success(text.toString());
+                    var complete = response == null || response.aiMessage() == null
+                            ? ""
+                            : response.aiMessage().text();
+                    sink.success(text.length() > 0 || complete == null
+                            ? text.toString()
+                            : complete);
                 }
 
                 @Override

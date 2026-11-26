@@ -15,10 +15,10 @@ class ChatCompletionsProtocolTest {
 
     @Test
     void createsOpenAiCompatibleStreamingModelsFromChannelSettings() {
-        var model = protocol.create(request("deepseek", "deepseek-v4-pro", Map.of()));
+        var model = protocol.create(request("custom", "custom-model", Map.of()));
 
         assertThat(model).isInstanceOf(OpenAiStreamingChatModel.class);
-        assertThat(model.defaultRequestParameters().modelName()).isEqualTo("deepseek-v4-pro");
+        assertThat(model.defaultRequestParameters().modelName()).isEqualTo("custom-model");
     }
 
     @Test

@@ -25,9 +25,6 @@ dependencies {
         api libs.guava
         api libs.json.patch
         api libs.langchain4j.mcp
-        api libs.langchain4j.community.dashscope
-        // DashScope 模块传递引入 SDK，平台约束固定该 SDK 的版本。
-        api libs.dashscope.sdk.java
         api libs.okhttp
         api libs.bundles.resilience4j
         api libs.twofactor.auth

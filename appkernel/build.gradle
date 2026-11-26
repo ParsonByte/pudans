@@ -62,7 +62,6 @@ dependencies {
         libs.langchain4j.open.ai,
         libs.langchain4j.anthropic,
         libs.langchain4j.mcp,
-        libs.langchain4j.community.dashscope,
         libs.webauthn4j,
         libs.guava,
         libs.json.patch,

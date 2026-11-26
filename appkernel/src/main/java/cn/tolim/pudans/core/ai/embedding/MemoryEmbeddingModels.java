@@ -9,13 +9,11 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.agent.memory.MemoryVectorSpaceEntity;
 import cn.tolim.pudans.infra.r2dbc.agent.memory.MemoryVectorSpaceRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.AiChannelModelRepository;
-import dev.langchain4j.community.model.dashscope.QwenEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -27,9 +25,6 @@ import reactor.core.publisher.Mono;
 public class MemoryEmbeddingModels {
 
     private static final String API_KEY = "apiKey";
-
-    private static final Set<String> DASHSCOPE_PROVIDERS =
-            Set.of("dashscope", "qwen", "alibaba", "aliyun", "bailian");
 
     private final AiModelDirectory models;
 
@@ -89,7 +84,7 @@ public class MemoryEmbeddingModels {
             throw new ApiException(
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "memory-embedding-protocol-unsupported",
-                    "Embedding 渠道必须使用 OpenAI 兼容协议或 DashScope 渠道。");
+                    "Embedding 渠道必须使用 OpenAI 兼容协议。");
         }
         var apiKey = credentials.get(API_KEY);
         if (!StringUtils.hasText(apiKey)) {
@@ -101,14 +96,6 @@ public class MemoryEmbeddingModels {
         var key = apiKey.trim();
         var name = upstreamModel.trim();
         var endpoint = embeddingBaseUrl(provider, baseUrl);
-        if (isDashScope(provider)) {
-            return QwenEmbeddingModel.builder()
-                    .apiKey(key)
-                    .modelName(name)
-                    .dimension(dimensions)
-                    .baseUrl(endpoint)
-                    .build();
-        }
         var builder = OpenAiEmbeddingModel.builder()
                 .apiKey(key)
                 .modelName(name)
@@ -122,8 +109,7 @@ public class MemoryEmbeddingModels {
     }
 
     private boolean supported(String protocol, String provider) {
-        return isDashScope(provider)
-                || openaiCompatible(protocol)
+        return openaiCompatible(protocol)
                 || openaiCompatible(provider)
                 || providers.find(provider)
                         .map(AiProvider::supportsOpenAiCompatibleEmbedding)
@@ -134,11 +120,6 @@ public class MemoryEmbeddingModels {
         return providers.find(provider)
                 .map(value -> value.embeddingBaseUrl(baseUrl))
                 .orElseGet(() -> baseUrl.trim());
-    }
-
-    private static boolean isDashScope(String provider) {
-        return provider != null
-                && DASHSCOPE_PROVIDERS.contains(provider.trim().toLowerCase(Locale.ROOT));
     }
 
     private static boolean openaiCompatible(String value) {

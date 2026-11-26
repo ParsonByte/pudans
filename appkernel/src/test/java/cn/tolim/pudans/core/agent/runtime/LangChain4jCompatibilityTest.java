@@ -20,11 +20,7 @@ class LangChain4jCompatibilityTest {
                 .isNotNull();
         assertThat(Class.forName("dev.langchain4j.model.anthropic.AnthropicStreamingChatModel"))
                 .isNotNull();
-        assertThat(Class.forName("dev.langchain4j.community.model.dashscope.QwenEmbeddingModel"))
-                .isNotNull();
         assertThat(Class.forName("dev.langchain4j.mcp.client.DefaultMcpClient")).isNotNull();
         assertThat(Class.forName("dev.langchain4j.model.embedding.EmbeddingModel")).isNotNull();
-        assertThat(Class.forName("com.alibaba.dashscope.aigc.videosynthesis.VideoSynthesis"))
-                .isNotNull();
     }
 }

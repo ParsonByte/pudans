@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -27,8 +29,10 @@ import dev.langchain4j.model.chat.response.ChatModelStreamingEvent;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.CompleteResponse;
 import dev.langchain4j.model.chat.response.PartialResponse;
+import dev.langchain4j.model.openai.OpenAiTokenUsage;
 import dev.langchain4j.model.output.TokenUsage;
 import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 import java.time.OffsetDateTime;
@@ -133,6 +137,22 @@ class DefaultAgentRuntimeTest {
     }
 
     @Test
+    void buildsTheModelBeforeReservingQuota() {
+        var context = context();
+        when(routes.resolve(context.workspaceId(), context.modelId()))
+                .thenReturn(Mono.just(route()));
+        when(memoryContext.recall(anyString(), anyString(), anyString())).thenReturn(Mono.just(""));
+        when(modelFactory.create(any(), any())).thenThrow(new IllegalStateException("model invalid"));
+
+        StepVerifier.create(runtime.start(context))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .hasMessage("model invalid"))
+                .verify();
+
+        verifyNoInteractions(quotas);
+    }
+
+    @Test
     void completesARealStreamedModelTurn() throws Exception {
         var context = context();
         var run = givenBackend(context);
@@ -197,6 +217,71 @@ class DefaultAgentRuntimeTest {
         assertThat(run.getStatus()).isEqualTo("completed");
     }
 
+    @Test
+    void reportsCachedTokensInTheCompletedUsage() throws Exception {
+        var context = context();
+        givenBackend(context);
+        when(modelFactory.create(any(), any())).thenReturn(new CachedTokenModel());
+        var completed = new CountDownLatch(1);
+        var completedData = new AtomicReference<Map<String, Object>>();
+        when(events.publish(any(), any(), anyString(), any())).thenAnswer(invocation -> {
+            var type = invocation.getArgument(2, String.class);
+            @SuppressWarnings("unchecked")
+            var data = (Map<String, Object>) invocation.getArgument(3);
+            return Mono.fromRunnable(() -> {
+                if (AgentRunEvents.RUN_COMPLETED.equals(type)) {
+                    completedData.set(data);
+                    completed.countDown();
+                }
+            });
+        });
+
+        runtime.start(context).block();
+
+        assertThat(completed.await(5, TimeUnit.SECONDS)).isTrue();
+        @SuppressWarnings("unchecked")
+        var usage = (Map<String, Object>) completedData.get().get("usage");
+        assertThat(usage).containsEntry("cachedTokens", 40L);
+    }
+
+    @Test
+    void rejectsAToolWithoutExecutingItAndFailsTheRun() throws Exception {
+        var context = context();
+        var run = givenBackend(context);
+        when(modelFactory.create(any(), any())).thenReturn(new ApprovalModel());
+        when(approvals.findFirstByRunIdAndToolCallIdAndStatus(any(), any(), any()))
+                .thenReturn(Mono.empty());
+        when(approvals.save(any())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(toolCalls.save(any())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(toolCalls.findById(any(UUID.class))).thenReturn(Mono.just(new AgentToolCallEntity()));
+        var approvalRequested = new CountDownLatch(1);
+        var failed = new CountDownLatch(1);
+        var approvalId = new java.util.concurrent.atomic.AtomicReference<UUID>();
+        when(events.publish(any(), any(), anyString(), any())).thenAnswer(invocation -> {
+            var type = invocation.getArgument(2, String.class);
+            @SuppressWarnings("unchecked")
+            var data = (Map<String, Object>) invocation.getArgument(3);
+            return Mono.fromRunnable(() -> {
+                if (AgentRunEvents.TOOL_APPROVAL_REQUIRED.equals(type)) {
+                    approvalId.set((UUID) data.get("approvalId"));
+                    approvalRequested.countDown();
+                }
+                if (AgentRunEvents.RUN_FAILED.equals(type)) {
+                    failed.countDown();
+                }
+            });
+        });
+
+        runtime.start(context).block();
+
+        assertThat(approvalRequested.await(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(runtime.resume(context, approvalId.get(), false).block()).isTrue();
+        assertThat(failed.await(5, TimeUnit.SECONDS)).isTrue();
+        verify(mediaTool, never()).execute(any(), any());
+        assertThat(run.getStatus()).isEqualTo("failed");
+        assertThat(run.getErrorCode()).isEqualTo("agent-tools-denied");
+    }
+
     private AgentRunEntity givenBackend(AgentRunContext context) {
         var route = route();
         var run = run(context.runId(), context.sessionId());
@@ -222,7 +307,7 @@ class DefaultAgentRuntimeTest {
                 null);
         when(routes.resolve(context.workspaceId(), context.modelId())).thenReturn(Mono.just(route));
         when(memoryContext.recall(anyString(), anyString(), anyString())).thenReturn(Mono.just(""));
-        when(memoryContext.record(anyString(), anyString(), anyString(), anyString()))
+        lenient().when(memoryContext.record(anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(Mono.empty());
         when(pricing.quoteTokens(any(), any(), any()))
                 .thenReturn(Mono.just(new AiPricing.PriceQuote(
@@ -231,7 +316,8 @@ class DefaultAgentRuntimeTest {
         when(quotas.settle(any(), any(), anyInt(), anyInt())).thenReturn(Mono.just(reservation));
         when(runs.findById(context.runId())).thenReturn(Mono.just(run));
         when(runs.save(any())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(messages.save(any())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        lenient().when(messages.save(any()))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         return run;
     }
 
@@ -312,6 +398,25 @@ class DefaultAgentRuntimeTest {
             return publisher(new PartialResponse("hello"), new CompleteResponse(ChatResponse.builder()
                     .aiMessage(AiMessage.from("hello"))
                     .tokenUsage(new TokenUsage(3, 2))
+                    .build()));
+        }
+    }
+
+    private static final class CachedTokenModel implements StreamingChatModel {
+
+        @Override
+        public Flow.Publisher<ChatModelStreamingEvent> doChat(ChatRequest request) {
+            var usage = OpenAiTokenUsage.builder()
+                    .inputTokenCount(100)
+                    .inputTokensDetails(OpenAiTokenUsage.InputTokensDetails.builder()
+                            .cachedTokens(40)
+                            .build())
+                    .outputTokenCount(20)
+                    .totalTokenCount(120)
+                    .build();
+            return publisher(new CompleteResponse(ChatResponse.builder()
+                    .aiMessage(AiMessage.from("done"))
+                    .tokenUsage(usage)
                     .build()));
         }
     }

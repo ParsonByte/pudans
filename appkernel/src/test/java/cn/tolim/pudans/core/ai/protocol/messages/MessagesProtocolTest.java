@@ -14,10 +14,10 @@ class MessagesProtocolTest {
     @Test
     void buildsTheOfficialAnthropicStreamingModelWithProviderOptions() {
         var request = new AiChatProtocolRequest(
-                "dashscope",
-                "qwen3.7-max",
+                "custom",
+                "custom-model",
                 "secret",
-                "https://dashscope.aliyuncs.com/apps/anthropic",
+                "https://api.example.com/apps/anthropic",
                 Map.of(
                         "x-api-key", "secret",
                         "anthropic-version", "2023-06-01",
@@ -30,7 +30,7 @@ class MessagesProtocolTest {
 
         assertThat(model).isInstanceOf(AnthropicStreamingChatModel.class);
         var parameters = (AnthropicChatRequestParameters) model.defaultRequestParameters();
-        assertThat(parameters.modelName()).isEqualTo("qwen3.7-max");
+        assertThat(parameters.modelName()).isEqualTo("custom-model");
         assertThat(parameters.maxOutputTokens()).isEqualTo(8_192);
         assertThat((Map<String, Object>) ReflectionTestUtils.getField(model, "customParameters"))
                 .containsEntry("enable_thinking", true);
@@ -69,6 +69,24 @@ class MessagesProtocolTest {
         assertThat(parameters.maxOutputTokens()).isEqualTo(1_024);
         assertThat((Map<String, Object>) ReflectionTestUtils.getField(model, "customParameters"))
                 .containsEntry("profile_flag", true);
+    }
+
+    @Test
+    void defaultsToTheLegacyOutputLimitWhenTheModelHasNoLimit() {
+        var request = new AiChatProtocolRequest(
+                "custom",
+                "custom-model",
+                "secret",
+                "https://api.example.com/v1",
+                Map.of(),
+                45_000,
+                null,
+                Map.of());
+
+        var model = new MessagesProtocol().create(request);
+
+        var parameters = (AnthropicChatRequestParameters) model.defaultRequestParameters();
+        assertThat(parameters.maxOutputTokens()).isEqualTo(4_096);
     }
 
     @Test

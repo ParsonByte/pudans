@@ -18,6 +18,8 @@ public class MessagesProtocol implements AiChatProtocol {
 
     private static final String ANTHROPIC_VERSION = "2023-06-01";
 
+    private static final int DEFAULT_MAX_TOKENS = 4096;
+
     @Override
     public AiProtocol protocol() {
         return AiProtocol.MESSAGES;
@@ -57,9 +59,7 @@ public class MessagesProtocol implements AiChatProtocol {
                 .returnThinking(true)
                 .sendThinking(true);
         var maxTokens = resolved.maxOutputTokens(request.maxOutputTokens());
-        if (maxTokens != null && maxTokens > 0) {
-            builder.maxTokens(maxTokens);
-        }
+        builder.maxTokens(maxTokens != null && maxTokens > 0 ? maxTokens : DEFAULT_MAX_TOKENS);
         resolved.customize(builder);
         return builder.build();
     }

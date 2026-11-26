@@ -16,14 +16,20 @@ public class AiProviders {
 
     private final Map<String, AiProvider> aliases;
 
+    private final AiProviderHttp http;
+
     public AiProviders(List<AiProvider> providers) {
+        this(providers, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AiProviders(List<AiProvider> providers, AiProviderHttp http) {
         var indexed = new LinkedHashMap<String, AiProvider>();
         for (var provider : providers) {
-            for (var alias : aliasesFor(provider.id())) {
-                indexed.put(alias, provider);
-            }
+            indexed.put(provider.id(), provider);
         }
         this.aliases = Map.copyOf(indexed);
+        this.http = http;
     }
 
     public List<AiProviderDescriptor> list() {
@@ -38,7 +44,14 @@ public class AiProviders {
         if (provider == null || provider.isBlank()) {
             return Optional.empty();
         }
-        return Optional.ofNullable(aliases.get(provider.trim().toLowerCase(Locale.ROOT)));
+        var normalized = provider.trim().toLowerCase(Locale.ROOT);
+        var configured = aliases.get(normalized);
+        if (configured != null) {
+            return Optional.of(configured);
+        }
+        return http == null
+                ? Optional.empty()
+                : Optional.of(new ConfiguredAiProvider(provider.trim(), http));
     }
 
     public AiProvider require(String provider) {
@@ -49,12 +62,4 @@ public class AiProviders {
                         "不支持的 AI 供应商：" + provider + "。"));
     }
 
-    private static List<String> aliasesFor(String provider) {
-        return switch (provider) {
-            case "deepseek" -> List.of("deepseek");
-            case "minimax" -> List.of("minimax");
-            case "dashscope" -> List.of("dashscope", "qwen", "alibaba", "aliyun", "bailian");
-            default -> List.of(provider);
-        };
-    }
 }
