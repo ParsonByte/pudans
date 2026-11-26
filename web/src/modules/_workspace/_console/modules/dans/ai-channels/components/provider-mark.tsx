@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { Deepseek } from "reicon-brands";
+import { type BrandIconFn, Deepseek, Minimax } from "reicon-brands";
 import { Sparkle } from "reicon-react";
 
 type ProviderMarkProps = {
@@ -34,9 +34,20 @@ const PROVIDER_COLORS: Record<string, string> = {
     anthropic: "#d97757",
     deepseek: "#3d6dff",
     google: "#4285f4",
+    minimax: "#e73562",
     moonshot: "#171717",
     openai: "#10a37f",
     xai: "#111111",
+};
+
+const PROVIDER_ICONS: Record<string, BrandIconFn> = {
+    deepseek: Deepseek,
+    minimax: Minimax,
+};
+
+const PROVIDER_BACKGROUNDS: Record<string, string> = {
+    deepseek: "#5786fe",
+    minimax: "linear-gradient(135deg, #e2167e 0%, #fe603c 100%)",
 };
 
 function markColor(provider: string) {
@@ -55,6 +66,7 @@ export function ProviderMark({ className = "", logoUrl, provider, size = "medium
     const showLogo = Boolean(logo) && failedLogo !== logo;
     const color = PROVIDER_COLORS[normalized] ?? markColor(normalized);
     const knownProvider = normalized in PROVIDER_COLORS;
+    const brandIcon = PROVIDER_ICONS[normalized];
 
     useEffect(() => {
         if (!logo) {
@@ -92,13 +104,13 @@ export function ProviderMark({ className = "", logoUrl, provider, size = "medium
         <span
             aria-hidden
             className={`inline-flex shrink-0 items-center justify-center rounded-lg font-semibold text-white shadow-sm ${SIZE_CLASSES[size]} ${className}`}
-            style={{ background: normalized === "deepseek" ? "#5786fe" : color }}
+            style={{ background: PROVIDER_BACKGROUNDS[normalized] ?? color }}
         >
-            {normalized === "deepseek" ? (
+            {brandIcon ? (
                 <span
                     className="[&>svg]:block"
                     dangerouslySetInnerHTML={{
-                        __html: Deepseek.toSvg({ color: "#ffffff", size: ICON_SIZES[size] }),
+                        __html: brandIcon.toSvg({ color: "#ffffff", size: ICON_SIZES[size] }),
                     }}
                 />
             ) : knownProvider ? (
