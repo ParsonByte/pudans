@@ -33,7 +33,7 @@ export type DynamicMenuSelection = {
     item: DynamicMenuItem;
 };
 
-function useNavigationQuery() {
+export function useNavigationQuery() {
     return useQuery({
         queryKey: ["navigation"],
         queryFn: async () => (await apiClient.navigation.getNavigation()).data,

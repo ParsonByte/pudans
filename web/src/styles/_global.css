@@ -260,11 +260,6 @@
     background: var(--td-bg-color-container-hover);
 }
 
-.app-switcher__panel {
-    width: 232px;
-    height: 80px;
-}
-
 .theme-menu {
     position: relative;
     display: flex;
