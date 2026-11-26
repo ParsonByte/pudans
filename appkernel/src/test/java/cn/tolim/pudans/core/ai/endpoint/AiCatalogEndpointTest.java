@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.dto.AiCreationCatalog;
+import cn.tolim.pudans.contract.ai.dto.AiToolDescriptor;
 import cn.tolim.pudans.core.ai.catalog.AiCatalogs;
 import cn.tolim.pudans.infra.utils.ReactiveRequestIdentity;
 import cn.tolim.pudans.infra.utils.RequestIdentity;
@@ -47,6 +48,25 @@ class AiCatalogEndpointTest {
                 .expectBody()
                 .jsonPath("$.length()")
                 .isEqualTo(0);
+    }
+
+    @Test
+    void listsRegisteredAiTools() {
+        when(identity.resolve(any())).thenReturn(Mono.just(new RequestIdentity("alice", "workspace-a")));
+        when(catalogs.tools())
+                .thenReturn(Flux.just(new AiToolDescriptor(
+                        "generate_media", "图片/视频生成", "创建真实媒体生成任务。", true)));
+
+        client.get()
+                .uri("/catalogs/-/tools")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$[0].key")
+                .isEqualTo("generate_media")
+                .jsonPath("$[0].enabled")
+                .isEqualTo(true);
     }
 
     @Test

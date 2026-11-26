@@ -38,6 +38,10 @@ public class AiDefaultModelEndpoint implements CustomEndpoint {
                         .description("List default models configured for the current workspace.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("Default models")))
+                .GET("/aidefaultmodels/-/all", this::all, builder -> builder.operationId("listAllAiDefaultModels")
+                        .description("List default models across the platform for administration.")
+                        .tag(TAG)
+                        .response(responseBuilder().responseCode("200").description("Default models")))
                 .PUT("/aidefaultmodels/{capability}", this::put, builder -> builder.operationId("putAiDefaultModel")
                         .description("Set the default model for a capability in the current workspace.")
                         .tag(TAG)
@@ -53,6 +57,10 @@ public class AiDefaultModelEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> list(ServerRequest request) {
         return identity.resolve(request).flatMap(owner -> ServerResponse.ok()
                 .body(defaults.list(owner.workspaceId()), AiDefaultModel.class));
+    }
+
+    private Mono<ServerResponse> all(ServerRequest request) {
+        return ServerResponse.ok().body(defaults.listAll(), AiDefaultModel.class);
     }
 
     private Mono<ServerResponse> put(ServerRequest request) {

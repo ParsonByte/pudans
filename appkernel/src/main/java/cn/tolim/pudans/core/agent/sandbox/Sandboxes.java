@@ -104,6 +104,17 @@ public class Sandboxes {
                         items, nextCursor(items, limit), limit));
     }
 
+    // 按创建时间与标识游标列出全平台沙箱。
+    public Mono<SandboxPage> listAll(CreationCursor.Position cursor, int requestedLimit) {
+        var limit = CreationCursor.limit(requestedLimit);
+        return store
+                .listAll(cursor, limit)
+                .map(SandboxStore.SessionRow::toContract)
+                .collectList()
+                .map(items -> new SandboxPage(
+                        items, nextCursor(items, limit), limit));
+    }
+
     public Mono<Sandbox> view(RequestIdentity identity, UUID sandboxId) {
         return requireOwned(identity, sandboxId).map(SandboxStore.SessionRow::toContract);
     }

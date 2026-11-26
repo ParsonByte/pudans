@@ -95,6 +95,17 @@ public class MemoryJobRepository {
                 .all();
     }
 
+    public Flux<MemoryJobEntity> listAll(int limit) {
+        return databaseClient
+                .sql(COLUMNS + """
+                         ORDER BY created_at DESC
+                         LIMIT :limit
+                        """)
+                .bind("limit", limit)
+                .map((row, metadata) -> map(row))
+                .all();
+    }
+
     public Mono<Boolean> markRunning(UUID id, Instant startedAt) {
         return databaseClient
                 .sql("""

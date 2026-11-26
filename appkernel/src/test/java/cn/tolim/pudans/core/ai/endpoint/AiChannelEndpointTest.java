@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.ai.endpoint;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiChannel;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,6 +78,23 @@ class AiChannelEndpointTest {
                 .isEqualTo(true)
                 .jsonPath("$.credentialCiphertext")
                 .doesNotExist();
+    }
+
+    @Test
+    void listsEveryChannelForAdministrativeInspection() {
+        var channel = channel();
+        when(channels.listAll()).thenReturn(Flux.just(channel));
+
+        client.get()
+                .uri("/aichannels/-/all")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$[0].workspaceId")
+                .isEqualTo("workspace-a");
+
+        verify(channels).listAll();
     }
 
     private static AiChannel channel() {

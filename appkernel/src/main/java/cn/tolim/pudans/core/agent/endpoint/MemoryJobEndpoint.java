@@ -51,6 +51,10 @@ public class MemoryJobEndpoint implements CustomEndpoint {
                         .description("List personal and visible global memory jobs using the contract path alias.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(MemoryJobList.class)))
+                .GET("/memoryjobs/-/all", this::all, builder -> builder.operationId("listAllMemoryJobs")
+                        .description("List memory jobs across the platform for administration.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(MemoryJobList.class)))
                 .POST("/memoryjobs", this::create, builder -> builder.operationId("createMemoryJob")
                         .description("Create an idempotent conversation memory extraction job.")
                         .tag(TAG)
@@ -89,6 +93,13 @@ public class MemoryJobEndpoint implements CustomEndpoint {
                 .resolve(request)
                 .flatMapMany(owner -> jobs.list(
                         owner, MemoryEndpointSupport.limit(request, 20, 100)))
+                .collectList()
+                .map(MemoryJobList::new)
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    private Mono<ServerResponse> all(ServerRequest request) {
+        return jobs.listAll(MemoryEndpointSupport.limit(request, 20, 100))
                 .collectList()
                 .map(MemoryJobList::new)
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));

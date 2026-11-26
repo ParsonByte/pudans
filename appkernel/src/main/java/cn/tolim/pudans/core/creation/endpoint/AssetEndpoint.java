@@ -48,6 +48,14 @@ public class AssetEndpoint implements CustomEndpoint {
                         .description("List assets for the current owner and workspace with cursor pagination.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("Asset page")))
+                .GET("/assets/-/all", this::allItems, builder -> builder.operationId("listAllAssets")
+                        .description("List assets across the platform with cursor pagination for administration.")
+                        .tag(TAG)
+                        .response(responseBuilder().responseCode("200").description("Asset page")))
+                .GET("/assets/-/all-facets", this::allFacets, builder -> builder.operationId("getAllAssetFacets")
+                        .description("Get real asset kind and source facets across the platform.")
+                        .tag(TAG)
+                        .response(responseBuilder().responseCode("200").description("Asset facets")))
                 .GET("/assets/{name}/view", this::view, builder -> builder.operationId("viewAsset")
                         .description("View an asset and its parent asset chain.")
                         .tag(TAG)
@@ -85,6 +93,21 @@ public class AssetEndpoint implements CustomEndpoint {
                         query(request, "cursor"),
                         integerQuery(request, "limit")))
                 .flatMap(page -> ServerResponse.ok().bodyValue(page));
+    }
+
+    private Mono<ServerResponse> allItems(ServerRequest request) {
+        return assets
+                .allItems(
+                        query(request, "kind"),
+                        query(request, "source"),
+                        query(request, "q"),
+                        query(request, "cursor"),
+                        integerQuery(request, "limit"))
+                .flatMap(page -> ServerResponse.ok().bodyValue(page));
+    }
+
+    private Mono<ServerResponse> allFacets(ServerRequest request) {
+        return assets.allFacets().flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> view(ServerRequest request) {

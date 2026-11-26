@@ -54,8 +54,17 @@ public class AgentSessionEndpoint implements CustomEndpoint {
                         .description("List conversation sessions owned by the current user.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(AgentSessionPage.class)))
+                .GET("/agentsessions/-/all", this::all, builder -> builder.operationId("listAllAgentSessions")
+                        .description("List conversation sessions across the platform for administration.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(AgentSessionPage.class)))
                 .GET("/agentsessions/-/summary", this::summary, builder -> builder.operationId("summarizeAgentSessions")
                         .description("Summarize the current user's conversation sessions.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(AgentSessionSummary.class)))
+                .GET("/agentsessions/-/all-summary", this::allSummary, builder -> builder
+                        .operationId("summarizeAllAgentSessions")
+                        .description("Summarize conversation sessions across the platform for administration.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(AgentSessionSummary.class)))
                 .GET("/agentsessions/{name}/view", this::view, builder -> builder.operationId("getAgentSession")
@@ -98,12 +107,24 @@ public class AgentSessionEndpoint implements CustomEndpoint {
                 .flatMap(page -> ServerResponse.ok().bodyValue(page));
     }
 
+    // 返回全平台会话列表。
+    private Mono<ServerResponse> all(ServerRequest request) {
+        return sessions
+                .listAll(limit(request))
+                .flatMap(page -> ServerResponse.ok().bodyValue(page));
+    }
+
     // 返回当前身份的会话统计。
     private Mono<ServerResponse> summary(ServerRequest request) {
         return identity
                 .resolve(request)
                 .flatMap(sessions::summary)
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    // 返回全平台会话统计。
+    private Mono<ServerResponse> allSummary(ServerRequest request) {
+        return sessions.summaryAll().flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     // 读取单个会话详情。

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import cn.tolim.pudans.contract.agent.MemoryJob;
 import cn.tolim.pudans.contract.agent.dto.MemoryJobCreateRequest;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentSessionEntity;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentSessionRepository;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -79,5 +81,20 @@ class MemoryJobsTest {
                 .verifyComplete();
 
         verify(jobRepository, never()).insert(any());
+    }
+
+    @Test
+    void listsEveryMemoryJobForAdministrativeInspection() {
+        var job = new MemoryJobEntity();
+        job.setId(UUID.randomUUID());
+        job.setJobType(MemoryJobs.POOL_CONSOLIDATE);
+        job.setScopeType("global");
+        job.setStatus("running");
+        job.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
+        when(jobRepository.listAll(20)).thenReturn(Flux.just(job));
+
+        var result = jobs.listAll(20).collectList().block();
+
+        assertThat(result).extracting(MemoryJob::id).containsExactly(job.getId());
     }
 }

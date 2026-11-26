@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.creation.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 
+import cn.tolim.pudans.contract.creation.Activity;
 import cn.tolim.pudans.contract.creation.dto.ActivitySubmissionRequest;
 import cn.tolim.pudans.core.creation.content.Activities;
 import cn.tolim.pudans.core.creation.content.Creators;
@@ -45,10 +46,34 @@ public class ActivityEndpoint implements CustomEndpoint {
                         .description("List published public activities with cursor pagination.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("Activity feed")))
+                .GET("/activities/-/all", this::allActivityFeed, builder -> builder.operationId("listAllActivities")
+                        .description("List all activities with cursor pagination for administration.")
+                        .tag(TAG)
+                        .response(responseBuilder().responseCode("200").description("Activity feed")))
                 .GET("/activities/{name}/view", this::viewActivity, builder -> builder.operationId("viewActivity")
                         .description("View a public published activity or an owned activity.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("Activity view")))
+                .POST("/activities/{name}/approve", this::approveActivity, builder -> builder
+                        .operationId("approveActivity")
+                        .description("Approve an activity for publication.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Activity.class)))
+                .POST("/activities/{name}/reject", this::rejectActivity, builder -> builder
+                        .operationId("rejectActivity")
+                        .description("Reject an activity during content review.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Activity.class)))
+                .POST("/activities/{name}/publish", this::publishActivity, builder -> builder
+                        .operationId("publishActivity")
+                        .description("Publish an approved activity.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Activity.class)))
+                .POST("/activities/{name}/unpublish", this::unpublishActivity, builder -> builder
+                        .operationId("unpublishActivity")
+                        .description("Unpublish a published activity.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Activity.class)))
                 .POST(
                         "/activities/{name}/submissions",
                         this::submitActivity,
@@ -65,6 +90,10 @@ public class ActivityEndpoint implements CustomEndpoint {
                                 .response(responseBuilder().responseCode("200").description("Activity submissions")))
                 .GET("/subjects/-/mine", this::mySubjects, builder -> builder.operationId("getMySubjects")
                         .description("List subjects owned by the current identity and workspace.")
+                        .tag(TAG)
+                        .response(responseBuilder().responseCode("200").description("Subject page")))
+                .GET("/subjects/-/all", this::allSubjects, builder -> builder.operationId("listAllSubjects")
+                        .description("List subjects across the platform for administration.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("Subject page")))
                 .GET("/subjects/{name}/view", this::viewSubject, builder -> builder.operationId("viewSubject")
@@ -89,12 +118,38 @@ public class ActivityEndpoint implements CustomEndpoint {
                 .flatMap(feed -> ServerResponse.ok().bodyValue(feed));
     }
 
+    private Mono<ServerResponse> allActivityFeed(ServerRequest request) {
+        return activities
+                .allFeed(query(request, "q"), query(request, "cursor"), integerQuery(request, "limit"))
+                .flatMap(feed -> ServerResponse.ok().bodyValue(feed));
+    }
+
     private Mono<ServerResponse> viewActivity(ServerRequest request) {
         var activityId = uuidPath(request, "activity-not-found");
         return identity
                 .resolve(request)
                 .flatMap(owner -> activities.view(owner, activityId))
                 .flatMap(activity -> ServerResponse.ok().bodyValue(activity));
+    }
+
+    private Mono<ServerResponse> approveActivity(ServerRequest request) {
+        return review(activities.approve(uuidPath(request, "activity-not-found")));
+    }
+
+    private Mono<ServerResponse> rejectActivity(ServerRequest request) {
+        return review(activities.reject(uuidPath(request, "activity-not-found")));
+    }
+
+    private Mono<ServerResponse> publishActivity(ServerRequest request) {
+        return review(activities.publish(uuidPath(request, "activity-not-found")));
+    }
+
+    private Mono<ServerResponse> unpublishActivity(ServerRequest request) {
+        return review(activities.unpublish(uuidPath(request, "activity-not-found")));
+    }
+
+    private static Mono<ServerResponse> review(Mono<?> result) {
+        return result.flatMap(value -> ServerResponse.ok().bodyValue(value));
     }
 
     private Mono<ServerResponse> submitActivity(ServerRequest request) {
@@ -129,6 +184,12 @@ public class ActivityEndpoint implements CustomEndpoint {
                 .resolve(request)
                 .flatMap(owner -> subjects.mine(
                         owner, query(request, "cursor"), integerQuery(request, "limit")))
+                .flatMap(page -> ServerResponse.ok().bodyValue(page));
+    }
+
+    private Mono<ServerResponse> allSubjects(ServerRequest request) {
+        return subjects
+                .all(query(request, "cursor"), integerQuery(request, "limit"))
                 .flatMap(page -> ServerResponse.ok().bodyValue(page));
     }
 

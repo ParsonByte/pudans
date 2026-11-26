@@ -12,6 +12,10 @@ public final class CreationValues {
 
     public static final String CONTENT_STATUS_DRAFT = "draft";
 
+    public static final String CONTENT_STATUS_APPROVED = "approved";
+
+    public static final String CONTENT_STATUS_REJECTED = "rejected";
+
     public static final String CONTENT_STATUS_PUBLISHED = "published";
 
     public static final String VISIBILITY_PRIVATE = "private";

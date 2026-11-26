@@ -54,6 +54,20 @@ class SubjectsTest {
     }
 
     @Test
+    void listsEverySubjectForAdministrativeInspection() {
+        var subject = subject(
+                UUID.randomUUID(), "bob", "workspace-b", "active", CreationValues.VISIBILITY_PRIVATE);
+        when(subjects.listAll(null, 21)).thenReturn(Mono.just(List.of(subject)));
+
+        StepVerifier.create(service.all(null, null))
+                .assertNext(page -> {
+                    assertThat(page.items()).extracting(Subject::id).containsExactly(subject.id());
+                    assertThat(page.limit()).isEqualTo(20);
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void hidesAnotherOwnersPrivateSubject() {
         var subjectId = UUID.randomUUID();
         when(subjects.findById(subjectId)).thenReturn(Mono.just(subject(

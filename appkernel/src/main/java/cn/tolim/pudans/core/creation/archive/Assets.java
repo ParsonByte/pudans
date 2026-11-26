@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.creation.archive;
 
 import cn.tolim.pudans.contract.creation.Asset;
 import cn.tolim.pudans.contract.creation.CreationValues;
+import cn.tolim.pudans.contract.creation.dto.AssetFacetBucket;
 import cn.tolim.pudans.contract.creation.dto.AssetFacets;
 import cn.tolim.pudans.contract.creation.dto.AssetPage;
 import cn.tolim.pudans.contract.creation.dto.AssetRegisterRequest;
@@ -61,8 +62,32 @@ public class Assets {
                 .map(fetched -> page(fetched, limit));
     }
 
+    public Mono<AssetPage> allItems(
+            String kind,
+            String source,
+            String q,
+            String cursor,
+            Integer requestedLimit) {
+        var limit = CreationCursor.limit(requestedLimit);
+        var position = CreationCursor.decode(cursor, "asset-cursor-invalid");
+        return assets
+                .listAll(kind, source, q, position, limit + 1)
+                .map(fetched -> page(fetched, limit));
+    }
+
     public Mono<AssetFacets> facets(RequestIdentity identity) {
-        return Mono.zip(assets.kindFacets(identity), assets.sourceFacets(identity), assets.count(identity))
+        return facets(assets.kindFacets(identity), assets.sourceFacets(identity), assets.count(identity));
+    }
+
+    public Mono<AssetFacets> allFacets() {
+        return facets(assets.kindFacetsAll(), assets.sourceFacetsAll(), assets.countAll());
+    }
+
+    private Mono<AssetFacets> facets(
+            Mono<List<AssetFacetBucket>> kinds,
+            Mono<List<AssetFacetBucket>> sources,
+            Mono<Long> count) {
+        return Mono.zip(kinds, sources, count)
                 .map(tuple -> {
                     var total = tuple.getT3();
                     var empty = total == 0;

@@ -97,6 +97,36 @@ class AssetsTest {
     }
 
     @Test
+    void listsEveryAssetForAdministrativeInspection() {
+        var items = List.of(asset(
+                UUID.randomUUID(), "bob", "workspace-b", null, null, NOW));
+        when(assets.listAll(eq("image"), isNull(), isNull(), isNull(), eq(21)))
+                .thenReturn(Mono.just(items));
+
+        StepVerifier.create(service.allItems("image", null, null, null, 20))
+                .assertNext(page -> {
+                    assertThat(page.items()).hasSize(1);
+                    assertThat(page.items().getFirst().ownerId()).isEqualTo("bob");
+                    assertThat(page.limit()).isEqualTo(20);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void returnsEveryAssetFacetForAdministrativeInspection() {
+        when(assets.kindFacetsAll()).thenReturn(Mono.just(List.of()));
+        when(assets.sourceFacetsAll()).thenReturn(Mono.just(List.of()));
+        when(assets.countAll()).thenReturn(Mono.just(3L));
+
+        StepVerifier.create(service.allFacets())
+                .assertNext(facets -> {
+                    assertThat(facets.total()).isEqualTo(3);
+                    assertThat(facets.emptyState()).isNull();
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void keepsAnotherOwnersAssetHidden() {
         var assetId = UUID.randomUUID();
         when(assets.findOwned(assetId, ALICE)).thenReturn(Mono.empty());

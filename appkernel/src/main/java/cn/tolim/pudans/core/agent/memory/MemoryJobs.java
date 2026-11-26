@@ -74,8 +74,12 @@ public class MemoryJobs {
     }
 
     public Flux<MemoryJob> list(RequestIdentity identity, int requestedLimit) {
-        var limit = requestedLimit <= 0 ? 20 : Math.min(requestedLimit, MAX_LIMIT);
-        return jobs.listVisible(identity.ownerId(), limit).map(MemoryJobEntity::toContract);
+        return jobs.listVisible(identity.ownerId(), normalizeLimit(requestedLimit))
+                .map(MemoryJobEntity::toContract);
+    }
+
+    public Flux<MemoryJob> listAll(int requestedLimit) {
+        return jobs.listAll(normalizeLimit(requestedLimit)).map(MemoryJobEntity::toContract);
     }
 
     public Mono<MemoryJobDetail> detail(RequestIdentity identity, UUID id) {
@@ -114,6 +118,10 @@ public class MemoryJobs {
 
     public Mono<Void> fail(UUID id, String errorCode, String errorMessage) {
         return jobs.fail(id, errorCode, errorMessage);
+    }
+
+    private static int normalizeLimit(int requestedLimit) {
+        return requestedLimit <= 0 ? 20 : Math.min(requestedLimit, MAX_LIMIT);
     }
 
     private static MemoryJobEntity queued(

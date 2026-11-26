@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.creation.GenerationTask;
 import cn.tolim.pudans.contract.creation.dto.GenerationTaskStartRequest;
+import cn.tolim.pudans.contract.creation.dto.GenerationTaskSummary;
 import cn.tolim.pudans.core.creation.provider.GenerationModelCatalog;
 import cn.tolim.pudans.core.creation.provider.GenerationModelProfile;
 import cn.tolim.pudans.core.creation.provider.MediaGenerationGateway;
@@ -220,6 +221,51 @@ class GenerationTasksTest {
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(tasks.cancel(ALICE, queued.id()))
+                .assertNext(result -> assertThat(result.status())
+                        .isEqualTo(GenerationTask.Status.CANCELLED))
+                .verifyComplete();
+
+        verify(cancellations).markTask(queued.id());
+        verify(cancellations, never()).markRun(any());
+        verifyNoInteractions(gateways);
+    }
+
+    @Test
+    void listsEveryTaskForAdministrativeInspection() {
+        var queued = task(
+                UUID.randomUUID(),
+                "bob",
+                "workspace-b",
+                GenerationTask.Status.QUEUED,
+                false,
+                null);
+        when(store.listAll(isNull(), eq(20))).thenReturn(Flux.just(queued));
+
+        var result = tasks.listAll(null, 20).block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.items()).extracting(GenerationTaskSummary::id)
+                .containsExactly(queued.id());
+    }
+
+    @Test
+    void forceCancelsAnotherOwnersLocalTask() {
+        var queued = task(
+                UUID.randomUUID(),
+                "bob",
+                "workspace-b",
+                GenerationTask.Status.QUEUED,
+                false,
+                null);
+        var cancelled = withStatus(queued, GenerationTask.Status.CANCELLED);
+        when(store.findById(queued.id())).thenReturn(Mono.just(queued));
+        when(cancellations.markTask(queued.id())).thenReturn(Mono.empty());
+        when(store.cancel(eq(queued.id()), any(), isNull(), isNull(), any(Instant.class)))
+                .thenReturn(Mono.just(cancelled));
+        when(events.publish(eq(cancelled), eq(GenerationTaskEvents.TASK_CANCELLED), any()))
+                .thenReturn(Mono.empty());
+
+        StepVerifier.create(tasks.forceCancel(queued.id()))
                 .assertNext(result -> assertThat(result.status())
                         .isEqualTo(GenerationTask.Status.CANCELLED))
                 .verifyComplete();

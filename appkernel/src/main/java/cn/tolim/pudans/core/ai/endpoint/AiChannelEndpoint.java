@@ -50,6 +50,10 @@ public class AiChannelEndpoint implements CustomEndpoint {
                         .description("List AI channels in the current workspace without credentials.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("AI channels")))
+                .GET("/aichannels/-/all", this::all, builder -> builder.operationId("listAllAiChannels")
+                        .description("List AI channels across the platform for administration without credentials.")
+                        .tag(TAG)
+                        .response(responseBuilder().responseCode("200").description("AI channels")))
                 .POST("/aichannels", this::create, builder -> builder.operationId("createAiChannel")
                         .description("Create an AI channel with write-only credentials.")
                         .tag(TAG)
@@ -102,6 +106,11 @@ public class AiChannelEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> list(ServerRequest request) {
         return identity.resolve(request).flatMap(owner -> ServerResponse.ok()
                 .body(channels.list(owner.workspaceId()), AiChannel.class));
+    }
+
+    // 返回全平台渠道列表。
+    private Mono<ServerResponse> all(ServerRequest request) {
+        return ServerResponse.ok().body(channels.listAll(), AiChannel.class);
     }
 
     // 创建渠道并返回不含凭据的资源。

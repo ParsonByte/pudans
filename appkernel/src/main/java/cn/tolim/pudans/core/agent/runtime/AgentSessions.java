@@ -56,6 +56,16 @@ public class AgentSessions {
                 .map(items -> new AgentSessionPage(items, pageSize));
     }
 
+    // 列出全平台会话供管理端巡检。
+    public Mono<AgentSessionPage> listAll(int limit) {
+        var pageSize = normalizeLimit(limit);
+        return sessions
+                .findAllByOrderByUpdatedAtDesc(PageRequest.of(0, pageSize))
+                .map(AgentSessionEntity::toContract)
+                .collectList()
+                .map(items -> new AgentSessionPage(items, pageSize));
+    }
+
     // 汇总当前用户的会话数量和最近消息时间。
     public Mono<AgentSessionSummary> summary(RequestIdentity identity) {
         return Mono.zip(
@@ -64,6 +74,21 @@ public class AgentSessions {
                                 identity.ownerId(), identity.workspaceId(), "active"),
                         sessions.findFirstByOwnerIdAndWorkspaceIdOrderByLastMessageAtDesc(
                                 identity.ownerId(), identity.workspaceId())
+                                .switchIfEmpty(Mono.just(new AgentSessionEntity())))
+                .map(tuple -> new AgentSessionSummary(
+                        tuple.getT1(),
+                        tuple.getT2(),
+                        tuple.getT3().getLastMessageAt() == null
+                                ? null
+                                : tuple.getT3().getLastMessageAt().toInstant()));
+    }
+
+    // 汇总全平台会话数量和最近消息时间。
+    public Mono<AgentSessionSummary> summaryAll() {
+        return Mono.zip(
+                        sessions.count(),
+                        sessions.countByStatus("active"),
+                        sessions.findFirstByOrderByLastMessageAtDesc()
                                 .switchIfEmpty(Mono.just(new AgentSessionEntity())))
                 .map(tuple -> new AgentSessionSummary(
                         tuple.getT1(),
