@@ -103,6 +103,7 @@ export function StorageFileActions({
     return (
         <Dropdown
             disabled={disabled || loading}
+            maxColumnWidth={160}
             onClick={handleAction}
             options={actions}
             placement="bottom-right"

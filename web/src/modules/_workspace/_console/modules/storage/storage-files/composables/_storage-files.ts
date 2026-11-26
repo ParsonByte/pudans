@@ -9,6 +9,7 @@ export const STORAGE_FILES_LIST_QUERY_ROOT = [...STORAGE_FILES_QUERY_ROOT, "list
 export const STORAGE_FILES_TOTAL_QUERY_ROOT = [...STORAGE_FILES_QUERY_ROOT, "total"] as const;
 export const STORAGE_FILES_DOWNLOAD_URL_QUERY_ROOT = [...STORAGE_FILES_QUERY_ROOT, "download-url"] as const;
 export const STORAGE_FILE_PERMISSIONS = {
+    create: "storage-files:create",
     delete: "storage-files:delete",
     download: "storage-files:download",
     purge: "storage-files:purge",
