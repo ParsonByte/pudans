@@ -73,7 +73,7 @@ class AiModelImportsTest {
         StepVerifier.create(imports.importModels(
                         "workspace-a",
                         channelId,
-                        new AiModelImportRequest(List.of("deepseek-v4-pro"))))
+                        new AiModelImportRequest(List.of("custom-model"))))
                 .assertNext(result -> {
                     assertThat(result.created()).isEqualTo(1);
                     assertThat(result.updated()).isZero();
@@ -83,7 +83,7 @@ class AiModelImportsTest {
 
         var request = ArgumentCaptor.forClass(AiModelCreateRequest.class);
         verify(models).create(request.capture());
-        assertThat(request.getValue().logicalName()).isEqualTo("deepseek/deepseek-v4-pro");
+        assertThat(request.getValue().logicalName()).isEqualTo("custom/custom-model");
         assertThat(request.getValue().contextWindow()).isEqualTo(1_048_576);
         assertThat(request.getValue().capabilities()).containsKey("chat");
         verify(channelModels).create(any(AiChannelModelCreateRequest.class));
@@ -115,9 +115,9 @@ class AiModelImportsTest {
 
     private static AiModelDiscovery discovery(UUID channelId) {
         var model = new AiDiscoveredModel(
-                "deepseek-v4-pro",
-                "DeepSeek V4 Pro",
-                "DeepSeek snapshot",
+                "custom-model",
+                "Custom Model",
+                "Custom snapshot",
                 "chat",
                 "chat-completions",
                 List.of("chat-completions", "messages", "responses"),
@@ -127,18 +127,18 @@ class AiModelImportsTest {
                 List.of("streaming", "tools", "reasoning", "structured_output"),
                 Map.of("input", List.of("text"), "output", List.of("text")),
                 Map.of("protocol", "chat-completions"),
-                Map.of("provider", "deepseek", "model", "deepseek-v4-pro"),
+                Map.of("provider", "custom", "model", "custom-model"),
                 "provider",
                 null,
                 null);
         return new AiModelDiscovery(
                 channelId,
                 "workspace-a",
-                "deepseek",
-                "DeepSeek",
+                "custom",
+                "Custom",
                 "chat-completions",
-                "https://api.deepseek.com/v1",
-                "deepseek",
+                "https://api.custom.com/v1",
+                "custom",
                 Instant.parse("2026-11-25T00:00:00Z"),
                 Instant.parse("2026-11-25T00:00:00Z"),
                 List.of(model));
@@ -147,8 +147,8 @@ class AiModelImportsTest {
     private static AiModel model(UUID channelId) {
         return new AiModel(
                 UUID.randomUUID(),
-                "deepseek/deepseek-v4-pro",
-                "DeepSeek V4 Pro",
+                "custom/custom-model",
+                "Custom Model",
                 null,
                 Map.of("chat", Map.of("type", "chat")),
                 1_048_576,
@@ -164,12 +164,12 @@ class AiModelImportsTest {
                 UUID.randomUUID(),
                 channelId,
                 model.id(),
-                "deepseek-v4-pro",
+                "custom-model",
                 100,
                 100,
                 true,
                 Map.of(),
-                Map.of("upstreamModelKey", "deepseek-v4-pro"),
+                Map.of("upstreamModelKey", "custom-model"),
                 Instant.now(),
                 Instant.now());
     }

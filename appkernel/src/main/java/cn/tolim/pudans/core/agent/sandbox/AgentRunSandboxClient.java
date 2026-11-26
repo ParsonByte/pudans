@@ -16,7 +16,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -45,6 +50,12 @@ public class AgentRunSandboxClient implements SandboxClient {
     private static final int MCP_TIMEOUT_SECONDS = 600;
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+
+    private static final ExecutorService MCP_CALLS = Executors.newCachedThreadPool(runnable -> {
+        var thread = new Thread(runnable, "agentrun-mcp-call");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     private final SandboxProperties properties;
 
@@ -185,17 +196,21 @@ public class AgentRunSandboxClient implements SandboxClient {
         public void start() throws Exception {
             ensureSandbox();
             running = true;
-            exec(null, "mkdir -p " + shellQuote(state.workspaceRoot()), 30);
+            exec("/", "mkdir -p " + shellQuote(state.workspaceRoot()), 30);
         }
 
         @Override
         public SandboxGateway.Execution exec(String workdir, String command, int timeoutSeconds)
                 throws Exception {
+            Future<?> future = null;
             try {
-                var result = mcp().executeTool(ToolExecutionRequest.builder()
+                var request = ToolExecutionRequest.builder()
                         .name(TOOL_EXEC)
                         .arguments(execArguments(command, workdir, timeoutSeconds))
-                        .build());
+                        .build();
+                future = MCP_CALLS.submit(() -> mcp().executeTool(request));
+                var result = (dev.langchain4j.service.tool.ToolExecutionResult)
+                        future.get(Math.max(1, timeoutSeconds) + 30L, TimeUnit.SECONDS);
                 if (result.isError()) {
                     var message = StringUtils.hasText(result.resultText())
                             ? result.resultText()
@@ -208,6 +223,25 @@ public class AgentRunSandboxClient implements SandboxClient {
                 return parseExec(result.resultText());
             } catch (ExecTimeoutException error) {
                 throw error;
+            } catch (TimeoutException error) {
+                if (future != null) {
+                    future.cancel(true);
+                }
+                throw new ExecTimeoutException("沙箱命令执行超时。", error);
+            } catch (ExecutionException error) {
+                var cause = error.getCause() == null ? error : error.getCause();
+                if (timeoutSeconds > 0
+                        && cause.getMessage() != null
+                        && cause.getMessage().toLowerCase().contains("timeout")) {
+                    throw new ExecTimeoutException("沙箱命令执行超时。", cause);
+                }
+                if (cause instanceof Exception checked) {
+                    throw checked;
+                }
+                throw error;
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                throw new ExecTimeoutException("沙箱命令执行被中断。", error);
             } catch (Exception error) {
                 if (timeoutSeconds > 0
                         && error.getMessage() != null
@@ -253,9 +287,8 @@ public class AgentRunSandboxClient implements SandboxClient {
         private String execArguments(String command, String workdir, int timeoutSeconds) {
             var arguments = new LinkedHashMap<String, Object>();
             arguments.put("command", command);
-            var cwd = StringUtils.hasText(workdir) ? workdir : state.workspaceRoot();
-            if (StringUtils.hasText(cwd)) {
-                arguments.put("cwd", cwd);
+            if (StringUtils.hasText(workdir)) {
+                arguments.put("cwd", workdir);
             }
             arguments.put("timeout", Math.max(1, timeoutSeconds));
             return JsonUtils.objectToJson(arguments);
@@ -319,7 +352,7 @@ public class AgentRunSandboxClient implements SandboxClient {
 
         private boolean sandboxExists(String sandboxId) throws Exception {
             return SandboxCalls.withRetries(properties.normalizedMaxRetries(), () -> {
-                var request = baseRequest(url("/sandboxes/" + sandboxId)).get().build();
+                var request = baseRequest(url("/sandboxes/" + sandboxId, state), state).get().build();
                 try (Response response = http.newCall(request).execute()) {
                     if (response.code() == 404) {
                         return false;
@@ -338,7 +371,7 @@ public class AgentRunSandboxClient implements SandboxClient {
             body.put("sandboxId", sandboxId);
             body.put("templateName", state.templateName());
             body.put("sandboxIdleTimeoutSeconds", properties.sandboxIdleTimeoutSeconds());
-            var request = baseRequest(url("/sandboxes"))
+            var request = baseRequest(url("/sandboxes", state), state)
                     .post(RequestBody.create(JsonUtils.objectToJson(body), JSON))
                     .build();
             SandboxCalls.withRetries(properties.normalizedMaxRetries(), () -> {
@@ -355,7 +388,7 @@ public class AgentRunSandboxClient implements SandboxClient {
 
         private void deleteSandbox(String sandboxId) throws Exception {
             SandboxCalls.withRetries(properties.normalizedMaxRetries(), () -> {
-                var request = baseRequest(url("/sandboxes/" + sandboxId)).delete().build();
+                var request = baseRequest(url("/sandboxes/" + sandboxId, state), state).delete().build();
                 try (Response response = http.newCall(request).execute()) {
                     if (!response.isSuccessful() && response.code() != 404) {
                         throw new IllegalStateException(
@@ -371,7 +404,7 @@ public class AgentRunSandboxClient implements SandboxClient {
             String last = null;
             while (System.nanoTime() < deadline) {
                 last = SandboxCalls.withRetries(properties.normalizedMaxRetries(), () -> {
-                    var request = baseRequest(url("/sandboxes/" + sandboxId)).get().build();
+                    var request = baseRequest(url("/sandboxes/" + sandboxId, state), state).get().build();
                     try (Response response = http.newCall(request).execute()) {
                         var text = response.body() == null ? "" : response.body().string();
                         if (!response.isSuccessful()) {
@@ -415,18 +448,22 @@ public class AgentRunSandboxClient implements SandboxClient {
         }
     }
 
-    private String url(String path) {
-        return dataPlaneBaseUrl() + path;
+    private String url(String path, State state) {
+        return dataPlaneBaseUrl(state) + path;
     }
 
-    private String dataPlaneBaseUrl() {
+    private String dataPlaneBaseUrl(State state) {
         if (StringUtils.hasText(properties.getDataPlaneBaseUrl())) {
             return stripTrailingSlash(properties.getDataPlaneBaseUrl().trim());
         }
-        if (StringUtils.hasText(properties.getAccountId())
-                && StringUtils.hasText(properties.getRegion())) {
-            return "https://" + properties.getAccountId().trim() + ".agentrun-data."
-                    + properties.getRegion().trim() + ".aliyuncs.com";
+        var accountId = StringUtils.hasText(state.accountId())
+                ? state.accountId().trim()
+                : properties.getAccountId();
+        var region = StringUtils.hasText(state.region())
+                ? state.region().trim()
+                : properties.getRegion();
+        if (StringUtils.hasText(accountId) && StringUtils.hasText(region)) {
+            return "https://" + accountId + ".agentrun-data." + region + ".aliyuncs.com";
         }
         throw new SandboxGateway.Failure(
                 "sandbox-provider-not-configured",
@@ -434,10 +471,13 @@ public class AgentRunSandboxClient implements SandboxClient {
                 null);
     }
 
-    private Request.Builder baseRequest(String url) {
+    private Request.Builder baseRequest(String url, State state) {
         var builder = new Request.Builder().url(url).addHeader("X-API-Key", requireApiKey());
-        if (StringUtils.hasText(properties.getAccountId())) {
-            builder.addHeader("X-Acs-Parent-Id", properties.getAccountId());
+        var accountId = StringUtils.hasText(state.accountId())
+                ? state.accountId()
+                : properties.getAccountId();
+        if (StringUtils.hasText(accountId)) {
+            builder.addHeader("X-Acs-Parent-Id", accountId);
         }
         return builder;
     }

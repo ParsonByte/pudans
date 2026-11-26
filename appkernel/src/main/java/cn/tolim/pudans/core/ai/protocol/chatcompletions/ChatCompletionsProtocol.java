@@ -8,16 +8,12 @@ import cn.tolim.pudans.core.ai.protocol.AiProtocolProfiles;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import java.time.Duration;
-import java.util.Set;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ChatCompletionsProtocol implements AiChatProtocol {
 
     private static final ChatCompletionsProfile STANDARD = new StandardChatCompletionsProfile();
-
-    private static final Set<String> NON_ACCUMULATING_PROVIDERS =
-            Set.of("dashscope", "deepseek", "minimax");
 
     @Override
     public AiProtocol protocol() {
@@ -50,9 +46,7 @@ public class ChatCompletionsProtocol implements AiChatProtocol {
                 .customHeaders(resolved.additionalHeaders(request.headers()))
                 .customParameters(resolved.additionalBodyParams(request.additionalBodyParams()))
                 .timeout(Duration.ofMillis(request.timeoutMs()))
-                .returnThinking(true)
-                .accumulateToolCallId(
-                        !NON_ACCUMULATING_PROVIDERS.contains(request.providerId()));
+                .returnThinking(true);
         resolved.customize(builder);
         return builder.build();
     }

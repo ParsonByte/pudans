@@ -17,7 +17,6 @@ java-semver = '0.10.2'
 bouncycastle = '1.83'
 langchain4j = '1.23.0'
 langchain4j-beta = '1.23.0-beta33'
-dashscope-sdk = '2.23.7'
 okhttp = '4.12.0'
 aws-sdk = '2.59.3'
 aliyun-oss = '3.18.5'
@@ -60,8 +59,6 @@ langchain4j = { module = 'dev.langchain4j:langchain4j' }
 langchain4j-open-ai = { module = 'dev.langchain4j:langchain4j-open-ai' }
 langchain4j-anthropic = { module = 'dev.langchain4j:langchain4j-anthropic' }
 langchain4j-mcp = { module = 'dev.langchain4j:langchain4j-mcp', version.ref = 'langchain4j-beta' }
-langchain4j-community-dashscope = { module = 'dev.langchain4j:langchain4j-community-dashscope', version.ref = 'langchain4j-beta' }
-dashscope-sdk-java = { module = 'com.alibaba:dashscope-sdk-java', version.ref = 'dashscope-sdk' }
 okhttp = { module = 'com.squareup.okhttp3:okhttp', version.ref = 'okhttp' }
 aws-sdk-s3 = { module = 'software.amazon.awssdk:s3', version.ref = 'aws-sdk' }
 aws-sdk-netty-nio-client = { module = 'software.amazon.awssdk:netty-nio-client', version.ref = 'aws-sdk' }

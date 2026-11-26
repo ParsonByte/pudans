@@ -168,12 +168,12 @@ public class E2bSandboxClient implements SandboxClient {
             requireTarPersistence();
             if (StringUtils.hasText(sandboxId) && connectSandbox(sandboxId)) {
                 running = true;
-                exec(null, "mkdir -p " + shellQuote(workspaceRoot), 30);
+                exec("/", "mkdir -p " + shellQuote(workspaceRoot), 30);
                 return;
             }
             createSandbox();
             running = true;
-            exec(null, "mkdir -p " + shellQuote(workspaceRoot), 30);
+            exec("/", "mkdir -p " + shellQuote(workspaceRoot), 30);
         }
 
         @Override

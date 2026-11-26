@@ -15,7 +15,6 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.agent.memory.MemoryVectorSpaceEntity;
 import cn.tolim.pudans.infra.r2dbc.agent.memory.MemoryVectorSpaceRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.AiChannelModelRepository;
-import dev.langchain4j.community.model.dashscope.QwenEmbeddingModel;
 import dev.langchain4j.model.openai.OpenAiEmbeddingModel;
 import java.time.Instant;
 import java.util.Map;
@@ -81,29 +80,15 @@ class MemoryEmbeddingModelsTest {
     }
 
     @Test
-    void buildsDashScopeEmbeddingForDashScopeChannels() {
-        var model = model();
-        var space = space(model.id(), 1024);
-        var channelModel = channelModel(model.id());
-        var channel = channel(channelModel.channelId(), "dashscope");
-        stubRoute(model, space, channelModel, channel);
-
-        StepVerifier.create(embeddingModels.defaultSpace("workspace"))
-                .assertNext(result -> assertThat(result.embeddingModel())
-                        .isInstanceOf(QwenEmbeddingModel.class))
-                .verifyComplete();
-    }
-
-    @Test
     void rejectsChannelsWithoutAnOpenAiCompatibleEmbeddingProtocol() {
         var model = model();
         var space = space(model.id(), 1024);
         var channelModel = channelModel(model.id());
-        var channel = channel(channelModel.channelId(), "deepseek");
+        var channel = channel(channelModel.channelId(), "unsupported");
         channelModelsStub(model, space, channelModel, channel);
         when(channels.credentials(channel.id()))
                 .thenReturn(Mono.just(Map.of("apiKey", "secret")));
-        when(providers.find("deepseek")).thenReturn(Optional.empty());
+        when(providers.find("unsupported")).thenReturn(Optional.empty());
 
         StepVerifier.create(embeddingModels.defaultSpace("workspace"))
                 .expectErrorSatisfies(error -> {
@@ -152,11 +137,15 @@ class MemoryEmbeddingModelsTest {
     }
 
     private static AiChannelModel channelModel(UUID modelId) {
+        return channelModel(modelId, "text-embedding-v4");
+    }
+
+    private static AiChannelModel channelModel(UUID modelId, String upstreamModel) {
         return new AiChannelModel(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 modelId,
-                "text-embedding-v4",
+                upstreamModel,
                 1,
                 100,
                 true,

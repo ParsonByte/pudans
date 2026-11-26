@@ -25,6 +25,7 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.anthropic.AnthropicTokenUsage;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatModelStreamingEvent;
@@ -32,6 +33,8 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.CompleteResponse;
 import dev.langchain4j.model.chat.response.PartialResponse;
 import dev.langchain4j.model.chat.response.PartialThinking;
+import dev.langchain4j.model.openai.OpenAiTokenUsage;
+import dev.langchain4j.model.output.TokenUsage;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
@@ -43,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,6 +58,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.adapter.JdkFlowAdapter;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -81,6 +87,8 @@ public class DefaultAgentRuntime implements AgentRuntime {
     private static final int MAX_ITERATIONS = 10;
 
     private static final int DEFAULT_OUTPUT_RESERVE_TOKENS = 1024;
+
+    private static final int DEFAULT_STREAM_TIMEOUT_MS = 60_000;
 
     private static final String SYSTEM_PROMPT =
             "你是 Pudans 工作区助手。调用 generate_media 时必须使用真实模型并返回真实任务标识，不得伪造生成结果。";
@@ -160,41 +168,82 @@ public class DefaultAgentRuntime implements AgentRuntime {
             if (pending == null) {
                 return Mono.just(false);
             }
+            active.approvalsInFlight.incrementAndGet();
             if (!approved) {
-                return deny(active, pending).thenReturn(true);
+                active.roundDenied.incrementAndGet();
+                return settleApproval(active, deny(active, pending)).thenReturn(true);
             }
-            return executeApproved(active, pending).then(Mono.defer(() -> {
-                if (active.pendingApprovals.isEmpty()) {
-                    active.waitingApproval.set(false);
-                    return markRunning(active).then(Mono.fromRunnable(() -> launch(active)));
-                }
-                return Mono.empty();
-            })).thenReturn(true);
+            return settleApproval(active, executeApproved(active, pending)).thenReturn(true);
         });
+    }
+
+    private Mono<Void> settleApproval(ActiveExecution active, Mono<Void> action) {
+        var decremented = new AtomicBoolean();
+        return action
+                .then(Mono.defer(() -> {
+                    if (decremented.compareAndSet(false, true)) {
+                        active.approvalsInFlight.decrementAndGet();
+                    }
+                    return continueAfterApprovals(active);
+                }))
+                .onErrorResume(error -> {
+                    if (decremented.compareAndSet(false, true)) {
+                        active.approvalsInFlight.decrementAndGet();
+                    }
+                    return fail(active, error);
+                });
+    }
+
+    private Mono<Void> continueAfterApprovals(ActiveExecution active) {
+        synchronized (active.approvalLock) {
+            if (!active.pendingApprovals.isEmpty() || active.approvalsInFlight.get() > 0) {
+                return Mono.empty();
+            }
+            if (active.terminal.get() || active.cancelled.get()) {
+                return Mono.empty();
+            }
+            if (active.roundToolCalls.get() > 0
+                    && active.roundDenied.get() >= active.roundToolCalls.get()) {
+                return finish(
+                        active,
+                        AgentRunEvents.RUN_FAILED,
+                        FAILED,
+                        "agent-tools-denied",
+                        "所有工具调用均被拒绝。",
+                        Map.of());
+            }
+            active.launchPending.set(true);
+            active.waitingApproval.set(false);
+            return markRunning(active).then(Mono.fromRunnable(() -> launch(active)));
+        }
     }
 
     private Mono<ActiveExecution> prepare(AgentRunContext context) {
         return routes.resolve(context.workspaceId(), context.modelId()).flatMap(route -> memoryContext
                 .recall(context.ownerId(), context.workspaceId(), context.prompt())
-                .flatMap(remembered -> reserve(context, route.model())
-                        .flatMap(reservation -> markStarted(context, reservation.id())
-                                .onErrorResume(error -> releaseReservation(reservation.id())
-                                        .then(Mono.error(error)))
-                                .thenReturn(active(context, route, remembered, reservation)))));
+                .flatMap(remembered -> {
+                    var model = modelFactory.create(route, context.reasoning());
+                    return reserve(context, route.model())
+                            .flatMap(reservation -> markStarted(context, reservation.id())
+                                    .onErrorResume(error -> releaseReservation(reservation.id())
+                                            .then(Mono.error(error)))
+                                    .thenReturn(active(
+                                            context, route, remembered, reservation, model)));
+                }));
     }
 
     private ActiveExecution active(
             AgentRunContext context,
             AgentModelRoute route,
             String rememberedContext,
-            ReservedQuota reservation) {
+            ReservedQuota reservation,
+            StreamingChatModel model) {
         var toolContext = new AgentToolContext(
                 context.runId(),
                 context.sessionId(),
                 context.ownerId(),
                 context.workspaceId(),
                 reservation.id());
-        var model = modelFactory.create(route, context.reasoning());
         var active = new ActiveExecution(
                 context, route, model, toolContext, reservation.id(), reservation.credits());
         active.messages.add(
@@ -252,11 +301,20 @@ public class DefaultAgentRuntime implements AgentRuntime {
 
     private void launch(ActiveExecution active) {
         if (!active.looping.compareAndSet(false, true)) {
+            active.launchPending.set(true);
             return;
         }
+        active.launchPending.set(false);
         try {
             var subscription = execute(active)
-                    .doFinally(ignored -> active.looping.set(false))
+                    .doFinally(ignored -> {
+                        active.looping.set(false);
+                        if (active.launchPending.getAndSet(false)
+                                && !active.terminal.get()
+                                && !active.cancelled.get()) {
+                            launch(active);
+                        }
+                    })
                     .subscribeOn(Schedulers.boundedElastic())
                     .subscribe(ignored -> {}, error -> {
                         log.error(
@@ -265,7 +323,7 @@ public class DefaultAgentRuntime implements AgentRuntime {
                                 error);
                         fail(active, error).subscribe();
                     });
-            active.subscription.set(subscription);
+            active.subscription.update(subscription);
         } catch (RuntimeException error) {
             active.looping.set(false);
             log.error("启动 Agent 运行失败：run={}", active.context.runId(), error);
@@ -305,7 +363,19 @@ public class DefaultAgentRuntime implements AgentRuntime {
                 .messages(List.copyOf(active.messages))
                 .toolSpecifications(mediaTool.specification())
                 .build();
+        var timeoutMs = active.route.channel().timeoutMs();
+        var effectiveTimeout = timeoutMs == null || timeoutMs <= 0
+                ? DEFAULT_STREAM_TIMEOUT_MS
+                : timeoutMs;
         return JdkFlowAdapter.flowPublisherToFlux(active.model.chat(request))
+                .timeout(Duration.ofMillis(effectiveTimeout))
+                .onErrorMap(
+                        TimeoutException.class,
+                        error -> new ApiException(
+                                HttpStatus.GATEWAY_TIMEOUT,
+                                "agent-stream-timeout",
+                                "模型事件流超时。",
+                                error))
                 .concatMap(event -> handle(active, reply, event))
                 .then();
     }
@@ -325,7 +395,9 @@ public class DefaultAgentRuntime implements AgentRuntime {
     }
 
     private Mono<Void> publishDelta(ActiveExecution active, ReplyState reply, String delta) {
-        if (!StringUtils.hasText(delta)) {
+        if (!StringUtils.hasText(delta)
+                || active.cancelled.get()
+                || active.terminal.get()) {
             return Mono.empty();
         }
         var start = reply.textStarted
@@ -347,7 +419,9 @@ public class DefaultAgentRuntime implements AgentRuntime {
     }
 
     private Mono<Void> publishReasoning(ActiveExecution active, ReplyState reply, String delta) {
-        if (!StringUtils.hasText(delta)) {
+        if (!StringUtils.hasText(delta)
+                || active.cancelled.get()
+                || active.terminal.get()) {
             return Mono.empty();
         }
         return events.publish(
@@ -361,6 +435,9 @@ public class DefaultAgentRuntime implements AgentRuntime {
     }
 
     private Mono<Void> complete(ActiveExecution active, ReplyState reply, ChatResponse response) {
+        if (active.cancelled.get() || active.terminal.get()) {
+            return Mono.empty();
+        }
         var message = response == null ? null : response.aiMessage();
         if (message == null) {
             return Mono.error(new ApiException(
@@ -374,6 +451,7 @@ public class DefaultAgentRuntime implements AgentRuntime {
                 .text(message.text())
                 .thinking(message.thinking())
                 .toolExecutionRequests(requests)
+                .attributes(message.attributes())
                 .build();
         active.messages.add(assistant);
         if (!requests.isEmpty()) {
@@ -413,6 +491,8 @@ public class DefaultAgentRuntime implements AgentRuntime {
             }
             return Mono.empty();
         });
+        active.roundToolCalls.set(requests.size());
+        active.roundDenied.set(0);
         return prefix
                 .thenMany(Flux.fromIterable(requests)
                         .concatMap(request -> ensureToolCall(active, request.id(), request.name())
@@ -477,6 +557,12 @@ public class DefaultAgentRuntime implements AgentRuntime {
 
     private Mono<Void> deny(ActiveExecution active, PendingApproval pending) {
         var request = pending.toolCall();
+        active.messages.add(ToolExecutionResultMessage.builder()
+                .id(request.id())
+                .toolName(request.name())
+                .text("工具调用被拒绝。")
+                .isError(true)
+                .build());
         return finishToolCall(active, request.id(), "denied")
                 .then(events.publish(
                         active.context.runId(),
@@ -486,14 +572,7 @@ public class DefaultAgentRuntime implements AgentRuntime {
                                 "replyId", pending.replyId(),
                                 "toolCallId", request.id(),
                                 "toolName", request.name(),
-                                "state", "denied")))
-                .then(finish(
-                        active,
-                        AgentRunEvents.RUN_FAILED,
-                        FAILED,
-                        "agent-tools-denied",
-                        "所有工具调用均被拒绝。",
-                        Map.of()));
+                                "state", "denied")));
     }
 
     private static String systemPrompt(String rememberedContext) {
@@ -620,6 +699,9 @@ public class DefaultAgentRuntime implements AgentRuntime {
     }
 
     private Mono<UUID> persistAssistant(ActiveExecution active, AiMessage message) {
+        if (active.cancelled.get() || active.terminal.get()) {
+            return Mono.empty();
+        }
         var entity = AgentMessageEntity.assistantMessage(
                 active.context.sessionId(),
                 active.context.runId(),
@@ -678,7 +760,7 @@ public class DefaultAgentRuntime implements AgentRuntime {
     }
 
     private Mono<Void> ensureSettled(ActiveExecution active) {
-        if (active.terminal.get() || active.waitingApproval.get()) {
+        if (active.terminal.get() || active.waitingApproval.get() || active.launchPending.get()) {
             return Mono.empty();
         }
         return settleIncomplete();
@@ -745,7 +827,8 @@ public class DefaultAgentRuntime implements AgentRuntime {
         var input = tokens(tokenUsage.inputTokenCount());
         var output = tokens(tokenUsage.outputTokenCount());
         var total = tokens(tokenUsage.totalTokenCount());
-        var usage = AiUsage.of(input, output, 0, total > 0 ? total : input + output);
+        var cached = cachedTokens(tokenUsage);
+        var usage = AiUsage.of(input, output, cached, total > 0 ? total : input + output);
         if (!usage.usable()) {
             return Mono.just(active.reservedCredits);
         }
@@ -836,8 +919,20 @@ public class DefaultAgentRuntime implements AgentRuntime {
         var input = tokens(usage.inputTokenCount());
         var output = tokens(usage.outputTokenCount());
         var total = tokens(usage.totalTokenCount());
-        return AiUsage.of(input, output, 0, total > 0 ? total : input + output)
+        var cached = cachedTokens(usage);
+        return AiUsage.of(input, output, cached, total > 0 ? total : input + output)
                 .toMap();
+    }
+
+    private static int cachedTokens(TokenUsage usage) {
+        if (usage instanceof OpenAiTokenUsage openAi
+                && openAi.inputTokensDetails() != null) {
+            return tokens(openAi.inputTokensDetails().cachedTokens());
+        }
+        if (usage instanceof AnthropicTokenUsage anthropic) {
+            return tokens(anthropic.cacheReadInputTokens());
+        }
+        return 0;
     }
 
     private static int tokens(Integer value) {
@@ -900,10 +995,7 @@ public class DefaultAgentRuntime implements AgentRuntime {
     }
 
     private static void dispose(ActiveExecution active) {
-        var subscription = active.subscription.getAndSet(null);
-        if (subscription != null && !subscription.isDisposed()) {
-            subscription.dispose();
-        }
+        active.subscription.dispose();
     }
 
     private OffsetDateTime now() {
@@ -946,9 +1038,17 @@ public class DefaultAgentRuntime implements AgentRuntime {
 
         private final BigDecimal reservedCredits;
 
-        private final List<ChatMessage> messages = new ArrayList<>();
+        private final List<ChatMessage> messages = new CopyOnWriteArrayList<>();
+
+        private final Object approvalLock = new Object();
 
         private final AtomicInteger iterations = new AtomicInteger();
+
+        private final AtomicInteger approvalsInFlight = new AtomicInteger();
+
+        private final AtomicInteger roundToolCalls = new AtomicInteger();
+
+        private final AtomicInteger roundDenied = new AtomicInteger();
 
         private final AtomicBoolean terminal = new AtomicBoolean();
 
@@ -960,13 +1060,15 @@ public class DefaultAgentRuntime implements AgentRuntime {
 
         private final AtomicBoolean looping = new AtomicBoolean();
 
+        private final AtomicBoolean launchPending = new AtomicBoolean();
+
         private final Map<String, UUID> toolCallIds = new ConcurrentHashMap<>();
 
         private final Map<UUID, PendingApproval> pendingApprovals = new ConcurrentHashMap<>();
 
         private final AtomicReference<ChatResponse> finalResult = new AtomicReference<>();
 
-        private final AtomicReference<Disposable> subscription = new AtomicReference<>();
+        private final Disposable.Swap subscription = Disposables.swap();
 
         private ActiveExecution(
                 AgentRunContext context,

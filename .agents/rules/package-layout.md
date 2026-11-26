@@ -63,8 +63,8 @@ must not contain a second provider registry or any dispatch keyed by provider
 id.
 
 `core/ai/provider` owns provider identity, endpoint resolution, model discovery
-and provider-specific protocol profiles. Each built-in provider has an
-independent directory: `deepseek`, `minimax` and `dashscope`.
+and optional provider-specific protocol profiles. Add a provider directory only
+when a real provider integration is implemented.
 
 `core/ai/usage` owns protocol-neutral token usage values. It must not persist
 records or calculate credits; persistence stays in `infra/r2dbc/ai` and credit
