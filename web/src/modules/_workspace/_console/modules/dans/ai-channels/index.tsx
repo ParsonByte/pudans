@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DataBaseIcon } from "tdesign-icons-react";
 import { Alert, Button, Loading } from "tdesign-react";
 
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { consoleErrorMessage } from "@/modules/_workspace/_console/composables/_errors";
 
 import { DansPage } from "../components/page";
@@ -74,6 +75,7 @@ function configuredProviderDescriptors(
 }
 
 export function AiChannelsView() {
+    const prompt = useMessagePrompt();
     const queryClient = useQueryClient();
     const [selectedProvider, setSelectedProvider] = useState<string>();
     const [providerSearch, setProviderSearch] = useState("");
@@ -126,17 +128,18 @@ export function AiChannelsView() {
         () => routes.filter((route) => route.channelId === selectedChannel?.id),
         [routes, selectedChannel?.id],
     );
-    const connectivityOptions = useMemo(
-        () =>
-            Array.from(
-                new Set(
-                    selectedRoutes
-                        .map((route) => route.upstreamModelKey)
-                        .filter((value): value is string => Boolean(value?.trim())),
-                ),
-            ).map((value) => ({ label: value, value })),
-        [selectedRoutes],
-    );
+    const connectivityOptions = useMemo(() => {
+        const names = new Map(models.map((model) => [model.id, model.displayName ?? model.logicalName]));
+        const options = new Map<string, string>();
+        for (const route of selectedRoutes) {
+            const upstream = route.upstreamModelKey?.trim();
+            if (upstream) {
+                const label = route.modelId ? names.get(route.modelId) : undefined;
+                options.set(upstream, label ?? upstream);
+            }
+        }
+        return Array.from(options, ([value, label]) => ({ label, value }));
+    }, [models, selectedRoutes]);
     const firstError = providersQuery.error ?? channelsQuery.error ?? modelsQuery.error ?? routesQuery.error;
     const refreshing =
         providersQuery.isFetching || channelsQuery.isFetching || modelsQuery.isFetching || routesQuery.isFetching;
@@ -193,15 +196,18 @@ export function AiChannelsView() {
         }
         setFetchingModels(true);
         try {
-            await importAiChannelModels(selectedChannel.id);
+            const result = await importAiChannelModels(selectedChannel.id);
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: MODELS_KEY }),
                 queryClient.invalidateQueries({ queryKey: ROUTES_KEY }),
             ]);
+            prompt.success({
+                content: `模型列表已同步：发现 ${result.discovered} 个，新增 ${result.created} 个，更新 ${result.updated} 个。`,
+            });
         } finally {
             setFetchingModels(false);
         }
-    }, [queryClient, selectedChannel]);
+    }, [prompt, queryClient, selectedChannel]);
 
     const toggleModel = useCallback(
         async (route: AiChannelModel, enabled: boolean) => {

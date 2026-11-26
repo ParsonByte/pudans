@@ -12,7 +12,7 @@ export const MODEL_TYPE_OPTIONS: Array<{ label: string; value: ModelType }> = [
     { label: "重排", value: "rerank" },
 ];
 
-const MODEL_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+export const MODEL_TYPE_LABELS: Record<string, string> = Object.fromEntries(
     MODEL_TYPE_OPTIONS.map((option) => [option.value, option.label]),
 );
 
@@ -35,6 +35,10 @@ export const MODEL_FEATURE_LABELS: Record<string, string> = {
     image: "图片生成",
     video: "视频识别",
     audio: "音频生成",
+    "image-generation": "图片生成",
+    "video-generation": "视频生成",
+    "audio-generation": "音频生成",
+    asr: "语音识别",
 };
 
 type UnknownRecord = Record<string, unknown>;

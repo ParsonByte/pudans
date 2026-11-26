@@ -10,16 +10,26 @@ import { formatCountOrDash } from "../../../composables/_format";
 import { DansPage } from "../components/page";
 import { type AiModel, listAiChannelModels, listAiDefaultModels, listAiModels } from "../composables/_dans";
 
+const CAPABILITY_LABELS: Record<string, string> = {
+    chat: "对话",
+    image: "图片",
+    video: "视频",
+    audio: "音频",
+    embedding: "向量化",
+    rerank: "重排",
+    "3d": "3D",
+};
+
 export function ModelPlazaView() {
     const [keyword, setKeyword] = useState("");
-    const modelsQuery = useQuery({ queryFn: listAiModels, queryKey: ["dans", "model-plaza", "models"] });
+    const modelsQuery = useQuery({ queryFn: listAiModels, queryKey: ["dans", "ai", "models"] });
     const routesQuery = useQuery({
         queryFn: listAiChannelModels,
-        queryKey: ["dans", "model-plaza", "routes"],
+        queryKey: ["dans", "ai", "channel-models"],
     });
     const defaultsQuery = useQuery({
         queryFn: listAiDefaultModels,
-        queryKey: ["dans", "model-plaza", "defaults"],
+        queryKey: ["dans", "ai", "default-models"],
     });
     const models = modelsQuery.data ?? [];
     const routes = routesQuery.data ?? [];
@@ -115,7 +125,7 @@ function ModelCard({ defaultCount, model, routeCount }: { defaultCount: number; 
                 {capabilities.length > 0 ? (
                     capabilities.map((capability) => (
                         <Tag key={capability} variant="light">
-                            {capability}
+                            {CAPABILITY_LABELS[capability] ?? capability}
                         </Tag>
                     ))
                 ) : (
