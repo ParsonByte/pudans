@@ -44,6 +44,10 @@ spring:
     timeout: 30m
   cache:
     type: redis
+  webflux:
+    multipart:
+      max-in-memory-size: 256KB
+      max-disk-usage-per-part: 100MB
   http:
     codecs:
       max-in-memory-size: 10MB
