@@ -1,5 +1,17 @@
 import type { ComponentType } from "react";
 
+import { AgentMemoryRoute } from "./(_console)/dans/agent-memory/route";
+import { AgentSandboxesRoute } from "./(_console)/dans/agent-sandboxes/route";
+import { AgentSessionsRoute } from "./(_console)/dans/agent-sessions/route";
+import { AiBillingRoute } from "./(_console)/dans/ai-billing/route";
+import { AiCatalogRoute } from "./(_console)/dans/ai-catalog/route";
+import { AiChannelsRoute } from "./(_console)/dans/ai-channels/route";
+import { AiModelsRoute } from "./(_console)/dans/ai-models/route";
+import { CreationAssetsRoute } from "./(_console)/dans/creation-assets/route";
+import { CreationContentRoute } from "./(_console)/dans/creation-content/route";
+import { CreationTasksRoute } from "./(_console)/dans/creation-tasks/route";
+import { DansOverviewRoute } from "./(_console)/dans/dans-overview/route";
+import { ModelPlazaRoute } from "./(_console)/dans/model-plaza/route";
 import { AuthProvidersRoute } from "./(_console)/identity/auth-providers/route";
 import { PermissionsRoute } from "./(_console)/identity/permissions/route";
 import { RolesRoute } from "./(_console)/identity/roles/route";
@@ -34,6 +46,20 @@ export const WORKSPACE_VIEWS: Record<string, WorkspaceViews> = {
     console: {
         overview: {
             dashboard: DashboardRoute,
+        },
+        dans: {
+            "dans-overview": DansOverviewRoute,
+            "ai-channels": AiChannelsRoute,
+            "ai-models": AiModelsRoute,
+            "ai-billing": AiBillingRoute,
+            "ai-catalog": AiCatalogRoute,
+            "model-plaza": ModelPlazaRoute,
+            "agent-sessions": AgentSessionsRoute,
+            "agent-sandboxes": AgentSandboxesRoute,
+            "agent-memory": AgentMemoryRoute,
+            "creation-tasks": CreationTasksRoute,
+            "creation-assets": CreationAssetsRoute,
+            "creation-content": CreationContentRoute,
         },
         identity: {
             users: UsersRoute,
