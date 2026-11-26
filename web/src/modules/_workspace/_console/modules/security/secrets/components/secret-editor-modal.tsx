@@ -5,7 +5,6 @@ import { useState } from "react";
 import type { SecretCatalogItem } from "@pudans-dev/api-client";
 import { apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AddIcon, DeleteIcon } from "tdesign-icons-react";
 import { Alert, Button, Form, Input } from "tdesign-react";
 import type { FormRule } from "tdesign-react";
 
@@ -18,16 +17,19 @@ import { IdentityDialogFooter } from "../../../identity/components/identity-dial
 import {
     DEFAULT_SECRET_TYPE,
     SECRET_GENERATED_KEY,
-    SECRET_KEY_PATTERN,
+    SECRET_NAME_MAX_LENGTH,
     SECRET_NAME_PATTERN,
     SECRET_QUERY_ROOT,
+    SECRET_TYPE_MAX_LENGTH,
     type SecretEditorEntry,
     type SecretEditorValues,
+    type SecretEntryKind,
     buildCreateSecretPayload,
     buildSecretPatch,
     duplicateSecretKey,
     generateSecretValue,
 } from "../composables/_secrets";
+import { SecretKeySection } from "./secret-key-section";
 
 type SecretEditorModalProps = {
     item?: SecretCatalogItem;
@@ -47,14 +49,14 @@ function nameRules(): FormRule[] {
             message: "只能使用小写字母、数字、- 和 .，且必须以字母或数字开头结尾。",
             pattern: SECRET_NAME_PATTERN,
         },
-        { message: "名称不能超过 253 个字符。", max: 253 },
+        { message: `名称不能超过 ${SECRET_NAME_MAX_LENGTH} 个字符。`, max: SECRET_NAME_MAX_LENGTH },
     ];
 }
 
 function typeRules(): FormRule[] {
     return [
         { message: "请输入类型。", required: true, whitespace: true },
-        { max: 128, message: "类型不能超过 128 个字符。" },
+        { max: SECRET_TYPE_MAX_LENGTH, message: `类型不能超过 ${SECRET_TYPE_MAX_LENGTH} 个字符。` },
     ];
 }
 
@@ -62,10 +64,10 @@ export function SecretEditorModal({ item, mode, onClose }: SecretEditorModalProp
     const [form] = Form.useForm();
     const prompt = useMessagePrompt();
     const queryClient = useQueryClient();
-    const [removedKeys, setRemovedKeys] = useState<Set<string>>(() => new Set());
+    const [removedDataKeys, setRemovedDataKeys] = useState<Set<string>>(() => new Set());
+    const [removedStringKeys, setRemovedStringKeys] = useState<Set<string>>(() => new Set());
     const [issuedSecret, setIssuedSecret] = useState<IssuedSecret>();
     const editing = mode === "edit";
-    const binaryKeys = new Set(item?.dataKeys ?? []);
     const initial = initialValues(item, editing);
     const saveSecret = useMutation({
         mutationFn: async (values: SecretEditorValues) => {
@@ -75,10 +77,13 @@ export function SecretEditorModal({ item, mode, onClose }: SecretEditorModalProp
                     throw new Error("密钥名称缺失。");
                 }
                 const patch = buildSecretPatch({
-                    entries: values.entries,
+                    dataEntries: values.dataEntries,
+                    hasData: item?.hasData,
                     hasStringData: item?.hasStringData,
                     initialType: item?.type,
-                    removedKeys,
+                    removedDataKeys,
+                    removedStringKeys,
+                    stringEntries: values.stringEntries,
                     type: values.type,
                 });
                 if (patch.length === 0) {
@@ -92,8 +97,8 @@ export function SecretEditorModal({ item, mode, onClose }: SecretEditorModalProp
             const key = generateSecretValue();
             await apiClient.secret.createSecret({
                 secret: buildCreateSecretPayload({
-                    entries: [{ key: SECRET_GENERATED_KEY, value: key }],
                     name: values.name,
+                    stringEntries: [{ key: SECRET_GENERATED_KEY, value: key }],
                 }),
             });
             return { key, status: "created" as const };
@@ -108,9 +113,9 @@ export function SecretEditorModal({ item, mode, onClose }: SecretEditorModalProp
 
     const submit = async (values: SecretEditorValues) => {
         if (editing) {
-            const duplicate = duplicateSecretKey(values.entries);
+            const duplicate = duplicateSecretKey(values.stringEntries, values.dataEntries);
             if (duplicate) {
-                prompt.error({ content: `文本键 ${duplicate} 重复，请保留一个。` });
+                prompt.error({ content: `键名 ${duplicate} 重复，请保留一个。` });
                 return;
             }
         }
@@ -132,16 +137,16 @@ export function SecretEditorModal({ item, mode, onClose }: SecretEditorModalProp
         }
     };
 
-    const removeEntry = (index: number) => {
-        const entries = form.getFieldValue("entries") as SecretEditorEntry[] | undefined;
-        const originalKey = entries?.[index]?.originalKey?.trim();
-        if (originalKey) {
-            setRemovedKeys((current) => {
-                const next = new Set(current);
-                next.add(originalKey);
-                return next;
-            });
+    const markRemoved = (kind: SecretEntryKind, originalKey?: string) => {
+        if (!originalKey) {
+            return;
         }
+        const update = (current: Set<string>) => new Set(current).add(originalKey);
+        if (kind === "data") {
+            setRemovedDataKeys(update);
+            return;
+        }
+        setRemovedStringKeys(update);
     };
 
     return (
@@ -174,11 +179,11 @@ export function SecretEditorModal({ item, mode, onClose }: SecretEditorModalProp
                     <div className="flex min-w-0 flex-col gap-4 rounded-xl border border-[var(--td-component-border)] px-4 py-4">
                         <div className="flex min-w-0 flex-col gap-1">
                             <span className="text-xs text-[var(--td-text-color-placeholder)]">名称</span>
-                            <CopyableIdentifier value={issuedSecret.name} />
+                            <CopyableIdentifier mask value={issuedSecret.name} />
                         </div>
                         <div className="flex min-w-0 flex-col gap-1">
                             <span className="text-xs text-[var(--td-text-color-placeholder)]">密钥</span>
-                            <CopyableIdentifier value={issuedSecret.key} />
+                            <CopyableIdentifier mask value={issuedSecret.key} />
                         </div>
                     </div>
                 </div>
@@ -197,14 +202,49 @@ export function SecretEditorModal({ item, mode, onClose }: SecretEditorModalProp
                     }}
                 >
                     {editing ? (
-                        <div className="grid min-w-0 grid-cols-1 gap-x-3 sm:grid-cols-2">
-                            <Form.FormItem label="名称" name="name" requiredMark rules={nameRules()}>
-                                <Input disabled placeholder="例如：smtp-credentials" />
-                            </Form.FormItem>
-                            <Form.FormItem label="类型" name="type" requiredMark rules={typeRules()}>
-                                <Input placeholder={DEFAULT_SECRET_TYPE} />
-                            </Form.FormItem>
-                        </div>
+                        <>
+                            <div className="grid min-w-0 grid-cols-1 gap-x-3 sm:grid-cols-2">
+                                <Form.FormItem
+                                    help="名称创建后不可修改。"
+                                    label="名称"
+                                    name="name"
+                                    requiredMark
+                                    rules={nameRules()}
+                                >
+                                    <Input disabled placeholder="例如：smtp-credentials" />
+                                </Form.FormItem>
+                                <Form.FormItem
+                                    help="用于标识用途，例如 Opaque。"
+                                    label="类型"
+                                    name="type"
+                                    requiredMark
+                                    rules={typeRules()}
+                                >
+                                    <Input placeholder={DEFAULT_SECRET_TYPE} />
+                                </Form.FormItem>
+                            </div>
+                            <Alert
+                                className="mt-4"
+                                message="已有键的值只写不读：值留空表示保持原值，删除条目会移除对应键。"
+                                theme="info"
+                            />
+                            <SecretKeySection
+                                entries={initial.stringEntries ?? []}
+                                fieldName="stringEntries"
+                                form={form}
+                                kind="stringData"
+                                onRemove={(key) => markRemoved("stringData", key)}
+                                otherFieldName="dataEntries"
+                            />
+                            <SecretKeySection
+                                entries={initial.dataEntries ?? []}
+                                fieldName="dataEntries"
+                                form={form}
+                                kind="data"
+                                onRemove={(key) => markRemoved("data", key)}
+                                otherFieldName="stringEntries"
+                            />
+                        </>
                     ) : (
                         <Form.FormItem
                             help="平台会自动生成密钥，创建后仅显示一次，请及时复制保存。"
@@ -216,121 +256,6 @@ export function SecretEditorModal({ item, mode, onClose }: SecretEditorModalProp
                             <Input placeholder="例如：smtp-credentials" />
                         </Form.FormItem>
                     )}
-                    {editing ? (
-                        <>
-                            <div className="mt-4 text-sm font-medium" style={{ color: "var(--td-text-color-primary)" }}>
-                                文本键值
-                            </div>
-                            <Form.FormList initialData={initial.entries} name="entries">
-                                {(fields, { add, remove }) => (
-                                    <div className="mt-3 flex min-w-0 flex-col gap-3">
-                                        {fields.map((field) => (
-                                            <div
-                                                className="grid min-w-0 grid-cols-1 items-start gap-x-3 sm:grid-cols-[1fr_1fr_auto]"
-                                                key={field.key}
-                                            >
-                                                <Form.FormItem
-                                                    name={[field.name, "originalKey"]}
-                                                    style={{ display: "none" }}
-                                                >
-                                                    <Input />
-                                                </Form.FormItem>
-                                                <Form.FormItem
-                                                    label="键名"
-                                                    name={[field.name, "key"]}
-                                                    rules={[
-                                                        { message: "请输入键名。", required: true, whitespace: true },
-                                                        {
-                                                            message: "只能使用字母、数字、-、_ 和 .。",
-                                                            pattern: SECRET_KEY_PATTERN,
-                                                        },
-                                                        { max: 253, message: "键名不能超过 253 个字符。" },
-                                                        {
-                                                            message: "键名不能重复。",
-                                                            validator: (value) => {
-                                                                if (
-                                                                    editing &&
-                                                                    binaryKeys.has(String(value ?? "").trim())
-                                                                ) {
-                                                                    return {
-                                                                        message: "键名与已有二进制键重复。",
-                                                                        result: false,
-                                                                    };
-                                                                }
-                                                                const entries = form.getFieldValue("entries") as
-                                                                    SecretEditorEntry[] | undefined;
-                                                                const keys = (entries ?? [])
-                                                                    .map((entry, index) =>
-                                                                        index === field.name
-                                                                            ? String(value ?? "").trim()
-                                                                            : entry.key?.trim(),
-                                                                    )
-                                                                    .filter(Boolean);
-
-                                                                return {
-                                                                    message: "键名不能重复。",
-                                                                    result: new Set(keys).size === keys.length,
-                                                                };
-                                                            },
-                                                        },
-                                                    ]}
-                                                >
-                                                    <Input className="font-mono" placeholder="例如：password" />
-                                                </Form.FormItem>
-                                                <Form.FormItem
-                                                    label="值"
-                                                    name={[field.name, "value"]}
-                                                    rules={[
-                                                        {
-                                                            message: "新增或改名的键必须填写值。",
-                                                            validator: (value) => {
-                                                                const entries = form.getFieldValue("entries") as
-                                                                    SecretEditorEntry[] | undefined;
-                                                                const entry = entries?.[field.name];
-                                                                const key = entry?.key?.trim();
-                                                                const originalKey = entry?.originalKey?.trim();
-
-                                                                return {
-                                                                    message: "新增或改名的键必须填写值。",
-                                                                    result:
-                                                                        Boolean(originalKey && originalKey === key) ||
-                                                                        Boolean(value),
-                                                                };
-                                                            },
-                                                        },
-                                                    ]}
-                                                >
-                                                    <Input
-                                                        autocomplete="new-password"
-                                                        placeholder="输入密钥值"
-                                                        type="password"
-                                                    />
-                                                </Form.FormItem>
-                                                <Button
-                                                    aria-label="移除文本键"
-                                                    className="mt-7"
-                                                    icon={<DeleteIcon />}
-                                                    onClick={() => {
-                                                        removeEntry(field.name);
-                                                        remove(field.name);
-                                                    }}
-                                                    theme="danger"
-                                                    variant="text"
-                                                />
-                                            </div>
-                                        ))}
-                                        <Button
-                                            icon={<AddIcon />}
-                                            onClick={() => add({ key: "", value: "" })}
-                                            variant="dashed"
-                                        >
-                                            添加文本键
-                                        </Button>
-                                    </div>
-                                )}
-                            </Form.FormList>
-                        </>
-                    ) : null}
                 </Form>
             )}
         </GlobalDialog>
@@ -339,16 +264,21 @@ export function SecretEditorModal({ item, mode, onClose }: SecretEditorModalProp
 
 function initialValues(item: SecretCatalogItem | undefined, editing: boolean): SecretEditorValues {
     if (!editing || !item) {
-        return { entries: [], name: "", type: DEFAULT_SECRET_TYPE };
+        return { dataEntries: [], name: "", stringEntries: [], type: DEFAULT_SECRET_TYPE };
     }
 
     return {
-        entries: (item.stringDataKeys ?? []).map((key) => ({
-            key,
-            originalKey: key,
-            value: "",
-        })),
+        dataEntries: emptyEntries(item.dataKeys),
         name: item.name ?? "",
+        stringEntries: emptyEntries(item.stringDataKeys),
         type: item.type ?? DEFAULT_SECRET_TYPE,
     };
+}
+
+function emptyEntries(keys?: string[]): SecretEditorEntry[] {
+    return (keys ?? []).map((key) => ({
+        key,
+        originalKey: key,
+        value: "",
+    }));
 }

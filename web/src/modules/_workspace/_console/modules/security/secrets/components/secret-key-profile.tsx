@@ -29,5 +29,5 @@ export function SecretKeyProfile({ items }: SecretKeyProfileProps) {
             valueLabel: "个键",
         }));
 
-    return <RankedBarList emptyText="当前筛选结果中没有密钥" items={ranked} />;
+    return <RankedBarList emptyText="当前页没有密钥" items={ranked} />;
 }

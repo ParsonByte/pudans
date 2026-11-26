@@ -14,6 +14,11 @@ export const DEFAULT_SECRET_TYPE = "Opaque";
 export const SECRET_GENERATED_KEY = "token";
 export const SECRET_KEY_PATTERN = /^[-._a-zA-Z0-9]+$/;
 export const SECRET_NAME_PATTERN = USERNAME_PATTERN;
+export const SECRET_KEY_MAX_LENGTH = 253;
+export const SECRET_NAME_MAX_LENGTH = 253;
+export const SECRET_TYPE_MAX_LENGTH = 128;
+
+const SECRET_BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
 const SECRET_TYPE_LABELS: Record<string, string> = {
     Opaque: "普通键值",
@@ -23,6 +28,8 @@ const SECRET_TYPE_LABELS: Record<string, string> = {
     "kubernetes.io/tls": "TLS 证书",
 };
 
+export type SecretEntryKind = "data" | "stringData";
+
 export type SecretEditorEntry = {
     key: string;
     originalKey?: string;
@@ -30,8 +37,9 @@ export type SecretEditorEntry = {
 };
 
 export type SecretEditorValues = {
-    entries?: SecretEditorEntry[];
+    dataEntries?: SecretEditorEntry[];
     name: string;
+    stringEntries?: SecretEditorEntry[];
     type?: string;
 };
 
@@ -53,49 +61,99 @@ export function generateSecretValue(): string {
     return `sk-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
+export function normalizeSecretDataValue(value?: string): string {
+    return value?.replace(/\s+/g, "") ?? "";
+}
+
+export function isSecretBase64(value?: string): boolean {
+    const normalized = normalizeSecretDataValue(value);
+
+    return normalized.length > 0 && SECRET_BASE64_PATTERN.test(normalized);
+}
+
 function escapeJsonPointer(value: string): string {
     return value.replaceAll("~", "~0").replaceAll("/", "~1");
 }
 
-export function buildCreateSecretPayload(values: SecretEditorValues): Secret {
-    const entries = normalizedEntries(values.entries);
-    const stringData = Object.fromEntries(entries.map((entry) => [entry.key, entry.value ?? ""]));
+export function buildCreateSecretPayload({ dataEntries, name, stringEntries, type }: SecretEditorValues): Secret {
+    const stringData = entriesToMap(stringEntries, "stringData");
+    const data = entriesToMap(dataEntries, "data");
 
     return {
         apiVersion: "v1alpha1",
         kind: "Secret",
-        metadata: { name: values.name.trim() },
-        type: normalizedType(values.type),
-        ...(entries.length > 0 ? { stringData } : {}),
+        metadata: { name: name.trim() },
+        type: normalizedType(type),
+        ...(Object.keys(stringData).length > 0 ? { stringData } : {}),
+        ...(Object.keys(data).length > 0 ? { data } : {}),
     };
 }
 
 type BuildSecretPatchInput = {
-    entries?: SecretEditorEntry[];
+    dataEntries?: SecretEditorEntry[];
+    hasData?: boolean;
     hasStringData?: boolean;
     initialType?: string;
-    removedKeys?: Iterable<string>;
+    removedDataKeys?: Iterable<string>;
+    removedStringKeys?: Iterable<string>;
+    stringEntries?: SecretEditorEntry[];
     type?: string;
 };
 
 export function buildSecretPatch({
-    entries,
+    dataEntries,
+    hasData,
     hasStringData,
     initialType,
-    removedKeys,
+    removedDataKeys,
+    removedStringKeys,
+    stringEntries,
     type,
 }: BuildSecretPatchInput): JsonPatchInner[] {
     const operations: JsonPatchInner[] = [];
-    const normalized = normalizedEntries(entries);
     const nextType = normalizedType(type);
     const currentType = normalizedType(initialType);
-    const additions = new Map<string, string>();
-    const removals = new Set(removedKeys ?? []);
-    const finalKeys = new Set(normalized.map((entry) => entry.key));
 
     if (nextType !== currentType) {
         operations.push({ op: "add", path: "/type", value: nextType });
     }
+
+    appendMapPatch(operations, "stringData", stringEntries, hasStringData, removedStringKeys, "stringData");
+    appendMapPatch(operations, "data", dataEntries, hasData, removedDataKeys, "data");
+
+    return operations;
+}
+
+export function duplicateSecretKey(...entryLists: Array<SecretEditorEntry[] | undefined>): string | undefined {
+    const seen = new Set<string>();
+    for (const entries of entryLists) {
+        for (const entry of entries ?? []) {
+            const key = entry.key.trim();
+            if (!key) {
+                continue;
+            }
+            if (seen.has(key)) {
+                return key;
+            }
+            seen.add(key);
+        }
+    }
+
+    return undefined;
+}
+
+function appendMapPatch(
+    operations: JsonPatchInner[],
+    field: SecretEntryKind,
+    entries: SecretEditorEntry[] | undefined,
+    hasField: boolean | undefined,
+    removedKeys: Iterable<string> | undefined,
+    kind: SecretEntryKind,
+): void {
+    const normalized = normalizedEntries(entries, kind);
+    const additions = new Map<string, string>();
+    const removals = new Set(removedKeys ?? []);
+    const finalKeys = new Set(normalized.map((entry) => entry.key));
 
     for (const entry of normalized) {
         if (entry.originalKey && entry.originalKey !== entry.key) {
@@ -108,49 +166,43 @@ export function buildSecretPatch({
 
     for (const key of removals) {
         if (!finalKeys.has(key)) {
-            operations.push({ op: "remove", path: `/stringData/${escapeJsonPointer(key)}` });
+            operations.push({ op: "remove", path: `/${field}/${escapeJsonPointer(key)}` });
         }
     }
 
-    if (additions.size > 0) {
-        if (!hasStringData) {
-            operations.push({ op: "add", path: "/stringData", value: Object.fromEntries(additions) });
-        } else {
-            for (const [key, value] of additions) {
-                operations.push({
-                    op: "add",
-                    path: `/stringData/${escapeJsonPointer(key)}`,
-                    value,
-                });
-            }
-        }
+    if (additions.size === 0) {
+        return;
     }
 
-    return operations;
+    if (!hasField) {
+        operations.push({ op: "add", path: `/${field}`, value: Object.fromEntries(additions) });
+        return;
+    }
+
+    for (const [key, value] of additions) {
+        operations.push({
+            op: "add",
+            path: `/${field}/${escapeJsonPointer(key)}`,
+            value,
+        });
+    }
 }
 
-export function duplicateSecretKey(entries?: SecretEditorEntry[]): string | undefined {
-    const seen = new Set<string>();
-    for (const entry of entries ?? []) {
-        const key = entry.key.trim();
-        if (!key) {
-            continue;
-        }
-        if (seen.has(key)) {
-            return key;
-        }
-        seen.add(key);
+function entriesToMap(entries: SecretEditorEntry[] | undefined, kind: SecretEntryKind): Record<string, string> {
+    const values: Record<string, string> = {};
+    for (const entry of normalizedEntries(entries, kind)) {
+        values[entry.key] = entry.value ?? "";
     }
 
-    return undefined;
+    return values;
 }
 
-function normalizedEntries(entries?: SecretEditorEntry[]): SecretEditorEntry[] {
+function normalizedEntries(entries: SecretEditorEntry[] | undefined, kind: SecretEntryKind): SecretEditorEntry[] {
     return (entries ?? [])
         .map((entry) => ({
             key: entry.key.trim(),
             originalKey: entry.originalKey?.trim(),
-            value: entry.value,
+            value: kind === "data" ? normalizeSecretDataValue(entry.value) : entry.value,
         }))
         .filter((entry) => Boolean(entry.key));
 }
