@@ -37,6 +37,9 @@ class MemoryRoleTemplateRulesTest {
         assertAllowed(VIEW_ROLE, HttpMethod.GET, API_PREFIX + "/memoryjobs/job-a/status");
         assertAllowed(VIEW_ROLE, HttpMethod.GET, API_PREFIX + "/memoryjobs/job-a/items");
         assertAllowed(VIEW_ROLE, HttpMethod.GET, API_PREFIX + "/memoryvectorspaces");
+        assertAllowed(VIEW_ROLE, HttpMethod.GET, API_PREFIX + "/understanding/-/map");
+        assertAllowed(VIEW_ROLE, HttpMethod.GET, API_PREFIX + "/understanding/-/status");
+        assertAllowed(VIEW_ROLE, HttpMethod.POST, API_PREFIX + "/understanding/-/query");
     }
 
     @Test

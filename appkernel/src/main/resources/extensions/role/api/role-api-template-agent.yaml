@@ -155,6 +155,8 @@ rules:
       - "memoryjobs/status"
       - "memoryjobs/items"
       - "memoryvectorspaces"
+      - "understanding/map"
+      - "understanding/status"
     verbs:
       - "get"
       - "list"
@@ -162,6 +164,7 @@ rules:
       - "api.pudans.tolim.cn"
     resources:
       - "memories/retrieve"
+      - "understanding/query"
     verbs:
       - "create"
 ---
