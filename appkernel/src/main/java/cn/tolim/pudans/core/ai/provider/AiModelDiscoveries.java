@@ -103,6 +103,13 @@ public class AiModelDiscoveries {
         var capabilities = modelType.supported()
                 ? List.of(modelType.capability())
                 : List.<String>of();
+        var modalities = new LinkedHashMap<String, Object>();
+        if (!model.inputModalities().isEmpty()) {
+            modalities.put("input", model.inputModalities());
+        }
+        if (!model.outputModalities().isEmpty()) {
+            modalities.put("output", model.outputModalities());
+        }
         var imported = existing.get(logicalName(providerId, model.modelId()));
         return new AiDiscoveredModel(
                 model.modelId(),
@@ -111,15 +118,15 @@ public class AiModelDiscoveries {
                 modelType.value(),
                 protocol,
                 List.of(protocol),
-                null,
-                null,
+                model.contextWindow(),
+                model.maxOutputTokens(),
                 capabilities,
-                List.of(),
-                Map.of(),
+                model.features(),
+                Map.copyOf(modalities),
                 Map.of(),
                 catalog(providerId, model),
                 model.source(),
-                null,
+                catalogStatus(model),
                 imported == null ? null : imported.id());
     }
 
@@ -137,10 +144,16 @@ public class AiModelDiscoveries {
     }
 
     private static Map<String, Object> catalog(String providerId, AiProviderModel model) {
-        return Map.of(
-                "provider", providerId,
-                "model", model.modelId(),
-                "source", model.source());
+        var values = new LinkedHashMap<String, Object>();
+        values.put("provider", providerId);
+        values.put("model", model.modelId());
+        values.put("source", model.source());
+        values.putAll(model.catalog());
+        return Map.copyOf(values);
+    }
+
+    private static String catalogStatus(AiProviderModel model) {
+        return Boolean.TRUE.equals(model.catalog().get("retired")) ? "retired" : null;
     }
 
     public static String logicalName(String provider, String modelId) {

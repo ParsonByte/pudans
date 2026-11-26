@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.ai.provider;
 
 import cn.tolim.pudans.contract.ai.AiModelType;
 import cn.tolim.pudans.contract.ai.dto.AiProviderDescriptor;
+import cn.tolim.pudans.core.ai.protocol.AiProtocol;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.AiChannelEntity;
@@ -52,13 +53,33 @@ public class ConfiguredAiProvider implements AiProvider {
                     "ai-channel-base-url-missing",
                     "AI 渠道缺少基础地址。"));
         }
-        return http.getJson(
-                        URI.create(baseUrl + "/models"),
-                        credentials,
-                        channel.getTimeoutMs() == null || channel.getTimeoutMs() <= 0
-                                ? http.responseTimeout()
-                                : java.time.Duration.ofMillis(channel.getTimeoutMs()))
-                .map(ConfiguredAiProvider::models);
+        var timeout = channel.getTimeoutMs() == null || channel.getTimeoutMs() <= 0
+                ? http.responseTimeout()
+                : java.time.Duration.ofMillis(channel.getTimeoutMs());
+        var uri = URI.create(modelsUrlForChannel(channel));
+        if (messages(channel)) {
+            var apiKey = credentials == null ? null : credentials.get("apiKey");
+            return http.getJson(
+                            uri,
+                            credentials,
+                            apiKey == null ? Map.of() : messagesHeaders(apiKey),
+                            timeout,
+                            AiProviderAuth.X_API_KEY)
+                    .map(ConfiguredAiProvider::models);
+        }
+        return http.getJson(uri, credentials, timeout).map(ConfiguredAiProvider::models);
+    }
+
+    @Override
+    public String modelsUrlForChannel(AiChannelEntity channel) {
+        var baseUrl = resolveBaseUrl(channel);
+        return messages(channel) ? anthropicBaseUrl(baseUrl) + "/models" : baseUrl + "/models";
+    }
+
+    private static boolean messages(AiChannelEntity channel) {
+        return AiProtocol.find(channel.getProtocol())
+                .filter(protocol -> protocol == AiProtocol.MESSAGES)
+                .isPresent();
     }
 
     private static List<AiProviderModel> models(String body) {

@@ -86,6 +86,13 @@ class AiModelImportsTest {
         assertThat(request.getValue().logicalName()).isEqualTo("custom/custom-model");
         assertThat(request.getValue().contextWindow()).isEqualTo(1_048_576);
         assertThat(request.getValue().capabilities()).containsKey("chat");
+        assertThat(details(request.getValue().capabilities(), "chat"))
+                .containsEntry(
+                        "features",
+                        List.of("streaming", "tools", "reasoning", "structured_output"))
+                .containsEntry(
+                        "modalities",
+                        Map.of("input", List.of("text"), "output", List.of("text")));
         verify(channelModels).create(any(AiChannelModelCreateRequest.class));
     }
 
@@ -172,5 +179,10 @@ class AiModelImportsTest {
                 Map.of("upstreamModelKey", "custom-model"),
                 Instant.now(),
                 Instant.now());
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> details(Map<String, Object> capabilities, String key) {
+        return (Map<String, Object>) capabilities.get(key);
     }
 }

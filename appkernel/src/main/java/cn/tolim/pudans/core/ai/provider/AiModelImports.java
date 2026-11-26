@@ -172,6 +172,9 @@ public class AiModelImports {
         if (discovered.features() != null && !discovered.features().isEmpty()) {
             details.put("features", discovered.features());
         }
+        if (discovered.modalities() != null && !discovered.modalities().isEmpty()) {
+            details.put("modalities", discovered.modalities());
+        }
         var capabilities = new LinkedHashMap<String, Object>();
         capabilities.put(type.capability(), Map.copyOf(details));
         return Map.copyOf(capabilities);

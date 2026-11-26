@@ -54,6 +54,13 @@ public class AiProviders {
                 : Optional.of(new ConfiguredAiProvider(provider.trim(), http));
     }
 
+    public Optional<AiProvider> builtIn(String provider) {
+        if (provider == null || provider.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(aliases.get(provider.trim().toLowerCase(Locale.ROOT)));
+    }
+
     public AiProvider require(String provider) {
         return find(provider)
                 .orElseThrow(() -> new ApiException(

@@ -55,6 +55,14 @@ public interface AiProvider {
         return resolveBaseUrl(baseUrl);
     }
 
+    default String modelsUrl(String baseUrl) {
+        return resolveBaseUrl(baseUrl) + "/models";
+    }
+
+    default String modelsUrlForChannel(AiChannelEntity channel) {
+        return modelsUrl(channel.getBaseUrl());
+    }
+
     default Map<String, String> responsesHeaders() {
         return Map.of();
     }
