@@ -21,6 +21,7 @@ import { useConsoleSession } from "../../../composables/_session";
 import { useConsoleTableState } from "../../../composables/_table";
 import { useDashboardTheme } from "../../overview/dashboard/composables/_theme";
 import { SecuritySearchInput } from "../components/security-search-input";
+import { PatPanel } from "./components/pat-panel";
 import { SecretDetailModal } from "./components/secret-detail-modal";
 import { SecretEditorModal } from "./components/secret-editor-modal";
 import { SecretKeyProfile } from "./components/secret-key-profile";
@@ -37,11 +38,12 @@ import {
 
 const { BreadcrumbItem } = Breadcrumb;
 
-type SecretTab = "catalog" | "overview";
+type SecretTab = "catalog" | "overview" | "personalAccessToken";
 
 const SECRET_TAB_OPTIONS: Array<{ label: string; value: SecretTab }> = [
-    { label: "密钥概览", value: "overview" },
     { label: "密钥目录", value: "catalog" },
+    { label: "密钥概览", value: "overview" },
+    { label: "个人访问令牌（API Key）", value: "personalAccessToken" },
 ];
 
 type SecretEditorState = {
@@ -69,7 +71,7 @@ export function SecretsView() {
     const { token } = useDashboardTheme();
     const keyword = table.keyword;
     const typeFilter = table.filters.type ?? "";
-    const [activeTab, setActiveTab] = useState<SecretTab>("overview");
+    const [activeTab, setActiveTab] = useState<SecretTab>("catalog");
     const [selected, setSelected] = useState<SecretCatalogItem>();
     const [editor, setEditor] = useState<SecretEditorState>();
     const catalogQuery = useQuery({
@@ -266,9 +268,11 @@ export function SecretsView() {
                     <BreadcrumbItem>密钥管理</BreadcrumbItem>
                 </Breadcrumb>
                 <div className="flex flex-wrap items-center gap-2">
-                    <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
-                        刷新
-                    </Button>
+                    {activeTab !== "personalAccessToken" ? (
+                        <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
+                            刷新
+                        </Button>
+                    ) : null}
                     {canCreate ? (
                         <Button icon={<AddIcon />} onClick={openCreate} theme="primary">
                             新建密钥
@@ -308,7 +312,7 @@ export function SecretsView() {
                 </div>
             ) : null}
 
-            <div hidden={activeTab !== "catalog"}>
+            {activeTab === "catalog" ? (
                 <SectionCard title="密钥目录">
                     <ConsoleTable
                         cardless
@@ -354,7 +358,9 @@ export function SecretsView() {
                         }
                     />
                 </SectionCard>
-            </div>
+            ) : null}
+
+            {activeTab === "personalAccessToken" ? <PatPanel /> : null}
 
             <SecretDetailModal item={selected} onClose={() => setSelected(undefined)} />
             {editor ? (
