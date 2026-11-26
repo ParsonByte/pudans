@@ -9,7 +9,7 @@ type SectionCardProps = {
     children: ReactNode;
     className?: string;
     extra?: ReactNode;
-    title: ReactNode;
+    title?: ReactNode;
 };
 
 export function SectionCard({ bodyClassName, children, className, extra, title }: SectionCardProps) {

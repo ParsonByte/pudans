@@ -38,7 +38,7 @@ function readCookie(name: string): string | undefined {
     return entry ? decodeURIComponent(entry.slice(prefix.length)) : undefined;
 }
 
-function csrfHeaders(): Record<string, string> {
+export function csrfHeaders(): Record<string, string> {
     const csrfToken = readCookie("XSRF-TOKEN");
 
     return csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {};
