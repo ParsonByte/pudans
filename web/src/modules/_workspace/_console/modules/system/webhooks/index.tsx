@@ -1,19 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { type Webhook, apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AddIcon, HelpCircleIcon, MoreIcon, RefreshIcon } from "tdesign-icons-react";
 import {
     Button,
+    Card,
+    Col,
     Dropdown,
     Empty,
     Form,
     Input,
     InputNumber,
+    Row,
     Select,
     Skeleton,
+    Space,
     Switch,
     Tag,
     Textarea,
@@ -26,13 +30,11 @@ import { usePagination } from "@/hooks/table/use-pagination";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { usePermission } from "@/hooks/utils/use-permission";
 
-import { ConsoleAddCard } from "../../../components/add-card";
 import { ConsoleTable } from "../../../components/console-table";
 import { EmptyValue } from "../../../components/empty-value";
 import { ObjectDetails } from "../../../components/object-details";
 import { PageBreadcrumb } from "../../../components/page-breadcrumb";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatDateTime } from "../../../composables/_format";
 import { useConsoleSession } from "../../../composables/_session";
 import { IdentityDialogFooter } from "../../identity/components/identity-dialog-footer";
 
@@ -102,18 +104,9 @@ const WEBHOOK_STATUS_FILTERS = [
     { label: "最近投递失败", value: "failed" },
 ];
 
-const DELIVERY_STATUS_LABELS: Record<string, string> = {
-    FAILURE: "失败",
-    SUCCESS: "成功",
-};
-
 const EVENTS_HINT = "全部事件表示订阅所有类型；未列出的事件名可在后端补充后在此选择。";
 const SECRET_HINT = "签名密钥加密保存，留空表示沿用已保存的密钥。";
 const TIMEOUT_HINT = "单次投递等待响应的最长时间。";
-
-function webhookEventLabel(event: string) {
-    return WEBHOOK_EVENTS.find((item) => item.value === event)?.label ?? event;
-}
 
 function webhookEnabled(record: WebhookRecord) {
     return record.spec?.enabled !== false;
@@ -311,7 +304,7 @@ export function WebhooksView() {
             cell: ({ row }) => <span className="font-medium">{row.metadata.name}</span>,
             colKey: "name",
             title: "名称",
-            width: 180,
+            width: 200,
         },
         {
             cell: ({ row }) => {
@@ -323,40 +316,12 @@ export function WebhooksView() {
 
                 return (
                     <Tooltip content={url}>
-                        <span className="block max-w-[280px] truncate font-mono text-xs">{url}</span>
+                        <span className="block max-w-[520px] truncate font-mono text-xs">{url}</span>
                     </Tooltip>
                 );
             },
             colKey: "url",
-            title: "地址",
-            width: 300,
-        },
-        {
-            cell: ({ row }) => {
-                const events = row.spec?.events ?? [];
-
-                if (events.length === 0) {
-                    return <EmptyValue text="未订阅" />;
-                }
-
-                return (
-                    <div className="flex flex-wrap gap-1">
-                        {events.slice(0, 3).map((event) => (
-                            <Tag key={event} size="small" variant="light">
-                                {webhookEventLabel(event)}
-                            </Tag>
-                        ))}
-                        {events.length > 3 ? (
-                            <Tag size="small" variant="light">
-                                +{events.length - 3}
-                            </Tag>
-                        ) : null}
-                    </div>
-                );
-            },
-            colKey: "events",
-            title: "事件",
-            width: 240,
+            title: "URL",
         },
         {
             cell: ({ row }) => (
@@ -366,36 +331,7 @@ export function WebhooksView() {
             ),
             colKey: "enabled",
             title: "状态",
-            width: 100,
-        },
-        {
-            cell: ({ row }) => {
-                const status = row.spec?.lastDeliveryStatus;
-
-                if (!status) {
-                    return <EmptyValue text="尚未投递" />;
-                }
-
-                return (
-                    <div className="flex flex-col gap-0.5 text-xs">
-                        <Tag theme={status === "FAILURE" ? "danger" : "success"} variant="light">
-                            {DELIVERY_STATUS_LABELS[status] ?? status}
-                        </Tag>
-                        <span className="text-[var(--td-text-color-placeholder)]">
-                            {formatDateTime(row.spec?.lastDeliveredAt)}
-                        </span>
-                    </div>
-                );
-            },
-            colKey: "delivery",
-            title: "最近投递",
-            width: 160,
-        },
-        {
-            cell: ({ row }) => <span className="tabular-nums">{row.spec?.failureCount ?? 0}</span>,
-            colKey: "failureCount",
-            title: "失败次数",
-            width: 100,
+            width: 120,
         },
         {
             align: "right",
@@ -432,36 +368,129 @@ export function WebhooksView() {
         },
     ];
 
-    if (sessionQuery.isPending) {
-        return <Skeleton animation="gradient" theme="paragraph" />;
-    }
+    let body: ReactNode;
 
-    if (sessionQuery.error) {
-        return (
-            <Empty
-                action={
-                    <Button onClick={() => void sessionQuery.refetch()} variant="outline">
-                        重试
-                    </Button>
+    if (sessionQuery.isPending) {
+        body = <Skeleton animation="gradient" theme="paragraph" />;
+    } else if (sessionQuery.error) {
+        body = (
+            <div className="flex min-h-[520px] flex-col items-center justify-center">
+                <Empty
+                    action={
+                        <Button onClick={() => void sessionQuery.refetch()} variant="outline">
+                            重试
+                        </Button>
+                    }
+                    description={consoleErrorMessage(sessionQuery.error)}
+                    type="network-error"
+                />
+            </div>
+        );
+    } else if (!canView) {
+        body = (
+            <div className="flex min-h-[520px] flex-col items-center justify-center">
+                <Empty description="当前账号没有查看 Webhook 的权限。" type="fail" />
+            </div>
+        );
+    } else if (webhooksQuery.isSuccess && records.length === 0) {
+        body = (
+            <div className="flex min-h-[520px] flex-col items-center justify-center">
+                <Empty
+                    action={
+                        canCreate || canManage ? (
+                            <Button
+                                icon={<AddIcon />}
+                                onClick={() => setEditor({})}
+                                style={{ borderStyle: "dashed", height: 120, width: 160 }}
+                                theme="primary"
+                                variant="outline"
+                            >
+                                新建 Webhook
+                            </Button>
+                        ) : undefined
+                    }
+                    description="暂无 Webhook 配置"
+                />
+            </div>
+        );
+    } else {
+        body = (
+            <ConsoleTable<WebhookRecord>
+                cardless
+                columns={columns}
+                data={pagedRecords}
+                error={webhooksQuery.error}
+                loading={webhooksQuery.isPending}
+                onRetry={refresh}
+                pagination={webhookPaginationConfig(pagination, filteredRecords.length)}
+                rowKey="metadata.name"
+                tableProps={{
+                    onSelectChange: (keys) => setSelectedKeys(keys as (string | number)[]),
+                    selectedRowKeys: selectedKeys,
+                }}
+                title="Webhook 列表"
+                toolbar={
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <Input
+                                clearable
+                                onChange={(value) => {
+                                    setKeyword(value);
+                                    pagination.setPage(1);
+                                }}
+                                placeholder="搜索名称、地址或描述"
+                                style={{ width: 280 }}
+                                value={keyword}
+                            />
+                            <Select
+                                clearable={false}
+                                onChange={(value) => {
+                                    setStatusFilter(String(value) as WebhookStatusFilter);
+                                    pagination.setPage(1);
+                                }}
+                                options={WEBHOOK_STATUS_FILTERS}
+                                style={{ width: 160 }}
+                                value={statusFilter}
+                            />
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {canDelete || canManage ? (
+                                <Dropdown
+                                    disabled={!selectedKeys || selectedKeys.length === 0}
+                                    onClick={(option) => {
+                                        if (
+                                            String(option.value) === "delete" &&
+                                            selectedKeys &&
+                                            selectedKeys.length > 0
+                                        ) {
+                                            confirmBatchDelete(selectedKeys.map((key) => String(key)));
+                                        }
+                                    }}
+                                    options={[{ content: "删除所选", theme: "error", value: "delete" }]}
+                                    placement="bottom-right"
+                                    trigger="click"
+                                >
+                                    <Button disabled={!selectedKeys || selectedKeys.length === 0} variant="outline">
+                                        批量操作
+                                    </Button>
+                                </Dropdown>
+                            ) : null}
+                            <span className="text-xs text-[var(--td-text-color-placeholder)]">
+                                共 {filteredRecords.length} 条
+                            </span>
+                        </div>
+                    </div>
                 }
-                description={consoleErrorMessage(sessionQuery.error)}
-                type="network-error"
             />
         );
     }
 
-    if (!canView) {
-        return <Empty description="当前账号没有查看 Webhook 的权限。" type="fail" />;
-    }
-
-    const listEmpty = webhooksQuery.isSuccess && records.length === 0;
-
     return (
         <>
-            <div className="flex min-w-0 flex-col gap-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-col">
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
                     <PageBreadcrumb current="Webhook" parents={["系统设置"]} />
-                    <div className="flex items-center gap-2">
+                    <Space size={8}>
                         <Button
                             icon={<RefreshIcon />}
                             loading={webhooksQuery.isFetching}
@@ -475,86 +504,17 @@ export function WebhooksView() {
                                 新建 Webhook
                             </Button>
                         ) : null}
-                    </div>
+                    </Space>
                 </div>
-                {listEmpty ? (
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        <ConsoleAddCard onClick={() => setEditor({})} title="新建 Webhook" />
-                    </div>
-                ) : (
-                    <ConsoleTable<WebhookRecord>
-                        columns={columns}
-                        data={pagedRecords}
-                        error={webhooksQuery.error}
-                        loading={webhooksQuery.isPending}
-                        onRetry={refresh}
-                        pagination={webhookPaginationConfig(pagination, filteredRecords.length)}
-                        rowKey="metadata.name"
-                        tableProps={{
-                            onSelectChange: (keys) => setSelectedKeys(keys as (string | number)[]),
-                            selectedRowKeys: selectedKeys,
-                        }}
-                        title="Webhook 列表"
-                        toolbar={
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                    <Input
-                                        clearable
-                                        onChange={(value) => {
-                                            setKeyword(value);
-                                            pagination.setPage(1);
-                                        }}
-                                        placeholder="搜索名称、地址或描述"
-                                        style={{ width: 280 }}
-                                        value={keyword}
-                                    />
-                                    <Select
-                                        clearable={false}
-                                        onChange={(value) => {
-                                            setStatusFilter(String(value) as WebhookStatusFilter);
-                                            pagination.setPage(1);
-                                        }}
-                                        options={WEBHOOK_STATUS_FILTERS}
-                                        style={{ width: 160 }}
-                                        value={statusFilter}
-                                    />
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    {canDelete || canManage ? (
-                                        <Dropdown
-                                            disabled={!selectedKeys || selectedKeys.length === 0}
-                                            onClick={(option) => {
-                                                if (
-                                                    String(option.value) === "delete" &&
-                                                    selectedKeys &&
-                                                    selectedKeys.length > 0
-                                                ) {
-                                                    confirmBatchDelete(selectedKeys.map((key) => String(key)));
-                                                }
-                                            }}
-                                            options={[{ content: "删除所选", theme: "error", value: "delete" }]}
-                                            placement="bottom-right"
-                                            trigger="click"
-                                        >
-                                            <Button
-                                                disabled={!selectedKeys || selectedKeys.length === 0}
-                                                variant="outline"
-                                            >
-                                                批量操作
-                                            </Button>
-                                        </Dropdown>
-                                    ) : null}
-                                    <span className="text-xs text-[var(--td-text-color-placeholder)]">
-                                        共 {filteredRecords.length} 条
-                                    </span>
-                                </div>
-                            </div>
-                        }
-                    />
-                )}
+                <Card
+                    bodyStyle={{ padding: 24 }}
+                    style={{ backgroundColor: "var(--td-bg-color-container)", borderRadius: 8, minHeight: 600 }}
+                >
+                    {body}
+                </Card>
             </div>
             {editor ? (
-                <WebhookDialog
+                <WebhookEditorDialog
                     key={editor.record?.metadata.name ?? "new"}
                     onClose={() => setEditor(undefined)}
                     onSubmit={(values) => saveWebhook.mutate({ record: editor.record, values })}
@@ -616,14 +576,14 @@ function webhookPaginationConfig(pagination: ReturnType<typeof usePagination>, t
     };
 }
 
-type WebhookDialogProps = {
+type WebhookEditorDialogProps = {
     onClose: () => void;
     onSubmit: (values: WebhookFormValues) => void;
     pending: boolean;
     record?: WebhookRecord;
 };
 
-function WebhookDialog({ onClose, onSubmit, pending, record }: WebhookDialogProps) {
+function WebhookEditorDialog({ onClose, onSubmit, pending, record }: WebhookEditorDialogProps) {
     const [form] = Form.useForm();
     const initialData: WebhookFormValues = {
         description: record?.spec?.description,
@@ -634,116 +594,117 @@ function WebhookDialog({ onClose, onSubmit, pending, record }: WebhookDialogProp
         timeoutMillis: record?.spec?.timeoutMillis ?? DEFAULT_TIMEOUT_MILLIS,
         url: record?.spec?.url ?? "",
     };
+    const close = () => {
+        if (!pending) {
+            onClose();
+        }
+    };
+    const labelWithHint = (label: string, hint: string) => (
+        <span className="inline-flex items-center gap-1">
+            {label}
+            <Tooltip content={hint} placement="top-left">
+                <HelpCircleIcon />
+            </Tooltip>
+        </span>
+    );
 
     return (
         <GlobalDialog
             footer={
                 <IdentityDialogFooter
-                    onCancel={onClose}
+                    onCancel={close}
                     onSubmit={() => form.submit()}
                     pending={pending}
                     submitLabel="保存"
                 />
             }
-            onClose={() => {
-                if (!pending) {
-                    onClose();
-                }
-            }}
+            onClose={close}
             open
             title={record ? `编辑 Webhook · ${record.metadata.name}` : "新建 Webhook"}
-            width={640}
+            width={880}
         >
             <Form
                 form={form}
                 initialData={initialData}
-                labelAlign="top"
-                layout="vertical"
+                labelAlign="right"
+                labelWidth={120}
                 onSubmit={({ validateResult }) => {
                     if (validateResult === true) {
                         onSubmit(form.getFieldsValue(true) as WebhookFormValues);
                     }
                 }}
             >
-                <div className="grid gap-x-4 sm:grid-cols-2">
-                    <Form.FormItem
-                        label="名称"
-                        name="name"
-                        rules={[{ message: "请输入名称。", required: true, whitespace: true }]}
-                    >
-                        <Input disabled={Boolean(record)} />
-                    </Form.FormItem>
-                    <Form.FormItem label="启用" name="enabled">
-                        <Switch />
-                    </Form.FormItem>
-                </div>
-                <Form.FormItem
-                    label="地址"
-                    name="url"
-                    rules={[
-                        { message: "请输入地址。", required: true, whitespace: true },
-                        { message: "请输入有效的 URL。", url: true },
-                    ]}
-                >
-                    <Input placeholder="接收事件的地址" />
-                </Form.FormItem>
-                <div className="grid gap-x-4 sm:grid-cols-2">
-                    <Form.FormItem
-                        label={
-                            <span className="flex items-center gap-1">
-                                最大尝试次数
-                                <Tooltip content="投递失败后重试的总次数上限。" placement="top-left">
-                                    <HelpCircleIcon />
-                                </Tooltip>
-                            </span>
-                        }
-                        name="maxAttempts"
-                    >
-                        <InputNumber decimalPlaces={0} min={1} style={{ width: "100%" }} />
-                    </Form.FormItem>
-                    <Form.FormItem
-                        label={
-                            <span className="flex items-center gap-1">
-                                超时
-                                <Tooltip content={TIMEOUT_HINT} placement="top-left">
-                                    <HelpCircleIcon />
-                                </Tooltip>
-                            </span>
-                        }
-                        name="timeoutMillis"
-                    >
-                        <InputNumber decimalPlaces={0} min={1000} step={1000} style={{ width: "100%" }} suffix="毫秒" />
-                    </Form.FormItem>
-                </div>
-                <Form.FormItem
-                    label={
-                        <span className="flex items-center gap-1">
-                            订阅事件
-                            <Tooltip content={EVENTS_HINT} placement="top-left">
-                                <HelpCircleIcon />
-                            </Tooltip>
-                        </span>
-                    }
-                    name="events"
-                >
-                    <Select filterable multiple options={WEBHOOK_EVENTS} placeholder="选择要订阅的事件" />
-                </Form.FormItem>
-                <Form.FormItem label="描述" name="description">
-                    <Textarea autosize={{ maxRows: 4, minRows: 2 }} placeholder="用途说明" />
-                </Form.FormItem>
-                <Form.FormItem
-                    label={
-                        <span className="flex items-center gap-1">
-                            签名密钥
-                            <Tooltip content={SECRET_HINT} placement="top-left">
-                                <HelpCircleIcon />
-                            </Tooltip>
-                        </span>
-                    }
-                    name="secret"
-                >
-                    <Input autocomplete="new-password" type="password" />
-                </Form.FormItem>
+                <Row gutter={[32, 24]}>
+                    <Col span={6}>
+                        <Form.FormItem
+                            className="!mb-0"
+                            label="Webhook 名称"
+                            name="name"
+                            rules={[{ message: "请输入名称。", required: true, whitespace: true }]}
+                        >
+                            <Input disabled={Boolean(record)} />
+                        </Form.FormItem>
+                    </Col>
+                    <Col span={6}>
+                        <Form.FormItem
+                            className="!mb-0"
+                            label="回调地址"
+                            name="url"
+                            rules={[
+                                { message: "请输入回调地址。", required: true, whitespace: true },
+                                { message: "请输入有效的 URL。", url: true },
+                            ]}
+                        >
+                            <Input placeholder="https://example.com/webhook" />
+                        </Form.FormItem>
+                    </Col>
+                    <Col span={6}>
+                        <Form.FormItem className="!mb-0" label={labelWithHint("订阅事件", EVENTS_HINT)} name="events">
+                            <Select filterable multiple options={WEBHOOK_EVENTS} placeholder="选择要订阅的事件" />
+                        </Form.FormItem>
+                    </Col>
+                    <Col span={6}>
+                        <Form.FormItem className="!mb-0" label="启用" name="enabled">
+                            <Switch />
+                        </Form.FormItem>
+                    </Col>
+                    <Col span={6}>
+                        <Form.FormItem
+                            className="!mb-0"
+                            label="最大尝试次数"
+                            name="maxAttempts"
+                            rules={[{ message: "请输入正整数。", min: 1, number: true, required: true }]}
+                        >
+                            <InputNumber decimalPlaces={0} min={1} style={{ width: "100%" }} />
+                        </Form.FormItem>
+                    </Col>
+                    <Col span={6}>
+                        <Form.FormItem
+                            className="!mb-0"
+                            label={labelWithHint("超时", TIMEOUT_HINT)}
+                            name="timeoutMillis"
+                            rules={[{ message: "请输入毫秒数。", min: 1000, number: true, required: true }]}
+                        >
+                            <InputNumber
+                                decimalPlaces={0}
+                                min={1000}
+                                step={1000}
+                                style={{ width: "100%" }}
+                                suffix="毫秒"
+                            />
+                        </Form.FormItem>
+                    </Col>
+                    <Col span={6}>
+                        <Form.FormItem className="!mb-0" label="描述" name="description">
+                            <Textarea autosize={{ maxRows: 4, minRows: 2 }} placeholder="用途说明" />
+                        </Form.FormItem>
+                    </Col>
+                    <Col span={6}>
+                        <Form.FormItem className="!mb-0" label={labelWithHint("签名密钥", SECRET_HINT)} name="secret">
+                            <Input autocomplete="new-password" type="password" />
+                        </Form.FormItem>
+                    </Col>
+                </Row>
             </Form>
         </GlobalDialog>
     );
