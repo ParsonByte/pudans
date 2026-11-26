@@ -104,6 +104,25 @@ tasks.register('validateOpenApiDocs') {
         assert paths.any { it.endsWith('/personalaccesstokens') }: 'API must expose personal access tokens'
         assert paths.any { it.contains('/authentications/two-factor/settings') }: 'API must expose two-factor settings'
         assert paths.any { it.contains('feishu') }: 'API must expose Feishu OAuth2 endpoints'
+        assert paths.any { it.endsWith('/aiproviders') }: 'API must expose AI providers'
+        assert paths.any { it.endsWith('/aichannels') }: 'API must expose AI channels'
+        assert paths.any { it.endsWith('/aichannels/{name}/-/models') }: 'API must expose AI model discovery'
+        assert paths.any { it.endsWith('/aimodels') }: 'API must expose AI models'
+        assert paths.any { it.endsWith('/aichannelmodels') }: 'API must expose AI channel models'
+        def aiListSchemas = [
+                'aichannels'     : 'AiChannel',
+                'aimodels'       : 'AiModel',
+                'aichannelmodels': 'AiChannelModel',
+                'aiproviders'    : 'AiProviderDescriptor',
+        ]
+        aiListSchemas.each { path, schema ->
+            def responseSchema = parsed['apis_api_v1alpha1.json']
+                    .paths["${apiPrefix}${path}".toString()]
+                    .get.responses.'200'.content.'*/*'.schema
+            assert responseSchema.type == 'array' : "AI list response must be an array: ${path}"
+            assert responseSchema.items?.getAt('$ref')?.endsWith("/${schema}") :
+                    "AI list response schema mismatch for ${path}; expected ${schema}"
+        }
         assert !paths.any { it.contains('/systemconfigs/') }:
                 'Deprecated /systemconfigs routes must not be published'
     }

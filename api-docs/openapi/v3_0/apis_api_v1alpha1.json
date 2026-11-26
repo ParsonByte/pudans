@@ -7052,6 +7052,1674 @@
         "security": []
       },
       "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannelmodels": {
+      "get": {
+        "description": "List AI channel to model mappings.",
+        "operationId": "listAiChannelModels",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiChannelModel"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "AiChannelModelV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create an AI channel to model mapping.",
+        "operationId": "createAiChannelModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChannelModelCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChannelModel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelModelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannelmodels/{name}": {
+      "delete": {
+        "description": "Delete an AI channel to model mapping.",
+        "operationId": "deleteAiChannelModel",
+        "responses": {
+          "204": {
+            "description": "Mapping deleted"
+          }
+        },
+        "tags": [
+          "AiChannelModelV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get an AI channel to model mapping.",
+        "operationId": "getAiChannelModel",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChannelModel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelModelV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Update an AI channel to model mapping.",
+        "operationId": "updateAiChannelModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChannelModelUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChannelModel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelModelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels": {
+      "get": {
+        "description": "List AI channels in the current workspace without credentials.",
+        "operationId": "listAiChannels",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiChannel"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "AiChannelV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create an AI channel with write-only credentials.",
+        "operationId": "createAiChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChannelCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChannel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/-/all": {
+      "get": {
+        "description": "List AI channels across the platform for administration without credentials.",
+        "operationId": "listAllAiChannels",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiChannel"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "AiChannelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}": {
+      "delete": {
+        "description": "Delete an AI channel that is not referenced by a model mapping.",
+        "operationId": "deleteAiChannel",
+        "responses": {
+          "204": {
+            "description": "AI channel deleted"
+          }
+        },
+        "tags": [
+          "AiChannelV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get an AI channel without credentials.",
+        "operationId": "getAiChannel",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChannel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Update an AI channel; empty credentials keep the stored value.",
+        "operationId": "updateAiChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChannelUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChannel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/anthropic-files": {
+      "get": {
+        "description": "List files through the DeepSeek Anthropic-compatible Files API.",
+        "operationId": "listAiChannelAnthropicFiles",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAnthropicFilePage"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Upload a file through the DeepSeek Anthropic-compatible Files API.",
+        "operationId": "uploadAiChannelAnthropicFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {}
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAnthropicFile"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/anthropic-files/{fileId}": {
+      "delete": {
+        "description": "Delete a file through the DeepSeek Anthropic-compatible Files API.",
+        "operationId": "deleteAiChannelAnthropicFile",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAnthropicFileDeletion"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Retrieve a file through the DeepSeek Anthropic-compatible Files API.",
+        "operationId": "getAiChannelAnthropicFile",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiAnthropicFile"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/anthropic/messages": {
+      "post": {
+        "description": "Call the DeepSeek Anthropic Messages compatibility alias with a raw JSON body.",
+        "operationId": "createAiChannelAnthropicMessage",
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider JSON"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/asr": {
+      "post": {
+        "description": "Transcribe audio through the DeepSeek Speech to Text API.",
+        "operationId": "transcribeAiChannelAudio",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {}
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiTranscriptionResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/balance": {
+      "get": {
+        "description": "Get the DeepSeek account balance.",
+        "operationId": "getAiChannelBalance",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiBalance"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/chat-completions": {
+      "post": {
+        "description": "Call the DeepSeek Chat Completions API with a raw JSON body.",
+        "operationId": "createAiChannelChatCompletion",
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider JSON"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/fetch": {
+      "post": {
+        "description": "Fetch a web page through the DeepSeek Fetch API.",
+        "operationId": "fetchAiChannelUrl",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiFetchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiFetchResponse"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/files": {
+      "get": {
+        "description": "List files through the DeepSeek OpenAI-compatible Files API.",
+        "operationId": "listAiChannelFiles",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiFilePage"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Upload a file through the DeepSeek OpenAI-compatible Files API.",
+        "operationId": "uploadAiChannelFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {}
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiFile"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/files/{fileId}": {
+      "delete": {
+        "description": "Delete a file through the DeepSeek OpenAI-compatible Files API.",
+        "operationId": "deleteAiChannelFile",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiFileDeletion"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Retrieve a file through the DeepSeek OpenAI-compatible Files API.",
+        "operationId": "getAiChannelFile",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiFile"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/fim": {
+      "post": {
+        "description": "Create a DeepSeek FIM completion, optionally as server-sent events.",
+        "operationId": "completeAiChannelFim",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiFimRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiFimResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/messages": {
+      "post": {
+        "description": "Call the DeepSeek Anthropic Messages API with a raw JSON body.",
+        "operationId": "createAiChannelMessage",
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider JSON"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/models": {
+      "get": {
+        "description": "Discover upstream model identifiers returned by the provider.",
+        "operationId": "discoverAiChannelModels",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModelDiscovery"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Import selected discovered models and bind them to the channel.",
+        "operationId": "importAiChannelModels",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiModelImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModelImportResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/ocr": {
+      "post": {
+        "description": "Recognize a document or image through the DeepSeek OCR API.",
+        "operationId": "ocrAiChannelFile",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {}
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiOcrResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/responses": {
+      "post": {
+        "description": "Call the DeepSeek Responses API with a raw JSON body.",
+        "operationId": "createAiChannelResponse",
+        "requestBody": {
+          "content": {
+            "application/json": {}
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Provider JSON"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/search": {
+      "post": {
+        "description": "Search the web through the DeepSeek Search API.",
+        "operationId": "searchAiChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiSearchResponse"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/test": {
+      "post": {
+        "description": "Test an AI channel with its resolved credentials.",
+        "operationId": "testAiChannel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChannelTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChannelTestResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiChannelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/tts": {
+      "post": {
+        "description": "Synthesize speech through the DeepSeek Text to Speech API.",
+        "operationId": "synthesizeAiChannelSpeech",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiSpeechRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Audio stream"
+          }
+        },
+        "tags": [
+          "AiChannelCapabilityV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aidefaultmodels": {
+      "get": {
+        "description": "List default models configured for the current workspace.",
+        "operationId": "listAiDefaultModels",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiDefaultModel"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "AiDefaultModelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aidefaultmodels/-/all": {
+      "get": {
+        "description": "List default models across the platform for administration.",
+        "operationId": "listAllAiDefaultModels",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiDefaultModel"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "AiDefaultModelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aidefaultmodels/{capability}": {
+      "put": {
+        "description": "Set the default model for a capability in the current workspace.",
+        "operationId": "putAiDefaultModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiDefaultModelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiDefaultModel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiDefaultModelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aimodels": {
+      "get": {
+        "description": "List AI logical models and their parameter schemas.",
+        "operationId": "listAiModels",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiModel"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "AiModelV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create an AI logical model.",
+        "operationId": "createAiModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiModelCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiModelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aimodels/{name}": {
+      "delete": {
+        "description": "Delete an AI model that is not referenced by configuration.",
+        "operationId": "deleteAiModel",
+        "responses": {
+          "204": {
+            "description": "AI model deleted"
+          }
+        },
+        "tags": [
+          "AiModelV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get an AI logical model.",
+        "operationId": "getAiModel",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiModelV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Update an AI logical model.",
+        "operationId": "updateAiModel",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiModelUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiModel"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiModelV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aipricerules": {
+      "get": {
+        "description": "List AI model and MCP price rules.",
+        "operationId": "listAiPriceRules",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiPriceRule"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "AiPriceRuleV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create a non-overlapping AI price rule.",
+        "operationId": "createAiPriceRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiPriceRuleCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPriceRule"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPriceRuleV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aipricerules/{name}": {
+      "delete": {
+        "description": "Delete a price rule that is not referenced by usage records.",
+        "operationId": "deleteAiPriceRule",
+        "responses": {
+          "204": {
+            "description": "Price rule deleted"
+          }
+        },
+        "tags": [
+          "AiPriceRuleV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get an AI price rule.",
+        "operationId": "getAiPriceRule",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPriceRule"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPriceRuleV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Update an AI price rule without overlapping its effective range.",
+        "operationId": "updateAiPriceRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiPriceRuleUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPriceRule"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPriceRuleV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiprotocols": {
+      "get": {
+        "description": "List AI protocol descriptors and runtime support.",
+        "operationId": "listAiProtocols",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiProtocolDescriptor"
+                  }
+                }
+              }
+            },
+            "description": "AI protocols"
+          }
+        },
+        "tags": [
+          "AiProtocolV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiproviders": {
+      "get": {
+        "description": "List built-in AI providers, protocols and default endpoints.",
+        "operationId": "listAiProviders",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiProviderDescriptor"
+                  }
+                }
+              }
+            },
+            "description": "AI providers"
+          }
+        },
+        "tags": [
+          "AiProviderV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiquotaassignments": {
+      "get": {
+        "description": "List AI quota assignments.",
+        "operationId": "listAiQuotaAssignments",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiQuotaAssignment"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "AiQuotaAssignmentV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Assign an AI quota plan to a user, workspace or role.",
+        "operationId": "createAiQuotaAssignment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiQuotaAssignmentCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiQuotaAssignment"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiQuotaAssignmentV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiquotaassignments/-/resolve": {
+      "get": {
+        "description": "Resolve the active quota assignment for an explicit subject.",
+        "operationId": "resolveAiQuotaAssignment",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolvedQuota"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiQuotaAssignmentV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiquotaassignments/{name}": {
+      "delete": {
+        "description": "Delete an AI quota assignment.",
+        "operationId": "deleteAiQuotaAssignment",
+        "responses": {
+          "204": {
+            "description": "Assignment deleted"
+          }
+        },
+        "tags": [
+          "AiQuotaAssignmentV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get an AI quota assignment.",
+        "operationId": "getAiQuotaAssignment",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiQuotaAssignment"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiQuotaAssignmentV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Update an AI quota assignment.",
+        "operationId": "updateAiQuotaAssignment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiQuotaAssignmentUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiQuotaAssignment"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiQuotaAssignmentV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiquotaplans": {
+      "get": {
+        "description": "List AI quota plans.",
+        "operationId": "listAiQuotaPlans",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiQuotaPlan"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "AiQuotaPlanV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create an AI quota plan with fixed five-hour and weekly windows.",
+        "operationId": "createAiQuotaPlan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiQuotaPlanCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiQuotaPlan"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiQuotaPlanV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiquotaplans/{name}": {
+      "delete": {
+        "description": "Delete a quota plan that is not assigned or reserved.",
+        "operationId": "deleteAiQuotaPlan",
+        "responses": {
+          "204": {
+            "description": "Quota plan deleted"
+          }
+        },
+        "tags": [
+          "AiQuotaPlanV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get an AI quota plan.",
+        "operationId": "getAiQuotaPlan",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiQuotaPlan"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiQuotaPlanV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Update an AI quota plan.",
+        "operationId": "updateAiQuotaPlan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiQuotaPlanUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiQuotaPlan"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiQuotaPlanV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogentries": {
+      "get": {
+        "description": "List catalog entries, optionally filtered by catalog kind.",
+        "operationId": "listCatalogEntries",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogEntry"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "CatalogEntryV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create a catalog entry.",
+        "operationId": "createCatalogEntry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogEntryCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogEntry"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "CatalogEntryV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogentries/{name}": {
+      "delete": {
+        "description": "Delete a catalog entry.",
+        "operationId": "deleteCatalogEntry",
+        "responses": {
+          "204": {
+            "description": "Catalog entry deleted"
+          }
+        },
+        "tags": [
+          "CatalogEntryV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get a catalog entry.",
+        "operationId": "getCatalogEntry",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogEntry"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "CatalogEntryV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Update a catalog entry.",
+        "operationId": "updateCatalogEntry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogEntryUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogEntry"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "CatalogEntryV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogs/-/chat": {
+      "get": {
+        "description": "Get chat modes, reasoning levels, available models and tools.",
+        "operationId": "getAiChatCatalog",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiChatCatalog"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiCatalogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogs/-/creation": {
+      "get": {
+        "description": "Get creation media modes, operations and model parameter schemas.",
+        "operationId": "getAiCreationCatalog",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiCreationCatalog"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiCatalogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogs/-/memory": {
+      "get": {
+        "description": "Get dynamic memory types and layers.",
+        "operationId": "getAiMemoryCatalog",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiMemoryCatalog"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiCatalogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogs/-/models": {
+      "get": {
+        "description": "List active models with a healthy channel in the current workspace.",
+        "operationId": "listAiCatalogModels",
+        "responses": {
+          "200": {
+            "description": "Available models"
+          }
+        },
+        "tags": [
+          "AiCatalogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogs/-/sandbox": {
+      "get": {
+        "description": "Get dynamic sandbox providers, templates and resource profiles.",
+        "operationId": "getAiSandboxCatalog",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiSandboxCatalog"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiCatalogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogs/-/skills": {
+      "get": {
+        "description": "List skills registered by the running capability registry.",
+        "operationId": "listAiCatalogSkills",
+        "responses": {
+          "200": {
+            "description": "Available skills"
+          }
+        },
+        "tags": [
+          "AiCatalogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogs/-/tools": {
+      "get": {
+        "description": "List tools registered by the running capability registry.",
+        "operationId": "listAiCatalogTools",
+        "responses": {
+          "200": {
+            "description": "Available tools"
+          }
+        },
+        "tags": [
+          "AiCatalogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/catalogs/-/understanding": {
+      "get": {
+        "description": "Get dynamic understanding dimensions.",
+        "operationId": "getAiUnderstandingCatalog",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiUnderstandingCatalog"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiCatalogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/quotas/-/snapshot": {
+      "get": {
+        "description": "Get the effective quota snapshot for the current subject.",
+        "operationId": "getAiQuotaSnapshot",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiQuotaSnapshot"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiQuotaV1alpha1"
+        ]
+      }
     }
   },
   "components": {
@@ -9024,9 +10692,9 @@
       "ListedUser": {
         "type": "object",
         "properties": {
-      "avatar": {
-        "type": "string"
-      },
+          "avatar": {
+            "type": "string"
+          },
           "disabled": {
             "type": "boolean"
           },
@@ -12041,6 +13709,2072 @@
           },
           "type": {
             "type": "string"
+          }
+        }
+      },
+      "AiAnthropicFile": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "AiAnthropicFileDeletion": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      },
+      "AiAnthropicFilePage": {
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiAnthropicFile"
+            }
+          },
+          "first_id": {
+            "type": "string"
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "last_id": {
+            "type": "string"
+          }
+        }
+      },
+      "AiBalance": {
+        "properties": {
+          "balance_infos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiBalanceInfo"
+            }
+          },
+          "is_available": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AiBalanceInfo": {
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "granted_balance": {
+            "type": "string"
+          },
+          "topped_up_balance": {
+            "type": "string"
+          },
+          "total_balance": {
+            "type": "string"
+          }
+        }
+      },
+      "AiCatalogItem": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "parentKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiChannel": {
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "credentialConfigured": {
+            "type": "boolean"
+          },
+          "credentialStatus": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maxConcurrency": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "rateLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "secretRef": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "workspaceId": {
+            "type": "string"
+          }
+        }
+      },
+      "AiChannelCreateRequest": {
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "credentials": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "maxConcurrency": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "rateLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "secretKeys": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "secretRef": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiChannelModel": {
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parameterOverrides": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "providerMetadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "upstreamModelKey": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiChannelModelCreateRequest": {
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "modelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parameterOverrides": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "providerMetadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "upstreamModelKey": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiChannelModelUpdateRequest": {
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "modelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parameterOverrides": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "providerMetadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "upstreamModelKey": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiChannelTestRequest": {
+        "properties": {
+          "model": {
+            "type": "string"
+          }
+        }
+      },
+      "AiChannelTestResult": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "statusCode": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "testedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AiChannelUpdateRequest": {
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "credentials": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "maxConcurrency": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "rateLimit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "secretKeys": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "secretRef": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiChatCatalog": {
+        "properties": {
+          "answerModes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiModelCatalogItem"
+            }
+          },
+          "reasoningLevels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiToolDescriptor"
+            }
+          }
+        }
+      },
+      "AiCreationCatalog": {
+        "properties": {
+          "mediaModes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCreationMediaMode"
+            }
+          }
+        }
+      },
+      "AiCreationMediaMode": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCreationModel"
+            }
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          },
+          "parameterOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          }
+        }
+      },
+      "AiCreationModel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "parameterSchema": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "AiDefaultModel": {
+        "properties": {
+          "capability": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "modelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "workspaceId": {
+            "type": "string"
+          }
+        }
+      },
+      "AiDefaultModelRequest": {
+        "properties": {
+          "modelId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "AiDiscoveredModel": {
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "catalog": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "catalogStatus": {
+            "type": "string"
+          },
+          "contextWindow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "importedModelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maxOutputTokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modalities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "modelType": {
+            "type": "string"
+          },
+          "parameterSchema": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "protocols": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "source": {
+            "type": "string"
+          },
+          "upstreamModelKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AiFetchRequest": {
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "AiFetchResponse": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "AiFile": {
+        "properties": {
+          "bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expires_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          }
+        }
+      },
+      "AiFileDeletion": {
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          }
+        }
+      },
+      "AiFilePage": {
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiFile"
+            }
+          },
+          "first_id": {
+            "type": "string"
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "last_id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          }
+        }
+      },
+      "AiFimChoice": {
+        "properties": {
+          "finish_reason": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "logprobs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "AiFimRequest": {
+        "properties": {
+          "echo": {
+            "type": "boolean"
+          },
+          "logprobs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "max_tokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "model": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "stop": {
+            "type": "object"
+          },
+          "stream": {
+            "type": "boolean"
+          },
+          "stream_options": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "suffix": {
+            "type": "string"
+          },
+          "temperature": {
+            "type": "number",
+            "format": "double"
+          },
+          "top_p": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "AiFimResult": {
+        "properties": {
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiFimChoice"
+            }
+          },
+          "created": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "system_fingerprint": {
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AiFimUsage"
+          }
+        }
+      },
+      "AiFimUsage": {
+        "properties": {
+          "completion_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "completion_tokens_details": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "prompt_cache_hit_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "prompt_cache_miss_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "prompt_tokens_details": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "safety_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "server_tool_use": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "total_tokens": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AiMemoryCatalog": {
+        "properties": {
+          "layers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          }
+        }
+      },
+      "AiModel": {
+        "properties": {
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "contextWindow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "maxOutputTokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parameterSchema": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AiModelCatalogItem": {
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "contextWindow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "maxOutputTokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parameterSchema": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "AiModelCreateRequest": {
+        "properties": {
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "contextWindow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "maxOutputTokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parameterSchema": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "AiModelDiscovery": {
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "catalogFetchedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "catalogProvider": {
+            "type": "string"
+          },
+          "channelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "discoveredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiDiscoveredModel"
+            }
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "providerDisplayName": {
+            "type": "string"
+          },
+          "workspaceId": {
+            "type": "string"
+          }
+        }
+      },
+      "AiModelImportRequest": {
+        "properties": {
+          "modelKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AiModelImportResult": {
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "discovered": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "importedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "skipped": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiModelUpdateRequest": {
+        "properties": {
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "contextWindow": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "logicalName": {
+            "type": "string"
+          },
+          "maxOutputTokens": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parameterSchema": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "AiOcrPage": {
+        "properties": {
+          "finish_reason": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "AiOcrResult": {
+        "properties": {
+          "created": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "page_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiOcrPage"
+            }
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AiOcrUsage"
+          }
+        }
+      },
+      "AiOcrUsage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_tokens": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AiPeakWindow": {
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "end": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          },
+          "zone": {
+            "type": "string"
+          }
+        }
+      },
+      "AiPriceRule": {
+        "properties": {
+          "baseCredits": {
+            "type": "number"
+          },
+          "cachedInputCoefficient": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inputCoefficient": {
+            "type": "number"
+          },
+          "mcpCallCoefficient": {
+            "type": "number"
+          },
+          "mcpToolKey": {
+            "type": "string"
+          },
+          "minimumCredits": {
+            "type": "number"
+          },
+          "modelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offpeakMultiplier": {
+            "type": "number"
+          },
+          "outputCoefficient": {
+            "type": "number"
+          },
+          "peakMultiplier": {
+            "type": "number"
+          },
+          "peakWindows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiPeakWindow"
+            }
+          },
+          "pricingMode": {
+            "type": "string"
+          },
+          "quotaBucket": {
+            "type": "string"
+          },
+          "targetKey": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unitCredits": {
+            "type": "number"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AiPriceRuleCreateRequest": {
+        "properties": {
+          "baseCredits": {
+            "type": "number"
+          },
+          "cachedInputCoefficient": {
+            "type": "number"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inputCoefficient": {
+            "type": "number"
+          },
+          "mcpCallCoefficient": {
+            "type": "number"
+          },
+          "mcpToolKey": {
+            "type": "string"
+          },
+          "minimumCredits": {
+            "type": "number"
+          },
+          "modelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offpeakMultiplier": {
+            "type": "number"
+          },
+          "outputCoefficient": {
+            "type": "number"
+          },
+          "peakMultiplier": {
+            "type": "number"
+          },
+          "peakWindows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiPeakWindow"
+            }
+          },
+          "pricingMode": {
+            "type": "string"
+          },
+          "quotaBucket": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unitCredits": {
+            "type": "number"
+          }
+        }
+      },
+      "AiPriceRuleUpdateRequest": {
+        "properties": {
+          "baseCredits": {
+            "type": "number"
+          },
+          "cachedInputCoefficient": {
+            "type": "number"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inputCoefficient": {
+            "type": "number"
+          },
+          "mcpCallCoefficient": {
+            "type": "number"
+          },
+          "mcpToolKey": {
+            "type": "string"
+          },
+          "minimumCredits": {
+            "type": "number"
+          },
+          "modelId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "offpeakMultiplier": {
+            "type": "number"
+          },
+          "outputCoefficient": {
+            "type": "number"
+          },
+          "peakMultiplier": {
+            "type": "number"
+          },
+          "peakWindows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiPeakWindow"
+            }
+          },
+          "pricingMode": {
+            "type": "string"
+          },
+          "quotaBucket": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unitCredits": {
+            "type": "number"
+          }
+        }
+      },
+      "AiProtocolDescriptor": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "requestPath": {
+            "type": "string"
+          },
+          "runtimeSupported": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AiProviderCapability": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "AiProviderDescriptor": {
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiProviderCapability"
+            }
+          },
+          "catalogProviders": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultBaseUrl": {
+            "type": "string"
+          },
+          "defaultProtocol": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "documentationUrl": {
+            "type": "string"
+          },
+          "modelTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "protocols": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "provider": {
+            "type": "string"
+          },
+          "requiresBaseUrl": {
+            "type": "boolean"
+          },
+          "websiteUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "AiQuotaAssignment": {
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subjectId": {
+            "type": "string"
+          },
+          "subjectType": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "weeklyAnchorAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AiQuotaAssignmentCreateRequest": {
+        "properties": {
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subjectId": {
+            "type": "string"
+          },
+          "subjectType": {
+            "type": "string"
+          },
+          "weeklyAnchorAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AiQuotaAssignmentUpdateRequest": {
+        "properties": {
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "planId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subjectId": {
+            "type": "string"
+          },
+          "subjectType": {
+            "type": "string"
+          },
+          "weeklyAnchorAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AiQuotaBucket": {
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "remainingPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resetLabel": {
+            "type": "string"
+          },
+          "resetsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "used": {
+            "type": "number"
+          }
+        }
+      },
+      "AiQuotaPlan": {
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "fiveHourCredits": {
+            "type": "number"
+          },
+          "fiveHourMcpCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fiveHourToolCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fiveHourWindowSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "weeklyAnchorMode": {
+            "type": "string"
+          },
+          "weeklyCredits": {
+            "type": "number"
+          },
+          "weeklyMcpCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weeklyToolCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weeklyWindowDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiQuotaPlanCreateRequest": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "fiveHourCredits": {
+            "type": "number"
+          },
+          "fiveHourMcpCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fiveHourToolCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fiveHourWindowSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "weeklyAnchorMode": {
+            "type": "string"
+          },
+          "weeklyCredits": {
+            "type": "number"
+          },
+          "weeklyMcpCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weeklyToolCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weeklyWindowDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiQuotaPlanUpdateRequest": {
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "fiveHourCredits": {
+            "type": "number"
+          },
+          "fiveHourMcpCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fiveHourToolCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fiveHourWindowSeconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "weeklyAnchorMode": {
+            "type": "string"
+          },
+          "weeklyCredits": {
+            "type": "number"
+          },
+          "weeklyMcpCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weeklyToolCalls": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weeklyWindowDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiQuotaSnapshot": {
+        "properties": {
+          "fiveHour": {
+            "$ref": "#/components/schemas/AiQuotaBucket"
+          },
+          "mcp": {
+            "$ref": "#/components/schemas/AiQuotaBucket"
+          },
+          "toolCalls": {
+            "$ref": "#/components/schemas/AiQuotaBucket"
+          },
+          "weekly": {
+            "$ref": "#/components/schemas/AiQuotaBucket"
+          }
+        }
+      },
+      "AiSandboxCatalog": {
+        "properties": {
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          },
+          "resourceProfiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          },
+          "templates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          }
+        }
+      },
+      "AiSearchRequest": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "localization": {
+            "type": "string"
+          },
+          "need_content": {
+            "type": "boolean"
+          },
+          "ori_question": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          }
+        }
+      },
+      "AiSearchResponse": {
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiSearchResult"
+            }
+          }
+        }
+      },
+      "AiSearchResult": {
+        "properties": {
+          "authority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rerank_score": {
+            "type": "number",
+            "format": "double"
+          },
+          "site_icon": {
+            "type": "string"
+          },
+          "site_name": {
+            "type": "string"
+          },
+          "snippet": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "AiSpeechRequest": {
+        "properties": {
+          "filter_markdown": {
+            "type": "boolean"
+          },
+          "format": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "voice_id": {
+            "type": "string"
+          }
+        }
+      },
+      "AiToolDescriptor": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "AiTranscriptionResult": {
+        "properties": {
+          "duration_ms": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "AiUnderstandingCatalog": {
+        "properties": {
+          "dimensions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiCatalogItem"
+            }
+          }
+        }
+      },
+      "CatalogEntry": {
+        "properties": {
+          "catalogKind": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "entryKey": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "parentKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validTo": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CatalogEntryCreateRequest": {
+        "properties": {
+          "catalogKind": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "entryKey": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "parentKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validTo": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CatalogEntryUpdateRequest": {
+        "properties": {
+          "catalogKind": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "entryKey": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "parentKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validTo": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResolvedQuota": {
+        "properties": {
+          "assignment": {
+            "$ref": "#/components/schemas/AiQuotaAssignment"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AiQuotaPlan"
           }
         }
       }

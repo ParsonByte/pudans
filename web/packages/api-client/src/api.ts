@@ -14,6 +14,18 @@
 
 
 
+export * from './api/ai-catalog-v1alpha1-api';
+export * from './api/ai-channel-capability-v1alpha1-api';
+export * from './api/ai-channel-model-v1alpha1-api';
+export * from './api/ai-channel-v1alpha1-api';
+export * from './api/ai-default-model-v1alpha1-api';
+export * from './api/ai-model-v1alpha1-api';
+export * from './api/ai-price-rule-v1alpha1-api';
+export * from './api/ai-protocol-v1alpha1-api';
+export * from './api/ai-provider-v1alpha1-api';
+export * from './api/ai-quota-assignment-v1alpha1-api';
+export * from './api/ai-quota-plan-v1alpha1-api';
+export * from './api/ai-quota-v1alpha1-api';
 export * from './api/annotation-setting-v1alpha1-api';
 export * from './api/audit-log-v1alpha1-api';
 export * from './api/auth-provider-v1alpha1-api';
@@ -21,6 +33,7 @@ export * from './api/auth-token-v1alpha1-api';
 export * from './api/authentication-v1alpha1-api';
 export * from './api/avatar-v1alpha1-api';
 export * from './api/captcha-v1alpha1-api';
+export * from './api/catalog-entry-v1alpha1-api';
 export * from './api/config-map-v1alpha1-api';
 export * from './api/dashboard-v1alpha1-api';
 export * from './api/device-v1alpha1-api';
