@@ -26,6 +26,7 @@ public enum AiSupport {
             "audio",
             "embedding",
             "rerank",
+            "3d",
             "transcription",
             "memory_extraction");
 

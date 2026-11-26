@@ -128,6 +128,57 @@ class AiModelDiscoveriesTest {
                 .verifyComplete();
     }
 
+    @Test
+    void passesProviderReturnedMetadataIntoTheDiscovery() {
+        var channel = channel("deepseek");
+        var provider = new StubProvider(
+                "deepseek",
+                List.of(new AiProviderModel(
+                        "deepseek-flash",
+                        "DeepSeek V4.1 Flash",
+                        AiModelType.CHAT,
+                        "provider",
+                        1_048_576,
+                        393_216,
+                        List.of("text", "image"),
+                        List.of("text"),
+                        List.of("reasoning", "vision"),
+                        Map.of(
+                                "version", "DeepSeek-V4.1-Flash-1017",
+                                "releasedAt", "2026-10-17",
+                                "pricing", Map.of("unit", "USD/1M tokens"),
+                                "retired", true))));
+        when(channels.findByWorkspaceAndId(WORKSPACE, channel.getId()))
+                .thenReturn(Mono.just(channel));
+        when(secrets.resolve(channel)).thenReturn(Mono.just(Map.of("apiKey", "secret")));
+        when(providers.require("deepseek")).thenReturn(provider);
+        when(models.findAll()).thenReturn(Flux.empty());
+
+        var discoveries = new AiModelDiscoveries(channels, secrets, providers, models);
+
+        StepVerifier.create(discoveries.discover(WORKSPACE, channel.getId()))
+                .assertNext(result -> {
+                    var model = result.models().getFirst();
+                    assertThat(model.contextWindow()).isEqualTo(1_048_576);
+                    assertThat(model.maxOutputTokens()).isEqualTo(393_216);
+                    assertThat(model.features()).containsExactly("reasoning", "vision");
+                    assertThat(model.modalities())
+                            .isEqualTo(Map.of(
+                                    "input", List.of("text", "image"),
+                                    "output", List.of("text")));
+                    assertThat(model.catalog())
+                            .containsEntry("provider", "deepseek")
+                            .containsEntry("model", "deepseek-flash")
+                            .containsEntry("source", "provider")
+                            .containsEntry("version", "DeepSeek-V4.1-Flash-1017")
+                            .containsEntry("releasedAt", "2026-10-17")
+                            .containsEntry("retired", true)
+                            .containsEntry("pricing", Map.of("unit", "USD/1M tokens"));
+                    assertThat(model.catalogStatus()).isEqualTo("retired");
+                })
+                .verifyComplete();
+    }
+
     private static AiChannelEntity channel(String provider) {
         var channel = new AiChannelEntity();
         channel.setId(UUID.randomUUID());
