@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -27,6 +28,7 @@ public class GenerationTaskLeases {
 
     private final Duration heartbeatInterval;
 
+    @Autowired
     public GenerationTaskLeases(
             ReactiveRedisTokenLease leases, ReactiveStringRedisTemplate redisTemplate) {
         this(leases, redisTemplate, DEFAULT_TTL, DEFAULT_HEARTBEAT_INTERVAL);

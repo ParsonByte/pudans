@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.creation.task;
 import cn.tolim.pudans.contract.creation.GenerationTask;
 import java.time.Duration;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -16,6 +17,7 @@ public class GenerationTaskCancellations {
 
     private final Duration ttl;
 
+    @Autowired
     public GenerationTaskCancellations(ReactiveStringRedisTemplate redisTemplate) {
         this(redisTemplate, DEFAULT_TTL);
     }
