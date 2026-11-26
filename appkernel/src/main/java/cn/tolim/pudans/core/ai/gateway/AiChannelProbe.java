@@ -3,31 +3,28 @@ package cn.tolim.pudans.core.ai.gateway;
 import cn.tolim.pudans.contract.ai.dto.AiChannelTestResult;
 import cn.tolim.pudans.core.ai.protocol.AiProtocol;
 import cn.tolim.pudans.core.ai.protocol.systemone.SystemOneDecisionClient;
+import cn.tolim.pudans.core.ai.provider.AiProviderAuth;
+import cn.tolim.pudans.core.ai.provider.AiProviderHttp;
 import cn.tolim.pudans.core.ai.provider.AiProviders;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
 import cn.tolim.pudans.infra.r2dbc.ai.AiChannelEntity;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientRequestException;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 @Component
 public class AiChannelProbe {
 
-    private static final Set<String> OPENAI_COMPATIBLE =
-            Set.of("openai", "openai-compatible", "openai_compatible");
-
     private static final String API_KEY = "apiKey";
 
-    private final WebClient webClient;
+    private final AiProviderHttp http;
 
     private final AiProperties properties;
 
@@ -37,36 +34,20 @@ public class AiChannelProbe {
 
     public AiChannelProbe(
             AiProperties properties,
-            WebClient.Builder builder,
+            AiProviderHttp http,
             AiProviders providers,
             SystemOneDecisionClient decisions) {
         this.properties = properties;
+        this.http = http;
         this.providers = providers;
         this.decisions = decisions;
-        this.webClient = builder
-                .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(
-                        reactor.netty.http.client.HttpClient.create()
-                                .option(
-                                        io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS,
-                                        (int) properties.getConnectTimeout().toMillis())
-                                .responseTimeout(properties.getResponseTimeout())))
-                .build();
     }
 
     public Mono<AiChannelTestResult> test(
-            AiChannelEntity channel, Map<String, String> credentials) {
+            AiChannelEntity channel, Map<String, String> credentials, String model) {
         var protocol = channel.getProtocol() == null ? "" : channel.getProtocol().trim().toLowerCase();
         if (AiProtocol.find(protocol).filter(value -> value == AiProtocol.SYSTEM_ONE).isPresent()) {
             return testSystemOne(channel, credentials, protocol);
-        }
-        if (!OPENAI_COMPATIBLE.contains(protocol)) {
-            var parsed = AiProtocol.find(protocol);
-            if (parsed.isEmpty() || parsed.get() != AiProtocol.CHAT_COMPLETIONS) {
-                return Mono.error(new ApiException(
-                        HttpStatus.BAD_REQUEST,
-                        "ai-channel-protocol-unsupported",
-                        "当前协议尚未实现渠道健康检查。"));
-            }
         }
         if (!StringUtils.hasText(channel.getBaseUrl())) {
             return Mono.error(new ApiException(
@@ -81,57 +62,84 @@ public class AiChannelProbe {
                     "ai-channel-credentials-missing",
                     "AI 渠道缺少 apiKey 凭据。"));
         }
+        var builtIn = providers.builtIn(channel.getProvider()).isPresent();
+        var parsed = AiProtocol.find(protocol);
+        if (!builtIn
+                && parsed.filter(value -> value == AiProtocol.CHAT_COMPLETIONS
+                                || value == AiProtocol.MESSAGES)
+                        .isEmpty()) {
+            return Mono.error(new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "ai-channel-protocol-unsupported",
+                    "当前协议尚未实现渠道健康检查。"));
+        }
         var timeout = Duration.ofMillis(
                 channel.getTimeoutMs() == null
                         ? properties.getDefaultTimeoutMs()
                         : channel.getTimeoutMs());
-        var url = stripTrailingSlash(channel.getBaseUrl().trim()) + "/models";
-        return webClient
-                .get()
-                .uri(url)
-                .headers(headers -> headers.setBearerAuth(apiKey))
-                .exchangeToMono(response -> {
-                    var requestId = response.headers().header("x-request-id").stream()
-                            .findFirst()
-                            .orElse(null);
-                    if (response.statusCode().is2xxSuccessful()) {
-                        return response.releaseBody().thenReturn(new AiChannelTestResult(
-                                true, protocol, response.statusCode().value(), requestId, null, "ok", Instant.now()));
-                    }
-                    return response.releaseBody().thenReturn(new AiChannelTestResult(
-                            false,
-                            protocol,
-                            response.statusCode().value(),
-                            requestId,
-                            "ai-channel-provider-http-error",
-                            "供应商返回非成功状态。",
-                            Instant.now()));
-                })
-                .timeout(timeout)
-                .onErrorResume(WebClientResponseException.class, error -> Mono.just(new AiChannelTestResult(
+        var provider = providers.require(channel.getProvider());
+        var messages = !builtIn
+                && parsed.filter(value -> value == AiProtocol.MESSAGES).isPresent();
+        var uri = URI.create(
+                builtIn ? provider.modelsUrl(channel.getBaseUrl()) : provider.modelsUrlForChannel(channel));
+        var request = builtIn
+                ? http.getResponse(uri, credentials, timeout)
+                : http.getResponse(
+                        uri,
+                        credentials,
+                        messages ? provider.messagesHeaders(apiKey) : Map.of(),
+                        timeout,
+                        messages ? AiProviderAuth.X_API_KEY : AiProviderAuth.BEARER);
+        return request
+                .map(response -> testResult(response, protocol, model))
+                .onErrorResume(ApiException.class, error -> Mono.just(new AiChannelTestResult(
                         false,
                         protocol,
                         error.getStatusCode().value(),
-                        error.getHeaders().getFirst("x-request-id"),
-                        "ai-channel-provider-http-error",
-                        "供应商返回非成功状态。",
+                        null,
+                        errorCode(error),
+                        reason(error),
                         Instant.now())))
-                .onErrorResume(WebClientRequestException.class, error -> Mono.just(new AiChannelTestResult(
+                .onErrorResume(error -> Mono.just(new AiChannelTestResult(
                         false,
                         protocol,
                         null,
                         null,
-                        "ai-channel-provider-unreachable",
+                        "ai-channel-provider-error",
                         "供应商请求失败。",
-                        Instant.now())))
-                .onErrorResume(java.util.concurrent.TimeoutException.class, error -> Mono.just(new AiChannelTestResult(
-                        false,
-                        protocol,
-                        null,
-                        null,
-                        "ai-channel-provider-timeout",
-                        "供应商请求超时。",
                         Instant.now())));
+    }
+
+    private static AiChannelTestResult testResult(
+            AiProviderHttp.UpstreamResponse response, String protocol, String model) {
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            return new AiChannelTestResult(
+                    false,
+                    protocol,
+                    response.statusCode(),
+                    response.requestId(),
+                    "ai-channel-provider-http-error",
+                    "供应商返回非成功状态。",
+                    Instant.now());
+        }
+        if (StringUtils.hasText(model) && !containsModel(response.body(), model)) {
+            return new AiChannelTestResult(
+                    false,
+                    protocol,
+                    response.statusCode(),
+                    response.requestId(),
+                    "ai-channel-model-unavailable",
+                    "上游模型列表未返回所选模型。",
+                    Instant.now());
+        }
+        return new AiChannelTestResult(
+                true,
+                protocol,
+                response.statusCode(),
+                response.requestId(),
+                null,
+                "ok",
+                Instant.now());
     }
 
     private Mono<AiChannelTestResult> testSystemOne(
@@ -165,7 +173,35 @@ public class AiChannelProbe {
                         Instant.now())));
     }
 
-    private static String stripTrailingSlash(String value) {
-        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
+    private static boolean containsModel(String body, String model) {
+        try {
+            var data = JsonUtils.mapper().readTree(body).path("data");
+            if (!data.isArray()) {
+                return false;
+            }
+            for (var item : data) {
+                if (model.trim().equalsIgnoreCase(item.path("id").asText(""))) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception error) {
+            return false;
+        }
+    }
+
+    private static String reason(ApiException error) {
+        return StringUtils.hasText(error.getReason()) ? error.getReason() : "供应商请求失败。";
+    }
+
+    private static String errorCode(ApiException error) {
+        var code = error.getCode();
+        if (code != null && code.endsWith("-timeout")) {
+            return "ai-channel-provider-timeout";
+        }
+        if (code != null && code.endsWith("-unreachable")) {
+            return "ai-channel-provider-unreachable";
+        }
+        return "ai-channel-provider-error";
     }
 }

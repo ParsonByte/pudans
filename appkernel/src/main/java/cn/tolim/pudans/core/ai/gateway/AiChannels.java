@@ -167,11 +167,11 @@ public class AiChannels {
                                 error));
     }
 
-    public Mono<AiChannelTestResult> test(String workspaceId, UUID id) {
+    public Mono<AiChannelTestResult> test(String workspaceId, UUID id, String model) {
         return require(workspaceId, id)
                 .flatMap(entity -> secrets
                         .resolve(entity)
-                        .flatMap(credentials -> probe.test(entity, credentials))
+                        .flatMap(credentials -> probe.test(entity, credentials, model))
                         .flatMap(result -> {
                             entity.setCredentialStatus(credentialStatus(
                                     true, entity.getCredentialStatus(), result));
@@ -185,6 +185,12 @@ public class AiChannels {
                 .switchIfEmpty(Mono.error(new ApiException(
                         HttpStatus.NOT_FOUND, "ai-channel-not-found", "AI 渠道不存在。")))
                 .flatMap(secrets::resolve);
+    }
+
+    public Mono<ResolvedChannel> resolve(String workspaceId, UUID id) {
+        return require(workspaceId, id).flatMap(channel -> secrets
+                .resolve(channel)
+                .map(credentials -> new ResolvedChannel(channel, credentials)));
     }
 
     private Mono<AiChannelEntity> require(String workspaceId, UUID id) {
@@ -295,4 +301,7 @@ public class AiChannels {
     void setClock(Clock clock) {
         this.clock = clock;
     }
+
+    public record ResolvedChannel(
+            AiChannelEntity channel, Map<String, String> credentials) {}
 }
