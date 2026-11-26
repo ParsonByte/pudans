@@ -43,15 +43,23 @@ Execute `.agents/rules/reuse-and-cleanup.md`: search by responsibility, naming, 
    rg -n '<existing symbol>' appkernel/src/main/java
    ```
 
-6. Apply the decision tree:
+6. Search LangChain4j and LangChain4j Community before writing AI capability code:
+   ```bash
+   curl -sS 'https://repo1.maven.org/maven2/dev/langchain4j/' | rg -i '<capability>'
+   find ~/.gradle/caches/modules-2/files-2.1/dev.langchain4j -maxdepth 2 -type d
+   ```
+   Inspect the matching source jar. Reuse an existing interface such as `ChatModel`, `StreamingChatModel`, `EmbeddingModel`, `ImageModel`, `ScoringModel`, `TextToSpeechModel`, `AudioTranscriptionModel` or `WebSearchEngine` when it fits, and implement only the provider adapter.
+
+7. Apply the decision tree:
    - Same responsibility and compatible contract: reuse.
    - Same responsibility, contract too narrow: extend with an overload, parameter object or strategy.
    - Shared part only: extract the shared part and reuse it from both call sites.
    - No candidate after all four searches: create the implementation and document why.
 
-7. Record the evidence in the pull request or task summary:
+8. Record the evidence in the pull request or task summary:
    - The commands run.
    - The candidate files inspected.
+   - The LangChain4j and LangChain4j Community artifacts inspected.
    - The decision and its reason.
 
 ## Inputs and outputs

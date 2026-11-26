@@ -50,6 +50,17 @@ rg -n '<existing symbol>' appkernel/src/main/java
 
 If an existing candidate has callers, reuse or extend it instead of creating a parallel type. If the candidate is unused today, decide whether it is dead code to delete or a reusable abstraction to adopt; do not leave both.
 
+### 5. AI library capabilities
+
+Before implementing any AI capability in Java, search LangChain4j core and LangChain4j Community for an existing interface or implementation:
+
+```bash
+curl -sS 'https://repo1.maven.org/maven2/dev/langchain4j/' | rg -i '<capability>'
+find ~/.gradle/caches/modules-2/files-2.1/dev.langchain4j -maxdepth 2 -type d
+```
+
+Inspect the matching source jar under `~/.gradle/caches/modules-2/files-2.1/dev.langchain4j/<artifact>/<version>/`. Reuse a LangChain4j interface such as `ChatModel`, `StreamingChatModel`, `EmbeddingModel`, `ImageModel`, `ScoringModel`, `TextToSpeechModel`, `AudioTranscriptionModel` or `WebSearchEngine` when it fits, and implement only the provider-specific adapter. A new generic abstraction is allowed only when neither LangChain4j nor LangChain4j Community provides a compatible contract; record the artifacts inspected and the reason in the task summary.
+
 ## Decision tree
 
 1. **Same responsibility and compatible contract** — reuse the existing type or method. Change the new call site, not the existing implementation.
