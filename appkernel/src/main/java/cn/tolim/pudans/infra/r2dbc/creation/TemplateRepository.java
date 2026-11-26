@@ -3,6 +3,7 @@ package cn.tolim.pudans.infra.r2dbc.creation;
 import cn.tolim.pudans.contract.creation.CreationValues;
 import cn.tolim.pudans.contract.creation.Template;
 import io.r2dbc.spi.Row;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -48,6 +49,40 @@ public class TemplateRepository {
             LIMIT :fetchLimit
             """;
 
+    private static final String UPDATE_STATUS_SQL = """
+            UPDATE creation_templates
+               SET status = :status,
+                   visibility = :visibility,
+                   published_at = CAST(:publishedAt AS timestamptz),
+                   updated_at = :updatedAt
+             WHERE id = :id
+            RETURNING id, owner_id, workspace_id, name, title, description, media_type,
+                prompt, settings_jsonb::text AS settings_json,
+                parameter_schema_jsonb::text AS parameter_schema_json, cover_asset_id,
+                tags_jsonb::text AS tags_json, metadata_jsonb::text AS metadata_json,
+                status, visibility, published_at,
+                created_at, updated_at
+            """;
+
+    private static final String ALL_SQL = """
+            SELECT id, owner_id, workspace_id, name, title, description, media_type,
+                prompt, settings_jsonb::text AS settings_json,
+                parameter_schema_jsonb::text AS parameter_schema_json, cover_asset_id,
+                tags_jsonb::text AS tags_json, metadata_jsonb::text AS metadata_json,
+                status, visibility, published_at,
+                created_at, updated_at
+            FROM creation_templates
+            WHERE (CAST(:q AS varchar) IS NULL
+                    OR COALESCE(title, '') ILIKE :q ESCAPE '!'
+                    OR COALESCE(description, '') ILIKE :q ESCAPE '!'
+                    OR COALESCE(prompt, '') ILIKE :q ESCAPE '!'
+                    OR COALESCE(name, '') ILIKE :q ESCAPE '!')
+                AND (CAST(:cursorTime AS timestamptz) IS NULL
+                    OR (updated_at, id) < (CAST(:cursorTime AS timestamptz), CAST(:cursorId AS uuid)))
+            ORDER BY updated_at DESC, id DESC
+            LIMIT :fetchLimit
+            """;
+
     private final DatabaseClient databaseClient;
 
     public Mono<Template> findById(UUID id) {
@@ -79,6 +114,42 @@ public class TemplateRepository {
                 .map((row, metadata) -> map(row))
                 .all()
                 .collectList();
+    }
+
+    public Mono<Template> updateStatus(
+            UUID id, String status, String visibility, Instant publishedAt, Instant updatedAt) {
+        var spec = databaseClient
+                .sql(UPDATE_STATUS_SQL)
+                .bind("id", id)
+                .bind("status", status)
+                .bind("visibility", visibility);
+        spec = bindNullable(
+                spec, "publishedAt", CreationRows.offset(publishedAt), OffsetDateTime.class);
+        return spec.bind("updatedAt", CreationRows.offset(updatedAt))
+                .map((row, metadata) -> map(row))
+                .one();
+    }
+
+    public Mono<List<Template>> allFeed(
+            String q, CreationCursor.Position cursor, int fetchLimit) {
+        var spec = databaseClient.sql(ALL_SQL);
+        var pattern = CreationRows.likePattern(q);
+        spec = pattern == null ? spec.bindNull("q", String.class) : spec.bind("q", pattern);
+        if (cursor == null) {
+            spec = spec.bindNull("cursorTime", OffsetDateTime.class).bindNull("cursorId", UUID.class);
+        } else {
+            spec = spec.bind("cursorTime", CreationRows.offset(cursor.sortTime()))
+                    .bind("cursorId", cursor.id());
+        }
+        return spec.bind("fetchLimit", fetchLimit)
+                .map((row, metadata) -> map(row))
+                .all()
+                .collectList();
+    }
+
+    private static DatabaseClient.GenericExecuteSpec bindNullable(
+            DatabaseClient.GenericExecuteSpec spec, String name, Object value, Class<?> type) {
+        return value == null ? spec.bindNull(name, type) : spec.bind(name, value);
     }
 
     private static Template map(Row row) {

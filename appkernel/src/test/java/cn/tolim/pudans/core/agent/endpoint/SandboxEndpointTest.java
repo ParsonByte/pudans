@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -109,6 +110,24 @@ class SandboxEndpointTest {
                 eq(sandbox),
                 eq(true),
                 anyMap());
+    }
+
+    @Test
+    void listsEverySandboxForAdministrativeInspection() {
+        var sandbox = sandbox(Sandbox.Status.READY);
+        when(sandboxes.listAll(isNull(), eq(20)))
+                .thenReturn(Mono.just(new SandboxPage(List.of(sandbox), null, 20)));
+
+        client.get()
+                .uri("/sandboxes/-/all?limit=20")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.items[0].ownerId")
+                .isEqualTo("alice");
+
+        verify(sandboxes).listAll(isNull(), eq(20));
     }
 
     @Test

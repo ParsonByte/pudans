@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -68,6 +69,43 @@ class GenerationTaskEndpointTest {
     void setUp() {
         var endpoint = new GenerationTaskEndpoint(tasks, events, identity, audits);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
+    }
+
+    @Test
+    void listsEveryTaskForAdministrativeInspection() {
+        var summary = summary(GenerationTask.Status.QUEUED);
+        when(tasks.listAll(isNull(), eq(20)))
+                .thenReturn(Mono.just(new GenerationTaskPage(List.of(summary), null)));
+
+        client.get()
+                .uri("/generationtasks/-/all?limit=20")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.items[0].id")
+                .isEqualTo(TASK_ID.toString());
+
+        verify(tasks).listAll(isNull(), eq(20));
+    }
+
+    @Test
+    void forceCancelsATaskAndRecordsTheAdministrativeAction() {
+        var summary = summary(GenerationTask.Status.CANCELLED);
+        when(tasks.forceCancel(TASK_ID)).thenReturn(Mono.just(summary));
+        when(audits.record(any(), eq("FORCE_CANCEL_GENERATION_TASK"), eq(summary), eq(true), anyMap()))
+                .thenReturn(Mono.empty());
+
+        client.post()
+                .uri("/generationtasks/{id}/force-cancel", TASK_ID)
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.status")
+                .isEqualTo("cancelled");
+
+        verify(tasks).forceCancel(TASK_ID);
     }
 
     @Test

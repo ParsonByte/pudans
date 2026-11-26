@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.creation.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 
+import cn.tolim.pudans.contract.creation.Template;
 import cn.tolim.pudans.contract.creation.Work;
 import cn.tolim.pudans.contract.creation.dto.WorkInteractionRequest;
 import cn.tolim.pudans.contract.creation.dto.WorkRemixRequest;
@@ -53,8 +54,28 @@ public class ContentEndpoint implements CustomEndpoint {
                         .description("List published public works with cursor pagination.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("Explore feed")))
+                .GET("/works/-/all", this::allWorks, builder -> builder.operationId("listAllWorks")
+                        .description("List all works with cursor pagination for administration.")
+                        .tag(TAG)
+                        .response(responseBuilder().responseCode("200").description("Work feed")))
                 .GET("/works/{name}/view", this::viewWork, builder -> builder.operationId("viewWork")
                         .description("View a public published work or a work owned by the current identity.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Work.class)))
+                .POST("/works/{name}/approve", this::approveWork, builder -> builder.operationId("approveWork")
+                        .description("Approve a work for publication.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Work.class)))
+                .POST("/works/{name}/reject", this::rejectWork, builder -> builder.operationId("rejectWork")
+                        .description("Reject a work during content review.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Work.class)))
+                .POST("/works/{name}/publish", this::publishWork, builder -> builder.operationId("publishWork")
+                        .description("Publish an approved work.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Work.class)))
+                .POST("/works/{name}/unpublish", this::unpublishWork, builder -> builder.operationId("unpublishWork")
+                        .description("Unpublish a published work.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(Work.class)))
                 .GET("/works/{name}/play", this::playWork, builder -> builder.operationId("playWork")
@@ -89,10 +110,34 @@ public class ContentEndpoint implements CustomEndpoint {
                         .description("List published public templates with cursor pagination.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("Template feed")))
+                .GET("/templates/-/all", this::allTemplates, builder -> builder.operationId("listAllTemplates")
+                        .description("List all templates with cursor pagination for administration.")
+                        .tag(TAG)
+                        .response(responseBuilder().responseCode("200").description("Template feed")))
                 .GET("/templates/{name}/view", this::viewTemplate, builder -> builder.operationId("viewTemplate")
                         .description("View a public published template or a template owned by the current identity.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("Template view")))
+                .POST("/templates/{name}/approve", this::approveTemplate, builder -> builder
+                        .operationId("approveTemplate")
+                        .description("Approve a template for publication.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Template.class)))
+                .POST("/templates/{name}/reject", this::rejectTemplate, builder -> builder
+                        .operationId("rejectTemplate")
+                        .description("Reject a template during content review.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Template.class)))
+                .POST("/templates/{name}/publish", this::publishTemplate, builder -> builder
+                        .operationId("publishTemplate")
+                        .description("Publish an approved template.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Template.class)))
+                .POST("/templates/{name}/unpublish", this::unpublishTemplate, builder -> builder
+                        .operationId("unpublishTemplate")
+                        .description("Unpublish a published template.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(Template.class)))
                 .build();
     }
 
@@ -117,12 +162,40 @@ public class ContentEndpoint implements CustomEndpoint {
                 .flatMap(feed -> ServerResponse.ok().bodyValue(feed));
     }
 
+    private Mono<ServerResponse> allWorks(ServerRequest request) {
+        return works
+                .allFeed(
+                        query(request, "q"),
+                        uuidQuery(request, "templateId", "explore-template-invalid"),
+                        uuidQuery(request, "activityId", "explore-activity-invalid"),
+                        query(request, "creator"),
+                        query(request, "cursor"),
+                        integerQuery(request, "limit"))
+                .flatMap(feed -> ServerResponse.ok().bodyValue(feed));
+    }
+
     private Mono<ServerResponse> viewWork(ServerRequest request) {
         var workId = uuidPath(request, "work-not-found", "作品不存在。");
         return identity
                 .resolve(request)
                 .flatMap(owner -> works.view(owner, workId))
                 .flatMap(detail -> ServerResponse.ok().bodyValue(detail));
+    }
+
+    private Mono<ServerResponse> approveWork(ServerRequest request) {
+        return review(works.approve(uuidPath(request, "work-not-found", "作品不存在。")));
+    }
+
+    private Mono<ServerResponse> rejectWork(ServerRequest request) {
+        return review(works.reject(uuidPath(request, "work-not-found", "作品不存在。")));
+    }
+
+    private Mono<ServerResponse> publishWork(ServerRequest request) {
+        return review(works.publish(uuidPath(request, "work-not-found", "作品不存在。")));
+    }
+
+    private Mono<ServerResponse> unpublishWork(ServerRequest request) {
+        return review(works.unpublish(uuidPath(request, "work-not-found", "作品不存在。")));
     }
 
     private Mono<ServerResponse> playWork(ServerRequest request) {
@@ -208,12 +281,38 @@ public class ContentEndpoint implements CustomEndpoint {
                 .flatMap(feed -> ServerResponse.ok().bodyValue(feed));
     }
 
+    private Mono<ServerResponse> allTemplates(ServerRequest request) {
+        return templates
+                .allFeed(query(request, "q"), query(request, "cursor"), integerQuery(request, "limit"))
+                .flatMap(feed -> ServerResponse.ok().bodyValue(feed));
+    }
+
     private Mono<ServerResponse> viewTemplate(ServerRequest request) {
         var templateId = uuidPath(request, "template-not-found", "模板不存在。");
         return identity
                 .resolve(request)
                 .flatMap(owner -> templates.view(owner, templateId))
                 .flatMap(template -> ServerResponse.ok().bodyValue(template));
+    }
+
+    private Mono<ServerResponse> approveTemplate(ServerRequest request) {
+        return review(templates.approve(uuidPath(request, "template-not-found", "模板不存在。")));
+    }
+
+    private Mono<ServerResponse> rejectTemplate(ServerRequest request) {
+        return review(templates.reject(uuidPath(request, "template-not-found", "模板不存在。")));
+    }
+
+    private Mono<ServerResponse> publishTemplate(ServerRequest request) {
+        return review(templates.publish(uuidPath(request, "template-not-found", "模板不存在。")));
+    }
+
+    private Mono<ServerResponse> unpublishTemplate(ServerRequest request) {
+        return review(templates.unpublish(uuidPath(request, "template-not-found", "模板不存在。")));
+    }
+
+    private static Mono<ServerResponse> review(Mono<?> result) {
+        return result.flatMap(value -> ServerResponse.ok().bodyValue(value));
     }
 
     private Mono<WorkInteractionRequest> interactionBody(ServerRequest request) {

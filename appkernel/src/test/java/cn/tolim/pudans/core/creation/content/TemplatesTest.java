@@ -56,6 +56,22 @@ class TemplatesTest {
     }
 
     @Test
+    void allFeedIncludesEveryStatusAndVisibility() {
+        var draft = template(UUID.randomUUID(), "bob", "draft", "private", null);
+        var published = template(UUID.randomUUID(), "bob", "published", "public", NOW);
+        when(templates.allFeed(isNull(), isNull(), eq(21)))
+                .thenReturn(Mono.just(List.of(draft, published)));
+
+        StepVerifier.create(service.allFeed(null, null, null))
+                .assertNext(feed -> {
+                    assertThat(feed.items()).extracting(Template::id)
+                            .containsExactly(draft.id(), published.id());
+                    assertThat(feed.emptyState()).isNull();
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void emptyTemplateFeedReturnsAnEmptyState() {
         when(templates.feed(isNull(), isNull(), eq(21))).thenReturn(Mono.just(List.of()));
 
@@ -66,6 +82,40 @@ class TemplatesTest {
                     assertThat(feed.emptyState()).isNotBlank();
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void approvesATemplateForReview() {
+        var templateId = UUID.randomUUID();
+        var draft = template(templateId, "bob", "draft", "private", null);
+        var approved = template(templateId, "bob", "approved", "private", null);
+        when(templates.findById(templateId)).thenReturn(Mono.just(draft));
+        when(templates.updateStatus(
+                        templateId,
+                        "approved",
+                        "private",
+                        null,
+                        NOW))
+                .thenReturn(Mono.just(approved));
+
+        StepVerifier.create(service.approve(templateId))
+                .assertNext(result -> assertThat(result.status()).isEqualTo("approved"))
+                .verifyComplete();
+    }
+
+    @Test
+    void rejectsPublishingATemplateThatHasNotBeenApproved() {
+        var templateId = UUID.randomUUID();
+        when(templates.findById(templateId))
+                .thenReturn(Mono.just(template(templateId, "bob", "draft", "private", null)));
+
+        StepVerifier.create(service.publish(templateId))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOfSatisfying(ApiException.class, api -> {
+                            assertThat(api.getStatusCode().value()).isEqualTo(409);
+                            assertThat(api.getCode()).isEqualTo("template-not-approved");
+                        }))
+                .verify();
     }
 
     @Test

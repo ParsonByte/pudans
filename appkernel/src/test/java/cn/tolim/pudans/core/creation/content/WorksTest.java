@@ -117,6 +117,23 @@ class WorksTest {
     }
 
     @Test
+    void allFeedIncludesEveryStatusAndVisibility() {
+        var draft = work(UUID.randomUUID(), "bob", "workspace-b", "draft", "private", null, 0, 0);
+        var published = work(
+                UUID.randomUUID(), "bob", "workspace-b", "published", "public", NOW, 1, 1);
+        when(works.allFeed(isNull(), isNull(), isNull(), isNull(), isNull(), eq(21)))
+                .thenReturn(Mono.just(List.of(draft, published)));
+
+        StepVerifier.create(service.allFeed(null, null, null, null, null, null))
+                .assertNext(feed -> {
+                    assertThat(feed.items()).extracting(Work::id)
+                            .containsExactly(draft.id(), published.id());
+                    assertThat(feed.emptyState()).isNull();
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void emptyFeedHasAnEmptyStateAndNoCursor() {
         when(works.feed(isNull(), isNull(), isNull(), isNull(), isNull(), eq(21)))
                 .thenReturn(Mono.just(List.of()));
@@ -128,6 +145,54 @@ class WorksTest {
                     assertThat(feed.emptyState()).isNotBlank();
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void approvesAndPublishesAWorkThroughTheAdministrativeTransitions() {
+        var workId = UUID.randomUUID();
+        var draft = work(workId, "bob", "workspace-b", "draft", "private", null, 0, 0);
+        var approved = work(workId, "bob", "workspace-b", "approved", "private", null, 0, 0);
+        var published = work(workId, "bob", "workspace-b", "published", "public", NOW, 0, 0);
+        when(works.findById(workId)).thenReturn(Mono.just(draft));
+        when(works.updateStatus(
+                        workId,
+                        CreationValues.CONTENT_STATUS_APPROVED,
+                        CreationValues.VISIBILITY_PRIVATE,
+                        null,
+                        NOW))
+                .thenReturn(Mono.just(approved));
+
+        StepVerifier.create(service.approve(workId))
+                .assertNext(result -> assertThat(result.status()).isEqualTo("approved"))
+                .verifyComplete();
+
+        when(works.findById(workId)).thenReturn(Mono.just(approved));
+        when(works.updateStatus(
+                        workId,
+                        CreationValues.CONTENT_STATUS_PUBLISHED,
+                        CreationValues.VISIBILITY_PUBLIC,
+                        NOW,
+                        NOW))
+                .thenReturn(Mono.just(published));
+
+        StepVerifier.create(service.publish(workId))
+                .assertNext(result -> assertThat(result.status()).isEqualTo("published"))
+                .verifyComplete();
+    }
+
+    @Test
+    void rejectsPublishingAWorkThatHasNotBeenApproved() {
+        var workId = UUID.randomUUID();
+        when(works.findById(workId)).thenReturn(Mono.just(work(
+                workId, "bob", "workspace-b", "draft", "private", null, 0, 0)));
+
+        StepVerifier.create(service.publish(workId))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOfSatisfying(ApiException.class, api -> {
+                            assertThat(api.getStatusCode().value()).isEqualTo(409);
+                            assertThat(api.getCode()).isEqualTo("work-not-approved");
+                        }))
+                .verify();
     }
 
     @Test

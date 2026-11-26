@@ -28,6 +28,10 @@ public class AiDefaultModels {
         return defaults.findAllByWorkspace(requireWorkspace(workspaceId));
     }
 
+    public Flux<AiDefaultModel> listAll() {
+        return defaults.findAll();
+    }
+
     public Mono<AiDefaultModel> put(
             String workspaceId, String capability, AiDefaultModelRequest request) {
         if (request == null || request.modelId() == null) {

@@ -63,6 +63,67 @@ class ActivityEndpointTest {
     }
 
     @Test
+    void listsEverySubjectForAdministrativeInspection() {
+        when(subjects.all(null, null))
+                .thenReturn(Mono.just(new SubjectPage(List.of(), null, 20, "暂无主体。", NOW)));
+
+        client.get()
+                .uri("/subjects/-/all")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.items")
+                .isArray();
+    }
+
+    @Test
+    void listsEveryActivityForAdministrativeInspection() {
+        when(activities.allFeed(null, null, null))
+                .thenReturn(Mono.just(new ActivityFeed(List.of(), null, 20, "暂无活动。", NOW)));
+
+        client.get()
+                .uri("/activities/-/all")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.items")
+                .isArray()
+                .jsonPath("$.emptyState")
+                .isEqualTo("暂无活动。");
+    }
+
+    @Test
+    void approvesAnActivityForAdministrativeReview() {
+        var activity = new Activity(
+                UUID.randomUUID(),
+                "bob",
+                "workspace-b",
+                "活动",
+                "描述",
+                null,
+                null,
+                null,
+                CreationValues.CONTENT_STATUS_DRAFT,
+                CreationValues.VISIBILITY_PRIVATE,
+                null,
+                null,
+                NOW,
+                NOW);
+        when(activities.approve(activity.id())).thenReturn(Mono.just(activity));
+
+        client.post()
+                .uri("/activities/{id}/approve", activity.id())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.id")
+                .isEqualTo(activity.id().toString());
+    }
+
+    @Test
     void returnsAnEmptyActivityFeedWithoutPublishedActivities() {
         when(identity.resolve(any())).thenReturn(Mono.just(ALICE));
         when(activities.feed(ALICE, null, null, null))

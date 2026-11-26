@@ -102,6 +102,11 @@ public class SandboxEndpoint implements CustomEndpoint {
                         .description("List sandboxes using the contract path alias.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(SandboxPage.class)))
+                .GET("/sandboxes/-/all", this::all, builder -> builder
+                        .operationId("listAllSandboxes")
+                        .description("List sandboxes across the platform for administration.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(SandboxPage.class)))
                 .GET("/sandboxes/{name}", this::view, builder -> builder
                         .operationId("getSandbox")
                         .description("Get one sandbox owned by the current user and workspace.")
@@ -214,6 +219,17 @@ public class SandboxEndpoint implements CustomEndpoint {
             return identity
                     .resolve(request)
                     .flatMap(owner -> sandboxes.list(owner, cursor, limit))
+                    .flatMap(page -> ServerResponse.ok().bodyValue(page));
+        });
+    }
+
+    private Mono<ServerResponse> all(ServerRequest request) {
+        return Mono.defer(() -> {
+            var cursor = CreationCursor.decode(
+                    request.queryParam("cursor").orElse(null),
+                    "sandbox-cursor-invalid");
+            return sandboxes
+                    .listAll(cursor, limit(request))
                     .flatMap(page -> ServerResponse.ok().bodyValue(page));
         });
     }

@@ -184,9 +184,22 @@ public class SandboxStore {
             String workspaceId,
             CreationCursor.Position cursor,
             int limit) {
+        return list(ownerId, workspaceId, cursor, limit);
+    }
+
+    public Flux<SessionRow> listAll(CreationCursor.Position cursor, int limit) {
+        return list(null, null, cursor, limit);
+    }
+
+    private Flux<SessionRow> list(
+            String ownerId,
+            String workspaceId,
+            CreationCursor.Position cursor,
+            int limit) {
         var sql = SELECT_SESSION
                 + """
-                  WHERE owner_id = :ownerId AND workspace_id = :workspaceId
+                  WHERE (CAST(:ownerId AS varchar) IS NULL
+                      OR (owner_id = :ownerId AND workspace_id = :workspaceId))
                   """;
         if (cursor != null) {
             sql += """
@@ -194,10 +207,10 @@ public class SandboxStore {
                     """;
         }
         sql += " ORDER BY created_at DESC, id DESC LIMIT :limit";
-        var spec = databaseClient
-                .sql(sql)
-                .bind("ownerId", ownerId)
-                .bind("workspaceId", workspaceId);
+        var spec = databaseClient.sql(sql);
+        spec = ownerId == null
+                ? spec.bindNull("ownerId", String.class).bindNull("workspaceId", String.class)
+                : spec.bind("ownerId", ownerId).bind("workspaceId", workspaceId);
         if (cursor != null) {
             spec = spec.bind("cursorTime", offset(cursor.sortTime()))
                     .bind("cursorId", cursor.id());

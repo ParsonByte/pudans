@@ -75,6 +75,11 @@ public class GenerationTaskEndpoint implements CustomEndpoint {
                         .description("List generation tasks owned by the current user and workspace.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(GenerationTaskPage.class)))
+                .GET("/generationtasks/-/all", this::all, builder -> builder
+                        .operationId("listAllGenerationTasks")
+                        .description("List generation tasks across the platform for administration.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(GenerationTaskPage.class)))
                 .GET("/generationtasks/{name}/status", this::status, builder -> builder
                         .operationId("getGenerationTaskStatus")
                         .description("Get a generation task and its attempt history.")
@@ -95,6 +100,11 @@ public class GenerationTaskEndpoint implements CustomEndpoint {
                 .POST("/generationtasks/{name}/cancel", this::cancel, builder -> builder
                         .operationId("cancelGenerationTask")
                         .description("Cancel a queued or provider-running generation task.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(GenerationTaskSummary.class)))
+                .POST("/generationtasks/{name}/force-cancel", this::forceCancel, builder -> builder
+                        .operationId("forceCancelGenerationTask")
+                        .description("Force cancel any queued or provider-running generation task as an administrator.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(GenerationTaskSummary.class)))
                 .POST("/generationtasks/{name}/-/retry", this::retry, builder -> builder
@@ -139,6 +149,12 @@ public class GenerationTaskEndpoint implements CustomEndpoint {
                     .flatMap(owner -> tasks.mine(owner, before, limit))
                     .flatMap(page -> ServerResponse.ok().bodyValue(page));
         });
+    }
+
+    private Mono<ServerResponse> all(ServerRequest request) {
+        return Mono.defer(() -> tasks
+                .listAll(before(request), limit(request))
+                .flatMap(page -> ServerResponse.ok().bodyValue(page)));
     }
 
     private Mono<ServerResponse> status(ServerRequest request) {
@@ -195,6 +211,23 @@ public class GenerationTaskEndpoint implements CustomEndpoint {
                             .record(
                                     request.exchange(),
                                     "CANCEL_GENERATION_TASK",
+                                    task,
+                                    true,
+                                    Map.of())
+                            .thenReturn(task))
+                    .flatMap(task -> ServerResponse.ok().bodyValue(task));
+        });
+    }
+
+    private Mono<ServerResponse> forceCancel(ServerRequest request) {
+        return Mono.defer(() -> {
+            var taskId = uuidPath(request);
+            return tasks
+                    .forceCancel(taskId)
+                    .flatMap(task -> audits
+                            .record(
+                                    request.exchange(),
+                                    "FORCE_CANCEL_GENERATION_TASK",
                                     task,
                                     true,
                                     Map.of())

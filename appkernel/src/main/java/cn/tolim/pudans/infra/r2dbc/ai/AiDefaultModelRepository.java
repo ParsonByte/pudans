@@ -32,6 +32,13 @@ public class AiDefaultModelRepository {
                 .all();
     }
 
+    public Flux<AiDefaultModel> findAll() {
+        return databaseClient
+                .sql(COLUMNS + " ORDER BY workspace_id, capability")
+                .map((row, metadata) -> map(row))
+                .all();
+    }
+
     public Mono<AiDefaultModel> findByWorkspaceAndCapability(String workspaceId, String capability) {
         return databaseClient
                 .sql(COLUMNS + " WHERE workspace_id = :workspaceId AND capability = :capability")

@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.agent.AgentSession;
+import cn.tolim.pudans.contract.agent.dto.AgentSessionPage;
+import cn.tolim.pudans.contract.agent.dto.AgentSessionSummary;
 import cn.tolim.pudans.core.agent.runtime.AgentSessions;
 import cn.tolim.pudans.infra.utils.ReactiveRequestIdentity;
 import cn.tolim.pudans.infra.utils.RequestIdentity;
@@ -69,6 +71,40 @@ class AgentSessionEndpointTest {
                 .expectBody()
                 .jsonPath("$.items")
                 .isArray();
+    }
+
+    @Test
+    void listsEverySessionForAdministrativeInspection() {
+        var session = session();
+        when(sessions.listAll(100)).thenReturn(Mono.just(new AgentSessionPage(java.util.List.of(session), 100)));
+
+        client.get()
+                .uri("/agentsessions/-/all?limit=100")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.items[0].ownerId")
+                .isEqualTo("alice");
+
+        org.mockito.Mockito.verify(sessions).listAll(100);
+    }
+
+    @Test
+    void summarizesEverySessionForAdministrativeInspection() {
+        when(sessions.summaryAll())
+                .thenReturn(Mono.just(new AgentSessionSummary(3, 2, Instant.now())));
+
+        client.get()
+                .uri("/agentsessions/-/all-summary")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.total")
+                .isEqualTo(3)
+                .jsonPath("$.active")
+                .isEqualTo(2);
     }
 
     private static AgentSession session() {

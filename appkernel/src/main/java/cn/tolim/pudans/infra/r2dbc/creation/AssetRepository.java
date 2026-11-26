@@ -81,7 +81,8 @@ public class AssetRepository {
                 duration_ms, tags_jsonb::text AS tags_json, metadata_jsonb::text AS metadata_json,
                 status, created_at, updated_at
             FROM assets
-            WHERE owner_id = :ownerId AND workspace_id = :workspaceId
+            WHERE (CAST(:ownerId AS varchar) IS NULL
+                OR (owner_id = :ownerId AND workspace_id = :workspaceId))
                 AND status = :activeStatus
                 AND (CAST(:kind AS varchar) IS NULL OR kind = :kind)
                 AND (CAST(:source AS varchar) IS NULL OR source = :source)
@@ -98,7 +99,8 @@ public class AssetRepository {
     private static final String KIND_FACETS_SQL = """
             SELECT kind AS facet_key, count(*) AS facet_count
             FROM assets
-            WHERE owner_id = :ownerId AND workspace_id = :workspaceId
+            WHERE (CAST(:ownerId AS varchar) IS NULL
+                OR (owner_id = :ownerId AND workspace_id = :workspaceId))
                 AND status = :activeStatus
             GROUP BY kind
             ORDER BY kind
@@ -107,7 +109,8 @@ public class AssetRepository {
     private static final String SOURCE_FACETS_SQL = """
             SELECT source AS facet_key, count(*) AS facet_count
             FROM assets
-            WHERE owner_id = :ownerId AND workspace_id = :workspaceId
+            WHERE (CAST(:ownerId AS varchar) IS NULL
+                OR (owner_id = :ownerId AND workspace_id = :workspaceId))
                 AND status = :activeStatus
             GROUP BY source
             ORDER BY source
@@ -116,7 +119,8 @@ public class AssetRepository {
     private static final String COUNT_SQL = """
             SELECT count(*) AS facet_count
             FROM assets
-            WHERE owner_id = :ownerId AND workspace_id = :workspaceId
+            WHERE (CAST(:ownerId AS varchar) IS NULL
+                OR (owner_id = :ownerId AND workspace_id = :workspaceId))
                 AND status = :activeStatus
             """;
 
@@ -189,11 +193,31 @@ public class AssetRepository {
             String q,
             CreationCursor.Position cursor,
             int fetchLimit) {
-        var spec = databaseClient
-                .sql(LIST_SQL)
-                .bind("ownerId", identity.ownerId())
-                .bind("workspaceId", identity.workspaceId())
-                .bind("activeStatus", CreationValues.ASSET_STATUS_ACTIVE);
+        return list(
+                identity.ownerId(), identity.workspaceId(), kind, source, q, cursor, fetchLimit);
+    }
+
+    public Mono<List<Asset>> listAll(
+            String kind,
+            String source,
+            String q,
+            CreationCursor.Position cursor,
+            int fetchLimit) {
+        return list(null, null, kind, source, q, cursor, fetchLimit);
+    }
+
+    private Mono<List<Asset>> list(
+            String ownerId,
+            String workspaceId,
+            String kind,
+            String source,
+            String q,
+            CreationCursor.Position cursor,
+            int fetchLimit) {
+        var spec = databaseClient.sql(LIST_SQL);
+        spec = bindNullable(spec, "ownerId", ownerId, String.class);
+        spec = bindNullable(spec, "workspaceId", workspaceId, String.class);
+        spec = spec.bind("activeStatus", CreationValues.ASSET_STATUS_ACTIVE);
         spec = bindNullable(spec, "kind", StringUtils.hasText(kind) ? kind.trim() : null, String.class);
         spec = bindNullable(
                 spec, "source", StringUtils.hasText(source) ? source.trim() : null, String.class);
@@ -211,33 +235,54 @@ public class AssetRepository {
     }
 
     public Mono<List<AssetFacetBucket>> kindFacets(RequestIdentity identity) {
-        return databaseClient
-                .sql(KIND_FACETS_SQL)
-                .bind("ownerId", identity.ownerId())
-                .bind("workspaceId", identity.workspaceId())
-                .bind("activeStatus", CreationValues.ASSET_STATUS_ACTIVE)
+        return kindFacets(identity.ownerId(), identity.workspaceId());
+    }
+
+    public Mono<List<AssetFacetBucket>> kindFacetsAll() {
+        return kindFacets(null, null);
+    }
+
+    private Mono<List<AssetFacetBucket>> kindFacets(String ownerId, String workspaceId) {
+        var spec = databaseClient.sql(KIND_FACETS_SQL);
+        spec = bindNullable(spec, "ownerId", ownerId, String.class);
+        spec = bindNullable(spec, "workspaceId", workspaceId, String.class);
+        return spec.bind("activeStatus", CreationValues.ASSET_STATUS_ACTIVE)
                 .map((row, metadata) -> facet(row))
                 .all()
                 .collectList();
     }
 
     public Mono<List<AssetFacetBucket>> sourceFacets(RequestIdentity identity) {
-        return databaseClient
-                .sql(SOURCE_FACETS_SQL)
-                .bind("ownerId", identity.ownerId())
-                .bind("workspaceId", identity.workspaceId())
-                .bind("activeStatus", CreationValues.ASSET_STATUS_ACTIVE)
+        return sourceFacets(identity.ownerId(), identity.workspaceId());
+    }
+
+    public Mono<List<AssetFacetBucket>> sourceFacetsAll() {
+        return sourceFacets(null, null);
+    }
+
+    private Mono<List<AssetFacetBucket>> sourceFacets(String ownerId, String workspaceId) {
+        var spec = databaseClient.sql(SOURCE_FACETS_SQL);
+        spec = bindNullable(spec, "ownerId", ownerId, String.class);
+        spec = bindNullable(spec, "workspaceId", workspaceId, String.class);
+        return spec.bind("activeStatus", CreationValues.ASSET_STATUS_ACTIVE)
                 .map((row, metadata) -> facet(row))
                 .all()
                 .collectList();
     }
 
     public Mono<Long> count(RequestIdentity identity) {
-        return databaseClient
-                .sql(COUNT_SQL)
-                .bind("ownerId", identity.ownerId())
-                .bind("workspaceId", identity.workspaceId())
-                .bind("activeStatus", CreationValues.ASSET_STATUS_ACTIVE)
+        return count(identity.ownerId(), identity.workspaceId());
+    }
+
+    public Mono<Long> countAll() {
+        return count(null, null);
+    }
+
+    private Mono<Long> count(String ownerId, String workspaceId) {
+        var spec = databaseClient.sql(COUNT_SQL);
+        spec = bindNullable(spec, "ownerId", ownerId, String.class);
+        spec = bindNullable(spec, "workspaceId", workspaceId, String.class);
+        return spec.bind("activeStatus", CreationValues.ASSET_STATUS_ACTIVE)
                 .map((row, metadata) -> row.get("facet_count", Long.class))
                 .one();
     }

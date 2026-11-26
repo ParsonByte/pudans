@@ -26,6 +26,7 @@ import cn.tolim.pudans.infra.r2dbc.agent.AgentRunRepository;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentSessionEntity;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentSessionRepository;
 import cn.tolim.pudans.infra.r2dbc.agent.sandbox.SandboxStore;
+import cn.tolim.pudans.infra.r2dbc.creation.CreationCursor;
 import cn.tolim.pudans.infra.utils.RequestIdentity;
 import java.time.Clock;
 import java.time.Duration;
@@ -490,6 +491,20 @@ class SandboxesTest {
                     assertThat(result.sha256()).isEqualTo(Digests.sha256Hex(content));
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void listsEverySandboxForAdministrativeInspection() {
+        var cursor = new CreationCursor.Position(NOW, UUID.randomUUID());
+        var row = row(Sandbox.Status.READY, "{}");
+        when(store.listAll(cursor, 20)).thenReturn(Flux.just(row));
+
+        var result = sandboxes.listAll(cursor, 20).block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.limit()).isEqualTo(20);
+        assertThat(result.items()).extracting(Sandbox::id).containsExactly(row.id());
+        assertThat(result.nextCursor()).isNull();
     }
 
     @Test

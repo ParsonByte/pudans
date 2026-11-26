@@ -68,6 +68,13 @@ public class AiChannelRepository {
                 .all();
     }
 
+    public Flux<AiChannelEntity> findAll() {
+        return databaseClient
+                .sql(COLUMNS + " ORDER BY workspace_id, created_at, id")
+                .map((row, metadata) -> map(row))
+                .all();
+    }
+
     public Mono<AiChannelEntity> findByWorkspaceAndId(String workspaceId, UUID id) {
         return databaseClient
                 .sql(COLUMNS + " WHERE workspace_id = :workspaceId AND id = :id")

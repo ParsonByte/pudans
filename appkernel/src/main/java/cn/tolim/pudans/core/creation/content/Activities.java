@@ -27,6 +27,8 @@ public class Activities {
 
     private static final String EMPTY_STATE = "暂无公开活动。";
 
+    private static final String ALL_EMPTY_STATE = "暂无活动。";
+
     private static final String SUBMISSION_EMPTY_STATE = "暂无提交记录。";
 
     private final ActivityRepository activities;
@@ -62,8 +64,97 @@ public class Activities {
                 });
     }
 
+    public Mono<ActivityFeed> allFeed(String q, String cursor, Integer requestedLimit) {
+        var limit = CreationCursor.limit(requestedLimit);
+        var position = CreationCursor.decode(cursor, "activity-cursor-invalid");
+        return activities
+                .allFeed(q, position, limit + 1)
+                .map(fetched -> {
+                    var hasMore = fetched.size() > limit;
+                    var items = hasMore ? fetched.subList(0, limit) : fetched;
+                    var nextCursor = hasMore && !items.isEmpty()
+                            ? CreationCursor.encode(items.getLast().updatedAt(), items.getLast().id())
+                            : null;
+                    return new ActivityFeed(
+                            List.copyOf(items),
+                            nextCursor,
+                            limit,
+                            items.isEmpty() ? ALL_EMPTY_STATE : null,
+                            now());
+                });
+    }
+
     public Mono<Activity> view(RequestIdentity identity, UUID activityId) {
         return requireVisible(identity, activityId);
+    }
+
+    // 审核通过只改变审核状态，上架时才公开。
+    public Mono<Activity> approve(UUID activityId) {
+        return require(activityId).flatMap(activity -> {
+            if (CreationValues.CONTENT_STATUS_PUBLISHED.equals(activity.status())) {
+                return Mono.error(
+                        reviewConflict("activity-already-published", "已上架活动不能重复审核。"));
+            }
+            return activities.updateStatus(
+                    activity.id(),
+                    CreationValues.CONTENT_STATUS_APPROVED,
+                    activity.visibility(),
+                    now());
+        });
+    }
+
+    // 审核拒绝活动保持私有且不公开。
+    public Mono<Activity> reject(UUID activityId) {
+        return require(activityId).flatMap(activity -> {
+            if (CreationValues.CONTENT_STATUS_PUBLISHED.equals(activity.status())) {
+                return Mono.error(
+                        reviewConflict("activity-already-published", "已上架活动不能审核拒绝。"));
+            }
+            return activities.updateStatus(
+                    activity.id(),
+                    CreationValues.CONTENT_STATUS_REJECTED,
+                    CreationValues.VISIBILITY_PRIVATE,
+                    now());
+        });
+    }
+
+    // 只有审核通过的活动允许上架。
+    public Mono<Activity> publish(UUID activityId) {
+        return require(activityId).flatMap(activity -> {
+            if (!CreationValues.CONTENT_STATUS_APPROVED.equals(activity.status())) {
+                return Mono.error(reviewConflict("activity-not-approved", "只有审核通过的活动可以上架。"));
+            }
+            return activities.updateStatus(
+                    activity.id(),
+                    CreationValues.CONTENT_STATUS_PUBLISHED,
+                    CreationValues.VISIBILITY_PUBLIC,
+                    now());
+        });
+    }
+
+    // 下架后保留审核通过状态，等待再次上架。
+    public Mono<Activity> unpublish(UUID activityId) {
+        return require(activityId).flatMap(activity -> {
+            if (!CreationValues.CONTENT_STATUS_PUBLISHED.equals(activity.status())) {
+                return Mono.error(reviewConflict("activity-not-published", "只有已上架活动可以下架。"));
+            }
+            return activities.updateStatus(
+                    activity.id(),
+                    CreationValues.CONTENT_STATUS_APPROVED,
+                    CreationValues.VISIBILITY_PRIVATE,
+                    now());
+        });
+    }
+
+    private Mono<Activity> require(UUID activityId) {
+        return activities
+                .findById(activityId)
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND, "activity-not-found", "活动不存在。")));
+    }
+
+    private static ApiException reviewConflict(String code, String message) {
+        return new ApiException(HttpStatus.CONFLICT, code, message);
     }
 
     public Mono<ActivitySubmission> submit(

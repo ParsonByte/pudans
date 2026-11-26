@@ -44,6 +44,10 @@ public class AiChannels {
         return channels.findAllByWorkspace(requireWorkspace(workspaceId)).map(AiChannelEntity::toContract);
     }
 
+    public Flux<AiChannel> listAll() {
+        return channels.findAll().map(AiChannelEntity::toContract);
+    }
+
     public Mono<AiChannel> get(String workspaceId, UUID id) {
         return require(workspaceId, id).map(AiChannelEntity::toContract);
     }

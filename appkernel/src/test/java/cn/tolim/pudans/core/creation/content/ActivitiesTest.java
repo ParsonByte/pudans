@@ -70,6 +70,22 @@ class ActivitiesTest {
     }
 
     @Test
+    void allFeedIncludesEveryStatusAndVisibility() {
+        var draft = activity(UUID.randomUUID(), "bob", "draft", "private");
+        var published = activity(UUID.randomUUID(), "bob", "published", "public");
+        when(activities.allFeed(isNull(), isNull(), eq(21)))
+                .thenReturn(Mono.just(List.of(draft, published)));
+
+        StepVerifier.create(service.allFeed(null, null, null))
+                .assertNext(feed -> {
+                    assertThat(feed.items()).extracting(Activity::id)
+                            .containsExactly(draft.id(), published.id());
+                    assertThat(feed.emptyState()).isNull();
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void emptyActivityFeedReturnsAnEmptyState() {
         when(activities.feed(isNull(), isNull(), eq(21))).thenReturn(Mono.just(List.of()));
 
@@ -79,6 +95,35 @@ class ActivitiesTest {
                     assertThat(feed.emptyState()).isNotBlank();
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void approvesAnActivityForReview() {
+        var activityId = UUID.randomUUID();
+        var draft = activity(activityId, "bob", "draft", "private");
+        var approved = activity(activityId, "bob", "approved", "private");
+        when(activities.findById(activityId)).thenReturn(Mono.just(draft));
+        when(activities.updateStatus(activityId, "approved", "private", NOW))
+                .thenReturn(Mono.just(approved));
+
+        StepVerifier.create(service.approve(activityId))
+                .assertNext(result -> assertThat(result.status()).isEqualTo("approved"))
+                .verifyComplete();
+    }
+
+    @Test
+    void rejectsPublishingAnActivityThatHasNotBeenApproved() {
+        var activityId = UUID.randomUUID();
+        when(activities.findById(activityId))
+                .thenReturn(Mono.just(activity(activityId, "bob", "draft", "private")));
+
+        StepVerifier.create(service.publish(activityId))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOfSatisfying(ApiException.class, api -> {
+                            assertThat(api.getStatusCode().value()).isEqualTo(409);
+                            assertThat(api.getCode()).isEqualTo("activity-not-approved");
+                        }))
+                .verify();
     }
 
     @Test

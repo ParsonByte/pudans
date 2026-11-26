@@ -110,17 +110,29 @@ public class GenerationTaskStore {
 
     public Flux<GenerationTask> listMine(
             String ownerId, String workspaceId, Instant before, int limit) {
+        return list(ownerId, workspaceId, before, limit);
+    }
+
+    public Flux<GenerationTask> listAll(Instant before, int limit) {
+        return list(null, null, before, limit);
+    }
+
+    private Flux<GenerationTask> list(
+            String ownerId, String workspaceId, Instant before, int limit) {
         var spec = databaseClient
                 .sql(SELECT_TASK
                         + """
-                          WHERE owner_id = :ownerId AND workspace_id = :workspaceId
-                            AND (:before IS NULL OR created_at < CAST(:before AS timestamptz))
+                          WHERE (CAST(:ownerId AS varchar) IS NULL
+                              OR (owner_id = :ownerId AND workspace_id = :workspaceId))
+                            AND (CAST(:before AS timestamptz) IS NULL
+                              OR created_at < CAST(:before AS timestamptz))
                           ORDER BY created_at DESC, id DESC
                           LIMIT :limit
                           """)
-                .bind("ownerId", ownerId)
-                .bind("workspaceId", workspaceId)
                 .bind("limit", limit);
+        spec = ownerId == null
+                ? spec.bindNull("ownerId", String.class).bindNull("workspaceId", String.class)
+                : spec.bind("ownerId", ownerId).bind("workspaceId", workspaceId);
         spec = before == null
                 ? spec.bindNull("before", OffsetDateTime.class)
                 : spec.bind("before", OffsetDateTime.ofInstant(before, ZoneOffset.UTC));

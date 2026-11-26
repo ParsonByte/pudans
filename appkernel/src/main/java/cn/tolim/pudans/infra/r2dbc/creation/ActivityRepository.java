@@ -3,6 +3,7 @@ package cn.tolim.pudans.infra.r2dbc.creation;
 import cn.tolim.pudans.contract.creation.Activity;
 import cn.tolim.pudans.contract.creation.CreationValues;
 import io.r2dbc.spi.Row;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +41,31 @@ public class ActivityRepository {
             LIMIT :fetchLimit
             """;
 
+    private static final String UPDATE_STATUS_SQL = """
+            UPDATE activities
+               SET status = :status,
+                   visibility = :visibility,
+                   updated_at = :updatedAt
+             WHERE id = :id
+            RETURNING id, owner_id, workspace_id, title, description, rules,
+                cover_asset_id, template_id, status, visibility, starts_at,
+                ends_at, created_at, updated_at
+            """;
+
+    private static final String ALL_SQL = """
+            SELECT id, owner_id, workspace_id, title, description, rules,
+                cover_asset_id, template_id, status, visibility, starts_at,
+                ends_at, created_at, updated_at
+            FROM activities
+            WHERE (CAST(:q AS varchar) IS NULL
+                    OR COALESCE(title, '') ILIKE :q ESCAPE '!'
+                    OR COALESCE(description, '') ILIKE :q ESCAPE '!')
+                AND (CAST(:cursorTime AS timestamptz) IS NULL
+                    OR (updated_at, id) < (CAST(:cursorTime AS timestamptz), CAST(:cursorId AS uuid)))
+            ORDER BY updated_at DESC, id DESC
+            LIMIT :fetchLimit
+            """;
+
     private final DatabaseClient databaseClient;
 
     public Mono<Activity> findById(UUID id) {
@@ -61,6 +87,35 @@ public class ActivityRepository {
         } else {
             spec = spec.bind("q", CreationRows.likePattern(q));
         }
+        if (cursor == null) {
+            spec = spec.bindNull("cursorTime", OffsetDateTime.class).bindNull("cursorId", UUID.class);
+        } else {
+            spec = spec.bind("cursorTime", CreationRows.offset(cursor.sortTime()))
+                    .bind("cursorId", cursor.id());
+        }
+        return spec.bind("fetchLimit", fetchLimit)
+                .map((row, metadata) -> map(row))
+                .all()
+                .collectList();
+    }
+
+    public Mono<Activity> updateStatus(
+            UUID id, String status, String visibility, Instant updatedAt) {
+        return databaseClient
+                .sql(UPDATE_STATUS_SQL)
+                .bind("id", id)
+                .bind("status", status)
+                .bind("visibility", visibility)
+                .bind("updatedAt", CreationRows.offset(updatedAt))
+                .map((row, metadata) -> map(row))
+                .one();
+    }
+
+    public Mono<List<Activity>> allFeed(
+            String q, CreationCursor.Position cursor, int fetchLimit) {
+        var spec = databaseClient.sql(ALL_SQL);
+        var pattern = CreationRows.likePattern(q);
+        spec = pattern == null ? spec.bindNull("q", String.class) : spec.bind("q", pattern);
         if (cursor == null) {
             spec = spec.bindNull("cursorTime", OffsetDateTime.class).bindNull("cursorId", UUID.class);
         } else {

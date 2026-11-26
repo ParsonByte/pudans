@@ -61,6 +61,41 @@ class AssetEndpointTest {
     }
 
     @Test
+    void listsEveryAssetForAdministrativeInspection() {
+        var asset = asset(UUID.randomUUID());
+        when(assets.allItems(isNull(), isNull(), isNull(), isNull(), eq(20)))
+                .thenReturn(Mono.just(new AssetPage(List.of(asset), null, 20, null, NOW)));
+
+        client.get()
+                .uri("/assets/-/all?limit=20")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.items[0].id")
+                .isEqualTo(asset.id().toString());
+
+        verify(assets).allItems(isNull(), isNull(), isNull(), isNull(), eq(20));
+    }
+
+    @Test
+    void returnsEveryAssetFacetForAdministrativeInspection() {
+        when(assets.allFacets())
+                .thenReturn(Mono.just(new AssetFacets(2, List.of(), List.of(), null, NOW)));
+
+        client.get()
+                .uri("/assets/-/all-facets")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.total")
+                .isEqualTo(2);
+
+        verify(assets).allFacets();
+    }
+
+    @Test
     void listsAssetsForTheResolvedOwnerAndWorkspace() {
         var asset = asset(UUID.randomUUID());
         when(identity.resolve(any())).thenReturn(Mono.just(ALICE));

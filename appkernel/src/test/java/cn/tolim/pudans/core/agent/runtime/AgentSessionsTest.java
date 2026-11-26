@@ -110,6 +110,35 @@ class AgentSessionsTest {
         assertThat(result.latestMessageAt()).isNull();
     }
 
+    @Test
+    void listsEverySessionForAdministrativeInspection() {
+        var session = session();
+        when(sessions.findAllByOrderByUpdatedAtDesc(
+                        org.springframework.data.domain.PageRequest.of(0, 20)))
+                .thenReturn(Flux.just(session));
+
+        var result = service.listAll(0).block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.limit()).isEqualTo(20);
+        assertThat(result.items()).extracting(sessionItem -> sessionItem.id())
+                .containsExactly(session.getId());
+    }
+
+    @Test
+    void summarizesEverySessionForAdministrativeInspection() {
+        when(sessions.count()).thenReturn(Mono.just(5L));
+        when(sessions.countByStatus("active")).thenReturn(Mono.just(3L));
+        when(sessions.findFirstByOrderByLastMessageAtDesc()).thenReturn(Mono.empty());
+
+        var result = service.summaryAll().block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.total()).isEqualTo(5);
+        assertThat(result.active()).isEqualTo(3);
+        assertThat(result.latestMessageAt()).isNull();
+    }
+
     private static AgentSessionEntity session() {
         var now = OffsetDateTime.now(ZoneOffset.UTC);
         var entity = AgentSessionEntity.create("alice", "workspace-a", "Planning", null, null, now);

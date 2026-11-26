@@ -23,13 +23,14 @@ public class SubjectRepository {
             WHERE id = :id
             """;
 
-    private static final String LIST_MINE_SQL = """
+    private static final String LIST_SQL = """
             SELECT id, owner_id, workspace_id, name, description, kind,
                 avatar_asset_id, tags_jsonb::text AS tags_json,
                 metadata_jsonb::text AS metadata_json, status, visibility,
                 created_at, updated_at
             FROM subjects
-            WHERE owner_id = :ownerId AND workspace_id = :workspaceId
+            WHERE (CAST(:ownerId AS varchar) IS NULL
+                OR (owner_id = :ownerId AND workspace_id = :workspaceId))
                 AND (CAST(:cursorTime AS timestamptz) IS NULL
                     OR (updated_at, id) < (CAST(:cursorTime AS timestamptz), CAST(:cursorId AS uuid)))
             ORDER BY updated_at DESC, id DESC
@@ -51,10 +52,22 @@ public class SubjectRepository {
             String workspaceId,
             CreationCursor.Position cursor,
             int fetchLimit) {
-        var spec = databaseClient
-                .sql(LIST_MINE_SQL)
-                .bind("ownerId", ownerId)
-                .bind("workspaceId", workspaceId);
+        return list(ownerId, workspaceId, cursor, fetchLimit);
+    }
+
+    public Mono<List<Subject>> listAll(CreationCursor.Position cursor, int fetchLimit) {
+        return list(null, null, cursor, fetchLimit);
+    }
+
+    private Mono<List<Subject>> list(
+            String ownerId,
+            String workspaceId,
+            CreationCursor.Position cursor,
+            int fetchLimit) {
+        var spec = databaseClient.sql(LIST_SQL);
+        spec = ownerId == null
+                ? spec.bindNull("ownerId", String.class).bindNull("workspaceId", String.class)
+                : spec.bind("ownerId", ownerId).bind("workspaceId", workspaceId);
         if (cursor == null) {
             spec = spec.bindNull("cursorTime", OffsetDateTime.class).bindNull("cursorId", UUID.class);
         } else {

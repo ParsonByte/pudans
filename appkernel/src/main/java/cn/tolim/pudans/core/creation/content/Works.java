@@ -44,6 +44,8 @@ public class Works {
 
     private static final String EXPLORE_EMPTY_STATE = "暂无公开作品。";
 
+    private static final String ALL_EMPTY_STATE = "暂无作品。";
+
     private final WorkRepository works;
 
     private final InteractionRepository interactions;
@@ -81,6 +83,32 @@ public class Works {
                             nextCursor,
                             limit,
                             items.isEmpty() ? EXPLORE_EMPTY_STATE : null,
+                            now());
+                });
+    }
+
+    public Mono<ExploreFeed> allFeed(
+            String q,
+            UUID templateId,
+            UUID activityId,
+            String creator,
+            String cursor,
+            Integer requestedLimit) {
+        var limit = CreationCursor.limit(requestedLimit);
+        var position = CreationCursor.decode(cursor, "explore-cursor-invalid");
+        return works
+                .allFeed(q, templateId, activityId, creator, position, limit + 1)
+                .map(fetched -> {
+                    var hasMore = fetched.size() > limit;
+                    var items = hasMore ? fetched.subList(0, limit) : fetched;
+                    var nextCursor = hasMore && !items.isEmpty()
+                            ? CreationCursor.encode(items.getLast().updatedAt(), items.getLast().id())
+                            : null;
+                    return new ExploreFeed(
+                            List.copyOf(items),
+                            nextCursor,
+                            limit,
+                            items.isEmpty() ? ALL_EMPTY_STATE : null,
                             now());
                 });
     }
@@ -231,6 +259,71 @@ public class Works {
                 .findById(workId)
                 .switchIfEmpty(Mono.error(new ApiException(
                         HttpStatus.NOT_FOUND, WORK_NOT_FOUND, "作品不存在。")));
+    }
+
+    // 审核通过只改变审核状态，上架时才公开。
+    public Mono<Work> approve(UUID workId) {
+        return findById(workId).flatMap(work -> {
+            if (CreationValues.CONTENT_STATUS_PUBLISHED.equals(work.status())) {
+                return Mono.error(reviewConflict("work-already-published", "已上架作品不能重复审核。"));
+            }
+            return works.updateStatus(
+                    work.id(),
+                    CreationValues.CONTENT_STATUS_APPROVED,
+                    work.visibility(),
+                    null,
+                    now());
+        });
+    }
+
+    // 审核拒绝内容保持私有且不公开。
+    public Mono<Work> reject(UUID workId) {
+        return findById(workId).flatMap(work -> {
+            if (CreationValues.CONTENT_STATUS_PUBLISHED.equals(work.status())) {
+                return Mono.error(reviewConflict("work-already-published", "已上架作品不能审核拒绝。"));
+            }
+            return works.updateStatus(
+                    work.id(),
+                    CreationValues.CONTENT_STATUS_REJECTED,
+                    CreationValues.VISIBILITY_PRIVATE,
+                    null,
+                    now());
+        });
+    }
+
+    // 只有审核通过的作品允许上架。
+    public Mono<Work> publish(UUID workId) {
+        return findById(workId).flatMap(work -> {
+            if (!CreationValues.CONTENT_STATUS_APPROVED.equals(work.status())) {
+                return Mono.error(reviewConflict("work-not-approved", "只有审核通过的作品可以上架。"));
+            }
+            var now = now();
+            return works.updateStatus(
+                    work.id(),
+                    CreationValues.CONTENT_STATUS_PUBLISHED,
+                    CreationValues.VISIBILITY_PUBLIC,
+                    now,
+                    now);
+        });
+    }
+
+    // 下架后保留审核通过状态，等待再次上架。
+    public Mono<Work> unpublish(UUID workId) {
+        return findById(workId).flatMap(work -> {
+            if (!CreationValues.CONTENT_STATUS_PUBLISHED.equals(work.status())) {
+                return Mono.error(reviewConflict("work-not-published", "只有已上架作品可以下架。"));
+            }
+            return works.updateStatus(
+                    work.id(),
+                    CreationValues.CONTENT_STATUS_APPROVED,
+                    CreationValues.VISIBILITY_PRIVATE,
+                    null,
+                    now());
+        });
+    }
+
+    private static ApiException reviewConflict(String code, String message) {
+        return new ApiException(HttpStatus.CONFLICT, code, message);
     }
 
     public boolean isOwned(Work work, RequestIdentity identity) {

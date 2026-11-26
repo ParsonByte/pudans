@@ -29,12 +29,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -147,8 +149,19 @@ public class GenerationTasks {
 
     public Mono<GenerationTaskPage> mine(
             RequestIdentity identity, Instant before, int limit) {
-        var boundedLimit = Math.max(1, Math.min(limit, 100));
-        return store.listMine(identity.ownerId(), identity.workspaceId(), before, boundedLimit)
+        var boundedLimit = boundedLimit(limit);
+        return page(
+                store.listMine(identity.ownerId(), identity.workspaceId(), before, boundedLimit),
+                boundedLimit);
+    }
+
+    public Mono<GenerationTaskPage> listAll(Instant before, int limit) {
+        var boundedLimit = boundedLimit(limit);
+        return page(store.listAll(before, boundedLimit), boundedLimit);
+    }
+
+    private Mono<GenerationTaskPage> page(Flux<GenerationTask> tasks, int boundedLimit) {
+        return tasks
                 .map(GenerationTasks::summary)
                 .collectList()
                 .map(items -> {
@@ -157,6 +170,10 @@ public class GenerationTasks {
                             : items.get(items.size() - 1).createdAt().toString();
                     return new GenerationTaskPage(items, nextCursor);
                 });
+    }
+
+    private static int boundedLimit(int limit) {
+        return Math.max(1, Math.min(limit, 100));
     }
 
     public Mono<GenerationTaskStatusView> status(RequestIdentity identity, UUID taskId) {
@@ -181,33 +198,47 @@ public class GenerationTasks {
 
     // 取消先写 Redis 标记并尝试供应商取消，数据库状态是最终事实。
     public Mono<GenerationTaskSummary> cancel(RequestIdentity identity, UUID taskId) {
-        return requireOwned(identity, taskId).flatMap(task -> {
-            if (task.status() == GenerationTask.Status.CANCELLED) {
-                return Mono.just(summary(task));
-            }
-            if (!CANCELLABLE.contains(task.status())) {
-                return Mono.error(notCancellable());
-            }
-            var marks = cancellations.markTask(task.id());
-            if (task.runId() != null) {
-                marks = marks.then(cancellations.markRun(task.runId()));
-            }
-            return marks
-                    .then(cancelProvider(task))
-                    .flatMap(outcome -> store.cancel(
-                                    task.id(),
-                                    CANCELLABLE,
-                                    outcome.errorCode(),
-                                    outcome.errorMessage(),
-                                    now())
-                            .flatMap(cancelled -> events
-                                    .publish(cancelled, GenerationTaskEvents.TASK_CANCELLED, cancelledData(cancelled))
-                                    .thenReturn(summary(cancelled)))
-                            .switchIfEmpty(Mono.defer(() -> requireOwned(identity, taskId)
-                                    .flatMap(current -> current.status() == GenerationTask.Status.CANCELLED
-                                            ? Mono.just(summary(current))
-                                            : Mono.error(notCancellable())))));
-        });
+        return requireOwned(identity, taskId)
+                .flatMap(task -> cancelTask(task, () -> requireOwned(identity, taskId)));
+    }
+
+    // 管理端强制取消不校验归属，但复用同一取消状态机。
+    public Mono<GenerationTaskSummary> forceCancel(UUID taskId) {
+        return store
+                .findById(taskId)
+                .switchIfEmpty(Mono.error(taskNotFound()))
+                .flatMap(task -> cancelTask(
+                        task,
+                        () -> store.findById(taskId).switchIfEmpty(Mono.error(taskNotFound()))));
+    }
+
+    private Mono<GenerationTaskSummary> cancelTask(
+            GenerationTask task, Supplier<Mono<GenerationTask>> reload) {
+        if (task.status() == GenerationTask.Status.CANCELLED) {
+            return Mono.just(summary(task));
+        }
+        if (!CANCELLABLE.contains(task.status())) {
+            return Mono.error(notCancellable());
+        }
+        var marks = cancellations.markTask(task.id());
+        if (task.runId() != null) {
+            marks = marks.then(cancellations.markRun(task.runId()));
+        }
+        return marks
+                .then(cancelProvider(task))
+                .flatMap(outcome -> store.cancel(
+                                task.id(),
+                                CANCELLABLE,
+                                outcome.errorCode(),
+                                outcome.errorMessage(),
+                                now())
+                        .flatMap(cancelled -> events
+                                .publish(cancelled, GenerationTaskEvents.TASK_CANCELLED, cancelledData(cancelled))
+                                .thenReturn(summary(cancelled)))
+                        .switchIfEmpty(Mono.defer(() -> reload.get()
+                                .flatMap(current -> current.status() == GenerationTask.Status.CANCELLED
+                                        ? Mono.just(summary(current))
+                                        : Mono.error(notCancellable())))));
     }
 
     // 已发送请求的重试必须先与供应商对账，禁止重复提交和重复计费。

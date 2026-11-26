@@ -10,6 +10,7 @@ import cn.tolim.pudans.contract.creation.CreationValues;
 import cn.tolim.pudans.contract.creation.Template;
 import cn.tolim.pudans.contract.creation.Work;
 import cn.tolim.pudans.contract.creation.dto.ExploreFeed;
+import cn.tolim.pudans.contract.creation.dto.TemplateFeed;
 import cn.tolim.pudans.contract.creation.dto.WorkDetail;
 import cn.tolim.pudans.contract.creation.dto.WorkInteractionResult;
 import cn.tolim.pudans.contract.creation.dto.WorkPlay;
@@ -79,6 +80,68 @@ class ContentEndpointTest {
                 .isArray()
                 .jsonPath("$.emptyState")
                 .isEqualTo("暂无公开作品。");
+    }
+
+    @Test
+    void listsEveryWorkForAdministrativeInspection() {
+        var work = work(UUID.randomUUID());
+        when(works.allFeed(null, null, null, null, null, null))
+                .thenReturn(Mono.just(new ExploreFeed(List.of(work), null, 20, null, NOW)));
+
+        client.get()
+                .uri("/works/-/all")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.items[0].ownerId")
+                .isEqualTo("bob");
+    }
+
+    @Test
+    void listsEveryTemplateForAdministrativeInspection() {
+        var template = template(UUID.randomUUID());
+        when(templates.allFeed(null, null, null))
+                .thenReturn(Mono.just(new TemplateFeed(List.of(template), null, 20, null, NOW)));
+
+        client.get()
+                .uri("/templates/-/all")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.items[0].ownerId")
+                .isEqualTo("bob");
+    }
+
+    @Test
+    void approvesAWorkForAdministrativeReview() {
+        var work = work(UUID.randomUUID());
+        when(works.approve(work.id())).thenReturn(Mono.just(work));
+
+        client.post()
+                .uri("/works/{id}/approve", work.id())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.id")
+                .isEqualTo(work.id().toString());
+    }
+
+    @Test
+    void publishesATemplateForAdministrativeReview() {
+        var template = template(UUID.randomUUID());
+        when(templates.publish(template.id())).thenReturn(Mono.just(template));
+
+        client.post()
+                .uri("/templates/{id}/publish", template.id())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.id")
+                .isEqualTo(template.id().toString());
     }
 
     @Test

@@ -31,19 +31,29 @@ public class Subjects {
         var position = CreationCursor.decode(cursor, "subject-cursor-invalid");
         return subjects
                 .listMine(identity.ownerId(), identity.workspaceId(), position, limit + 1)
-                .map(fetched -> {
-                    var hasMore = fetched.size() > limit;
-                    var items = hasMore ? fetched.subList(0, limit) : fetched;
-                    var nextCursor = hasMore && !items.isEmpty()
-                            ? CreationCursor.encode(items.getLast().updatedAt(), items.getLast().id())
-                            : null;
-                    return new SubjectPage(
-                            List.copyOf(items),
-                            nextCursor,
-                            limit,
-                            items.isEmpty() ? EMPTY_STATE : null,
-                            now());
-                });
+                .map(fetched -> page(fetched, limit));
+    }
+
+    public Mono<SubjectPage> all(String cursor, Integer requestedLimit) {
+        var limit = CreationCursor.limit(requestedLimit);
+        var position = CreationCursor.decode(cursor, "subject-cursor-invalid");
+        return subjects
+                .listAll(position, limit + 1)
+                .map(fetched -> page(fetched, limit));
+    }
+
+    private SubjectPage page(List<Subject> fetched, int limit) {
+        var hasMore = fetched.size() > limit;
+        var items = hasMore ? fetched.subList(0, limit) : fetched;
+        var nextCursor = hasMore && !items.isEmpty()
+                ? CreationCursor.encode(items.getLast().updatedAt(), items.getLast().id())
+                : null;
+        return new SubjectPage(
+                List.copyOf(items),
+                nextCursor,
+                limit,
+                items.isEmpty() ? EMPTY_STATE : null,
+                now());
     }
 
     public Mono<Subject> view(RequestIdentity identity, UUID subjectId) {
