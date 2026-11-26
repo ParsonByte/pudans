@@ -2,6 +2,18 @@ import axios, { type AxiosInstance } from "axios";
 import QueryString from "qs";
 
 import {
+    AiCatalogV1alpha1Api,
+    AiChannelCapabilityV1alpha1Api,
+    AiChannelModelV1alpha1Api,
+    AiChannelV1alpha1Api,
+    AiDefaultModelV1alpha1Api,
+    AiModelV1alpha1Api,
+    AiPriceRuleV1alpha1Api,
+    AiProtocolV1alpha1Api,
+    AiProviderV1alpha1Api,
+    AiQuotaAssignmentV1alpha1Api,
+    AiQuotaPlanV1alpha1Api,
+    AiQuotaV1alpha1Api,
     AnnotationSettingV1alpha1Api,
     AuditLogV1alpha1Api,
     AuthProviderV1alpha1Api,
@@ -9,6 +21,7 @@ import {
     AuthenticationV1alpha1Api,
     AvatarV1alpha1Api,
     CaptchaV1alpha1Api,
+    CatalogEntryV1alpha1Api,
     ConfigMapV1alpha1Api,
     DashboardV1alpha1Api,
     DeviceV1alpha1Api,
@@ -44,11 +57,35 @@ const defaultAxiosInstance = axios.create({
 });
 
 defaultAxiosInstance.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
+defaultAxiosInstance.interceptors.request.use((config) => {
+    if (typeof window === "undefined") {
+        return config;
+    }
+
+    const workspace = window.location.pathname.match(/^\/workspace\/([^/?#]+)/)?.[1];
+    if (workspace) {
+        config.headers.set("X-Pudans-Workspace", decodeURIComponent(workspace));
+    }
+
+    return config;
+});
 
 export function createApiClient(axiosInstance: AxiosInstance = defaultAxiosInstance) {
     const baseURL = axiosInstance.defaults.baseURL ?? "";
 
     return {
+        aiCatalog: new AiCatalogV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiChannel: new AiChannelV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiChannelCapability: new AiChannelCapabilityV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiChannelModel: new AiChannelModelV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiDefaultModel: new AiDefaultModelV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiModel: new AiModelV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiPriceRule: new AiPriceRuleV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiProtocol: new AiProtocolV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiProvider: new AiProviderV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiQuota: new AiQuotaV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiQuotaAssignment: new AiQuotaAssignmentV1alpha1Api(undefined, baseURL, axiosInstance),
+        aiQuotaPlan: new AiQuotaPlanV1alpha1Api(undefined, baseURL, axiosInstance),
         annotationSetting: new AnnotationSettingV1alpha1Api(undefined, baseURL, axiosInstance),
         auditLog: new AuditLogV1alpha1Api(undefined, baseURL, axiosInstance),
         authProvider: new AuthProviderV1alpha1Api(undefined, baseURL, axiosInstance),
@@ -56,6 +93,7 @@ export function createApiClient(axiosInstance: AxiosInstance = defaultAxiosInsta
         authentication: new AuthenticationV1alpha1Api(undefined, baseURL, axiosInstance),
         avatar: new AvatarV1alpha1Api(undefined, baseURL, axiosInstance),
         captcha: new CaptchaV1alpha1Api(undefined, baseURL, axiosInstance),
+        catalogEntry: new CatalogEntryV1alpha1Api(undefined, baseURL, axiosInstance),
         configMap: new ConfigMapV1alpha1Api(undefined, baseURL, axiosInstance),
         dashboard: new DashboardV1alpha1Api(undefined, baseURL, axiosInstance),
         device: new DeviceV1alpha1Api(undefined, baseURL, axiosInstance),
