@@ -49,13 +49,22 @@ public class AgentChatModelFactory {
         var provider = providers.require(channel.provider());
         var protocol = descriptor.protocol();
         var profile = provider.protocolProfile(protocol);
+        var reasoningSupported = supports(route.model(), "reasoning");
         var bodyParams = protocol == AiProtocol.CHAT_COMPLETIONS
                 ? AiProtocolProfiles.resolve(profile, ChatCompletionsProfile.class, STANDARD_CHAT)
-                        .reasoningBodyParams(supports(route.model(), "reasoning"), reasoning)
+                        .reasoningBodyParams(reasoningSupported, reasoning)
                 : Map.<String, Object>of();
         return protocols.requireChat(protocol.value())
                 .create(
-                        request(route, provider, apiKey, upstream, protocol, bodyParams),
+                        request(
+                                route,
+                                provider,
+                                apiKey,
+                                upstream,
+                                protocol,
+                                bodyParams,
+                                reasoning,
+                                reasoningSupported),
                         profile);
     }
 
@@ -65,7 +74,9 @@ public class AgentChatModelFactory {
             String apiKey,
             String upstream,
             AiProtocol protocol,
-            Map<String, Object> bodyParams) {
+            Map<String, Object> bodyParams,
+            String reasoning,
+            boolean reasoningSupported) {
         var channel = route.channel();
         var baseUrl = switch (protocol) {
             case CHAT_COMPLETIONS -> provider.chatCompletionsBaseUrl(channel.baseUrl());
@@ -87,7 +98,9 @@ public class AgentChatModelFactory {
                 headers,
                 timeoutMs(channel),
                 route.model().maxOutputTokens(),
-                protocol == AiProtocol.CHAT_COMPLETIONS ? bodyParams : Map.of());
+                protocol == AiProtocol.CHAT_COMPLETIONS ? bodyParams : Map.of(),
+                reasoning,
+                reasoningSupported);
     }
 
     private AiProtocolDescriptor protocol(String protocol, String provider) {
