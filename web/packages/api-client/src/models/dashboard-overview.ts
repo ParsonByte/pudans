@@ -18,13 +18,25 @@
 import type { ActiveUser } from './active-user';
 // May contain unused imports in some cases
 // @ts-ignore
+import type { DashboardInsight } from './dashboard-insight';
+// May contain unused imports in some cases
+// @ts-ignore
+import type { DashboardMetric } from './dashboard-metric';
+// May contain unused imports in some cases
+// @ts-ignore
 import type { GlobalInfoSummary } from './global-info-summary';
 // May contain unused imports in some cases
 // @ts-ignore
 import type { LoginTrendPoint } from './login-trend-point';
 // May contain unused imports in some cases
 // @ts-ignore
+import type { OperationCount } from './operation-count';
+// May contain unused imports in some cases
+// @ts-ignore
 import type { RecentOperation } from './recent-operation';
+// May contain unused imports in some cases
+// @ts-ignore
+import type { ResultCount } from './result-count';
 // May contain unused imports in some cases
 // @ts-ignore
 import type { RoleUserCount } from './role-user-count';
@@ -34,13 +46,20 @@ import type { RoleUserCount } from './role-user-count';
  */
 export interface DashboardOverview {
     'activeUsers'?: Array<ActiveUser>;
+    'failureTrend'?: Array<LoginTrendPoint>;
+    'generatedAt'?: string;
     'globalInfo'?: GlobalInfoSummary;
+    'insights'?: Array<DashboardInsight>;
     'loginTrend'?: Array<LoginTrendPoint>;
+    'metrics'?: Array<DashboardMetric>;
     'operationTrend'?: Array<LoginTrendPoint>;
+    'rangeDays'?: number;
     'recentAuditLogs'?: Array<RecentOperation>;
+    'resultDistribution'?: Array<ResultCount>;
     'riskRuleTrend'?: Array<LoginTrendPoint>;
     'roleDistribution'?: Array<RoleUserCount>;
     'todayOperations'?: number;
+    'topOperations'?: Array<OperationCount>;
     'totalRiskRules'?: number;
     'totalRoles'?: number;
     'totalUserGroups'?: number;

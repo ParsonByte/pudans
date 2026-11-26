@@ -105,7 +105,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * Call the DeepSeek Anthropic Messages compatibility alias with a raw JSON body.
+         * Call the channel provider\'s Anthropic Messages compatibility alias with a raw JSON body.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -145,7 +145,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * Call the DeepSeek Chat Completions API with a raw JSON body.
+         * Call the channel provider\'s Chat Completions API with a raw JSON body.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -185,7 +185,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * Call the DeepSeek Anthropic Messages API with a raw JSON body.
+         * Call the channel provider\'s Messages API with a raw JSON body.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -225,7 +225,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * Call the DeepSeek Responses API with a raw JSON body.
+         * Call the channel provider\'s Responses API with a raw JSON body.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -310,7 +310,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * Delete a file through the DeepSeek OpenAI-compatible Files API.
+         * Delete a file through the channel provider\'s Files API.
          * @param {string} name
          * @param {string} fileId
          * @param {*} [options] Override http request option.
@@ -344,6 +344,50 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
             localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Download file content through the channel provider\'s Files API.
+         * @param {string} name
+         * @param {string} fileId
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        downloadAiChannelFile: async (name: string, fileId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'name' is not null or undefined
+            assertParamExists('downloadAiChannelFile', 'name', name)
+            // verify required parameter 'fileId' is not null or undefined
+            assertParamExists('downloadAiChannelFile', 'fileId', fileId)
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/aichannels/{name}/-/files/{fileId}/content`
+                .replace('{name}', encodeURIComponent(String(name)))
+                .replace('{fileId}', encodeURIComponent(String(fileId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
@@ -487,7 +531,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * Retrieve a file through the DeepSeek OpenAI-compatible Files API.
+         * Retrieve a file through the channel provider\'s Files API.
          * @param {string} name
          * @param {string} fileId
          * @param {*} [options] Override http request option.
@@ -573,7 +617,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * List files through the DeepSeek OpenAI-compatible Files API.
+         * List files through the channel provider\'s Files API.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -701,7 +745,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * Synthesize speech through the DeepSeek Text to Speech API.
+         * Synthesize speech through the channel provider\'s Text to Speech API.
          * @param {string} name
          * @param {AiSpeechRequest} aiSpeechRequest
          * @param {*} [options] Override http request option.
@@ -746,7 +790,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * Transcribe audio through the DeepSeek Speech to Text API.
+         * Transcribe audio through the channel provider\'s Speech to Text API.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -828,7 +872,7 @@ export const AiChannelCapabilityV1alpha1ApiAxiosParamCreator = function (configu
             };
         },
         /**
-         * Upload a file through the DeepSeek OpenAI-compatible Files API.
+         * Upload a file through the channel provider\'s Files API.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -891,7 +935,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Call the DeepSeek Anthropic Messages compatibility alias with a raw JSON body.
+         * Call the channel provider\'s Anthropic Messages compatibility alias with a raw JSON body.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -903,7 +947,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Call the DeepSeek Chat Completions API with a raw JSON body.
+         * Call the channel provider\'s Chat Completions API with a raw JSON body.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -915,7 +959,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Call the DeepSeek Anthropic Messages API with a raw JSON body.
+         * Call the channel provider\'s Messages API with a raw JSON body.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -927,7 +971,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Call the DeepSeek Responses API with a raw JSON body.
+         * Call the channel provider\'s Responses API with a raw JSON body.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -952,7 +996,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Delete a file through the DeepSeek OpenAI-compatible Files API.
+         * Delete a file through the channel provider\'s Files API.
          * @param {string} name
          * @param {string} fileId
          * @param {*} [options] Override http request option.
@@ -962,6 +1006,19 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             const localVarAxiosArgs = await localVarAxiosParamCreator.deleteAiChannelFile(name, fileId, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AiChannelCapabilityV1alpha1Api.deleteAiChannelFile']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Download file content through the channel provider\'s Files API.
+         * @param {string} name
+         * @param {string} fileId
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async downloadAiChannelFile(name: string, fileId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.downloadAiChannelFile(name, fileId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AiChannelCapabilityV1alpha1Api.downloadAiChannelFile']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -1003,7 +1060,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Retrieve a file through the DeepSeek OpenAI-compatible Files API.
+         * Retrieve a file through the channel provider\'s Files API.
          * @param {string} name
          * @param {string} fileId
          * @param {*} [options] Override http request option.
@@ -1028,7 +1085,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * List files through the DeepSeek OpenAI-compatible Files API.
+         * List files through the channel provider\'s Files API.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1065,7 +1122,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Synthesize speech through the DeepSeek Text to Speech API.
+         * Synthesize speech through the channel provider\'s Text to Speech API.
          * @param {string} name
          * @param {AiSpeechRequest} aiSpeechRequest
          * @param {*} [options] Override http request option.
@@ -1078,7 +1135,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Transcribe audio through the DeepSeek Speech to Text API.
+         * Transcribe audio through the channel provider\'s Speech to Text API.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1102,7 +1159,7 @@ export const AiChannelCapabilityV1alpha1ApiFp = function(configuration?: Configu
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Upload a file through the DeepSeek OpenAI-compatible Files API.
+         * Upload a file through the channel provider\'s Files API.
          * @param {string} name
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1132,7 +1189,7 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.completeAiChannelFim(requestParameters.name, requestParameters.aiFimRequest, options).then((request) => request(axios, basePath));
         },
         /**
-         * Call the DeepSeek Anthropic Messages compatibility alias with a raw JSON body.
+         * Call the channel provider\'s Anthropic Messages compatibility alias with a raw JSON body.
          * @param {AiChannelCapabilityV1alpha1ApiCreateAiChannelAnthropicMessageRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1141,7 +1198,7 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.createAiChannelAnthropicMessage(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
-         * Call the DeepSeek Chat Completions API with a raw JSON body.
+         * Call the channel provider\'s Chat Completions API with a raw JSON body.
          * @param {AiChannelCapabilityV1alpha1ApiCreateAiChannelChatCompletionRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1150,7 +1207,7 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.createAiChannelChatCompletion(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
-         * Call the DeepSeek Anthropic Messages API with a raw JSON body.
+         * Call the channel provider\'s Messages API with a raw JSON body.
          * @param {AiChannelCapabilityV1alpha1ApiCreateAiChannelMessageRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1159,7 +1216,7 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.createAiChannelMessage(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
-         * Call the DeepSeek Responses API with a raw JSON body.
+         * Call the channel provider\'s Responses API with a raw JSON body.
          * @param {AiChannelCapabilityV1alpha1ApiCreateAiChannelResponseRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1177,13 +1234,22 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.deleteAiChannelAnthropicFile(requestParameters.name, requestParameters.fileId, options).then((request) => request(axios, basePath));
         },
         /**
-         * Delete a file through the DeepSeek OpenAI-compatible Files API.
+         * Delete a file through the channel provider\'s Files API.
          * @param {AiChannelCapabilityV1alpha1ApiDeleteAiChannelFileRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
         deleteAiChannelFile(requestParameters: AiChannelCapabilityV1alpha1ApiDeleteAiChannelFileRequest, options?: RawAxiosRequestConfig): AxiosPromise<AiFileDeletion> {
             return localVarFp.deleteAiChannelFile(requestParameters.name, requestParameters.fileId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Download file content through the channel provider\'s Files API.
+         * @param {AiChannelCapabilityV1alpha1ApiDownloadAiChannelFileRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        downloadAiChannelFile(requestParameters: AiChannelCapabilityV1alpha1ApiDownloadAiChannelFileRequest, options?: RawAxiosRequestConfig): AxiosPromise<void> {
+            return localVarFp.downloadAiChannelFile(requestParameters.name, requestParameters.fileId, options).then((request) => request(axios, basePath));
         },
         /**
          * Fetch a web page through the DeepSeek Fetch API.
@@ -1213,7 +1279,7 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.getAiChannelBalance(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
-         * Retrieve a file through the DeepSeek OpenAI-compatible Files API.
+         * Retrieve a file through the channel provider\'s Files API.
          * @param {AiChannelCapabilityV1alpha1ApiGetAiChannelFileRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1231,7 +1297,7 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.listAiChannelAnthropicFiles(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
-         * List files through the DeepSeek OpenAI-compatible Files API.
+         * List files through the channel provider\'s Files API.
          * @param {AiChannelCapabilityV1alpha1ApiListAiChannelFilesRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1258,7 +1324,7 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.searchAiChannel(requestParameters.name, requestParameters.aiSearchRequest, options).then((request) => request(axios, basePath));
         },
         /**
-         * Synthesize speech through the DeepSeek Text to Speech API.
+         * Synthesize speech through the channel provider\'s Text to Speech API.
          * @param {AiChannelCapabilityV1alpha1ApiSynthesizeAiChannelSpeechRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1267,7 +1333,7 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.synthesizeAiChannelSpeech(requestParameters.name, requestParameters.aiSpeechRequest, options).then((request) => request(axios, basePath));
         },
         /**
-         * Transcribe audio through the DeepSeek Speech to Text API.
+         * Transcribe audio through the channel provider\'s Speech to Text API.
          * @param {AiChannelCapabilityV1alpha1ApiTranscribeAiChannelAudioRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1285,7 +1351,7 @@ export const AiChannelCapabilityV1alpha1ApiFactory = function (configuration?: C
             return localVarFp.uploadAiChannelAnthropicFile(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
-         * Upload a file through the DeepSeek OpenAI-compatible Files API.
+         * Upload a file through the channel provider\'s Files API.
          * @param {AiChannelCapabilityV1alpha1ApiUploadAiChannelFileRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1346,6 +1412,15 @@ export interface AiChannelCapabilityV1alpha1ApiDeleteAiChannelAnthropicFileReque
  * Request parameters for deleteAiChannelFile operation in AiChannelCapabilityV1alpha1Api.
  */
 export interface AiChannelCapabilityV1alpha1ApiDeleteAiChannelFileRequest {
+    readonly name: string
+
+    readonly fileId: string
+}
+
+/**
+ * Request parameters for downloadAiChannelFile operation in AiChannelCapabilityV1alpha1Api.
+ */
+export interface AiChannelCapabilityV1alpha1ApiDownloadAiChannelFileRequest {
     readonly name: string
 
     readonly fileId: string
@@ -1460,7 +1535,7 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Call the DeepSeek Anthropic Messages compatibility alias with a raw JSON body.
+     * Call the channel provider\'s Anthropic Messages compatibility alias with a raw JSON body.
      * @param {AiChannelCapabilityV1alpha1ApiCreateAiChannelAnthropicMessageRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1470,7 +1545,7 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Call the DeepSeek Chat Completions API with a raw JSON body.
+     * Call the channel provider\'s Chat Completions API with a raw JSON body.
      * @param {AiChannelCapabilityV1alpha1ApiCreateAiChannelChatCompletionRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1480,7 +1555,7 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Call the DeepSeek Anthropic Messages API with a raw JSON body.
+     * Call the channel provider\'s Messages API with a raw JSON body.
      * @param {AiChannelCapabilityV1alpha1ApiCreateAiChannelMessageRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1490,7 +1565,7 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Call the DeepSeek Responses API with a raw JSON body.
+     * Call the channel provider\'s Responses API with a raw JSON body.
      * @param {AiChannelCapabilityV1alpha1ApiCreateAiChannelResponseRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1510,13 +1585,23 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Delete a file through the DeepSeek OpenAI-compatible Files API.
+     * Delete a file through the channel provider\'s Files API.
      * @param {AiChannelCapabilityV1alpha1ApiDeleteAiChannelFileRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
     public deleteAiChannelFile(requestParameters: AiChannelCapabilityV1alpha1ApiDeleteAiChannelFileRequest, options?: RawAxiosRequestConfig) {
         return AiChannelCapabilityV1alpha1ApiFp(this.configuration).deleteAiChannelFile(requestParameters.name, requestParameters.fileId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Download file content through the channel provider\'s Files API.
+     * @param {AiChannelCapabilityV1alpha1ApiDownloadAiChannelFileRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public downloadAiChannelFile(requestParameters: AiChannelCapabilityV1alpha1ApiDownloadAiChannelFileRequest, options?: RawAxiosRequestConfig) {
+        return AiChannelCapabilityV1alpha1ApiFp(this.configuration).downloadAiChannelFile(requestParameters.name, requestParameters.fileId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -1550,7 +1635,7 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Retrieve a file through the DeepSeek OpenAI-compatible Files API.
+     * Retrieve a file through the channel provider\'s Files API.
      * @param {AiChannelCapabilityV1alpha1ApiGetAiChannelFileRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1570,7 +1655,7 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * List files through the DeepSeek OpenAI-compatible Files API.
+     * List files through the channel provider\'s Files API.
      * @param {AiChannelCapabilityV1alpha1ApiListAiChannelFilesRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1600,7 +1685,7 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Synthesize speech through the DeepSeek Text to Speech API.
+     * Synthesize speech through the channel provider\'s Text to Speech API.
      * @param {AiChannelCapabilityV1alpha1ApiSynthesizeAiChannelSpeechRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1610,7 +1695,7 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Transcribe audio through the DeepSeek Speech to Text API.
+     * Transcribe audio through the channel provider\'s Speech to Text API.
      * @param {AiChannelCapabilityV1alpha1ApiTranscribeAiChannelAudioRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -1630,7 +1715,7 @@ export class AiChannelCapabilityV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Upload a file through the DeepSeek OpenAI-compatible Files API.
+     * Upload a file through the channel provider\'s Files API.
      * @param {AiChannelCapabilityV1alpha1ApiUploadAiChannelFileRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}

@@ -18,13 +18,7 @@ export interface FeishuContactView {
     'avatar'?: string;
     'displayName'?: string;
     'email'?: string;
-    /**
-     * Whether the contact is already bound to a local account.
-     */
     'imported'?: boolean;
-    /**
-     * Local login name bound to the contact.
-     */
     'importedUsername'?: string;
     'openId'?: string;
     'phone'?: string;

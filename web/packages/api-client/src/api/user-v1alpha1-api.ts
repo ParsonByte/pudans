@@ -1095,9 +1095,9 @@ export const UserV1alpha1ApiAxiosParamCreator = function (configuration?: Config
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
          * @param {Array<string>} [sort] Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.
-         * @param {string} [keyword] Case-insensitive fuzzy match against displayName and email. Disables database paging and filters in memory.
+         * @param {string} [keyword] Case-insensitive fuzzy match against displayName and email.
          * @param {string} [status] Filter by account status: active or disabled.
-         * @param {string} [userGroup] Filter by user group name. Disables database paging and filters in memory.
+         * @param {string} [userGroup] Filter by membership of a user group name.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -1687,9 +1687,9 @@ export const UserV1alpha1ApiFp = function(configuration?: Configuration) {
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
          * @param {Array<string>} [sort] Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.
-         * @param {string} [keyword] Case-insensitive fuzzy match against displayName and email. Disables database paging and filters in memory.
+         * @param {string} [keyword] Case-insensitive fuzzy match against displayName and email.
          * @param {string} [status] Filter by account status: active or disabled.
-         * @param {string} [userGroup] Filter by user group name. Disables database paging and filters in memory.
+         * @param {string} [userGroup] Filter by membership of a user group name.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -2220,7 +2220,7 @@ export interface UserV1alpha1ApiListUsersRequest {
     readonly sort?: Array<string>
 
     /**
-     * Case-insensitive fuzzy match against displayName and email. Disables database paging and filters in memory.
+     * Case-insensitive fuzzy match against displayName and email.
      */
     readonly keyword?: string
 
@@ -2230,7 +2230,7 @@ export interface UserV1alpha1ApiListUsersRequest {
     readonly status?: string
 
     /**
-     * Filter by user group name. Disables database paging and filters in memory.
+     * Filter by membership of a user group name.
      */
     readonly userGroup?: string
 }

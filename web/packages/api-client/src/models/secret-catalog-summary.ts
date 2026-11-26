@@ -17,6 +17,9 @@
 // @ts-ignore
 import type { SecretTypeCount } from './secret-type-count';
 
+/**
+ * Summary across all secrets before filters.
+ */
 export interface SecretCatalogSummary {
     /**
      * Secrets created in the last seven days.

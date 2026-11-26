@@ -13,9 +13,14 @@
  */
 
 
+// May contain unused imports in some cases
+// @ts-ignore
+import type { AiTranscriptionSegment } from './ai-transcription-segment';
 
 export interface AiTranscriptionResult {
     'duration_ms'?: number;
     'request_id'?: string;
+    'segments'?: Array<AiTranscriptionSegment>;
+    'speakers'?: number;
     'text'?: string;
 }

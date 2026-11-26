@@ -15,6 +15,7 @@
 
 
 export interface LoginStatusView {
+    'loginCaptchaEnabled'?: boolean;
     'postLoginUrl'?: string;
     'rsaEncryptionEnabled'?: boolean;
     'setupRequired'?: boolean;

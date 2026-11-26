@@ -19,15 +19,9 @@ import type { Metadata } from './metadata';
 
 export interface Secret {
     'apiVersion': string;
-    /**
-     * Binary secret data. Write-only; values are never returned by responses.
-     */
     'data'?: { [key: string]: string; };
     'kind': string;
     'metadata': Metadata;
-    /**
-     * String secret data. Write-only; values are never returned by responses.
-     */
     'stringData'?: { [key: string]: string; };
     'type'?: string;
 }

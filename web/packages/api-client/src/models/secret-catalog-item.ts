@@ -14,6 +14,9 @@
 
 
 
+/**
+ * Catalog items for the requested page.
+ */
 export interface SecretCatalogItem {
     /**
      * Secret annotations.

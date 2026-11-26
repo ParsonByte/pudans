@@ -15,8 +15,19 @@
 
 
 export interface AiSpeechRequest {
+    'bitrate'?: number;
+    'channel'?: number;
+    'emotion'?: string;
     'filter_markdown'?: boolean;
     'format'?: string;
+    'language_boost'?: string;
+    'model'?: string;
+    'pitch'?: number;
+    'sample_rate'?: number;
+    'speed'?: number;
+    'stream'?: boolean;
+    'subtitle_enable'?: boolean;
     'text'?: string;
     'voice_id'?: string;
+    'volume'?: number;
 }
