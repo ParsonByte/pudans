@@ -27,6 +27,11 @@ public interface AiProvider {
         return true;
     }
 
+    // 声明模型是否能通过模型列表接口校验。
+    default boolean verifiesModelInList(String modelId) {
+        return true;
+    }
+
     default boolean supportsOpenAiCompatibleEmbedding() {
         return false;
     }

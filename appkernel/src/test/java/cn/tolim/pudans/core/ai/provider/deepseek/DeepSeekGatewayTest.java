@@ -388,7 +388,8 @@ class DeepSeekGatewayTest {
                         CREDENTIALS,
                         "speech.wav",
                         "audio/wav",
-                        file("wav")))
+                        file("wav"),
+                        null))
                 .assertNext(result -> assertThat(result.durationMs()).isEqualTo(3200))
                 .verifyComplete();
 

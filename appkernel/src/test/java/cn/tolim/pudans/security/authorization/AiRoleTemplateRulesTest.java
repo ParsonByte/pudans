@@ -83,6 +83,26 @@ class AiRoleTemplateRulesTest {
                 API_PREFIX + "/aichannels/channel-1/-/files/file-1");
         assertAllowed(
                 role,
+                HttpMethod.POST,
+                API_PREFIX + "/aichannels/channel-1/-/minimax/image-generations");
+        assertAllowed(
+                role,
+                HttpMethod.POST,
+                API_PREFIX + "/aichannels/channel-1/-/minimax/video-generations");
+        assertAllowed(
+                role,
+                HttpMethod.DELETE,
+                API_PREFIX + "/aichannels/channel-1/-/minimax/video-generations/task-1");
+        assertAllowed(
+                role,
+                HttpMethod.POST,
+                API_PREFIX + "/aichannels/channel-1/-/minimax/voice-list");
+        assertAllowed(
+                role,
+                HttpMethod.POST,
+                API_PREFIX + "/aichannels/channel-1/-/minimax/tts-websocket");
+        assertAllowed(
+                role,
                 HttpMethod.DELETE,
                 API_PREFIX + "/aichannels/channel-1/-/anthropic-files/file-1");
         assertAllowed(
@@ -105,6 +125,26 @@ class AiRoleTemplateRulesTest {
                 "role-template-view-ai-config",
                 HttpMethod.GET,
                 API_PREFIX + "/aichannels/channel-1/-/balance");
+        assertAllowed(
+                "role-template-view-ai-config",
+                HttpMethod.GET,
+                API_PREFIX + "/aichannels/channel-1/-/files/file-1/content");
+        assertAllowed(
+                "role-template-view-ai-config",
+                HttpMethod.GET,
+                API_PREFIX + "/aichannels/channel-1/-/minimax/video-generations");
+        assertAllowed(
+                "role-template-view-ai-config",
+                HttpMethod.GET,
+                API_PREFIX + "/aichannels/channel-1/-/minimax/video-generations/task-1");
+        assertAllowed(
+                "role-template-view-ai-config",
+                HttpMethod.GET,
+                API_PREFIX + "/aichannels/channel-1/-/minimax/tts-websocket");
+        assertDenied(
+                "role-template-view-ai-config",
+                HttpMethod.POST,
+                API_PREFIX + "/aichannels/channel-1/-/minimax/tts-websocket");
         assertAllowed(
                 "role-template-view-ai-config",
                 HttpMethod.GET,

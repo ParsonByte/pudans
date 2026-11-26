@@ -22,16 +22,17 @@ import cn.tolim.pudans.contract.ai.dto.AiSearchResponse;
 import cn.tolim.pudans.contract.ai.dto.AiSpeechRequest;
 import cn.tolim.pudans.contract.ai.dto.AiTranscriptionResult;
 import cn.tolim.pudans.core.ai.gateway.AiChannels;
+import cn.tolim.pudans.core.ai.provider.AiCapabilityGateway;
+import cn.tolim.pudans.core.ai.provider.AiTranscriptionOptions;
 import cn.tolim.pudans.core.ai.provider.deepseek.DeepSeekGateway;
 import cn.tolim.pudans.core.ai.provider.deepseek.DeepSeekProvider;
 import cn.tolim.pudans.core.storage.driver.StorageIo;
 import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
-import cn.tolim.pudans.infra.utils.ReactiveRequestIdentity;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.core.ParameterizedTypeReference;
@@ -48,9 +49,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import tools.jackson.databind.json.JsonMapper;
 
 @Component
 @RequiredArgsConstructor
@@ -60,45 +59,58 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
 
     private static final long MAX_DOCUMENT_BYTES = 100L * 1024 * 1024;
 
+    private static final long MAX_MEDIA_BYTES = 512L * 1024 * 1024;
+
     private static final long MAX_IMAGE_BYTES = 64L * 1024 * 1024;
 
     private static final long MAX_USER_DATA_BYTES = 32L * 1024 * 1024;
 
+    private static final long MAX_AUDIO_CLONE_BYTES = 20L * 1024 * 1024;
+
+    private static final long MAX_GENERATION_INPUT_BYTES = 50L * 1024 * 1024;
+
     private static final long MAX_TRANSCRIPTION_BYTES = 8L * 1024 * 1024;
 
-    private final AiChannels channels;
+    private static final long MAX_MINIMAX_TRANSCRIPTION_BYTES = 50L * 1024 * 1024;
 
-    private final DeepSeekGateway gateway;
+    private final AiChannelResolver resolver;
 
-    private final DeepSeekProvider provider;
+    private final DeepSeekGateway deepSeekGateway;
 
-    private final ReactiveRequestIdentity identity;
+    private final DeepSeekProvider deepSeekProvider;
+
+    private final List<AiCapabilityGateway> gateways;
 
     private final PudansProperties properties;
 
-    // 注册 DeepSeek 文件、联网、语音、余额、FIM 与协议透传路由。
+    // 注册渠道文件、语音与文本协议能力路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         return SpringdocRouteBuilder.route()
                 .POST("/aichannels/{name}/-/files", this::uploadFile, builder -> builder
                         .operationId("uploadAiChannelFile")
-                        .description("Upload a file through the DeepSeek OpenAI-compatible Files API.")
+                        .description("Upload a file through the channel provider's Files API.")
                         .tag(TAG)
                         .requestBody(multipartRequest())
                         .response(responseBuilder().implementation(AiFile.class)))
                 .GET("/aichannels/{name}/-/files", this::listFiles, builder -> builder
                         .operationId("listAiChannelFiles")
-                        .description("List files through the DeepSeek OpenAI-compatible Files API.")
+                        .description("List files through the channel provider's Files API.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(AiFilePage.class)))
                 .GET("/aichannels/{name}/-/files/{fileId}", this::retrieveFile, builder -> builder
                         .operationId("getAiChannelFile")
-                        .description("Retrieve a file through the DeepSeek OpenAI-compatible Files API.")
+                        .description("Retrieve a file through the channel provider's Files API.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(AiFile.class)))
+                .GET("/aichannels/{name}/-/files/{fileId}/content", this::downloadFile, builder -> builder
+                        .operationId("downloadAiChannelFile")
+                        .description("Download file content through the channel provider's Files API.")
+                        .tag(TAG)
+                        .response(responseBuilder().responseCode("200").description("File content")))
                 .DELETE("/aichannels/{name}/-/files/{fileId}", this::deleteFile, builder -> builder
                         .operationId("deleteAiChannelFile")
-                        .description("Delete a file through the DeepSeek OpenAI-compatible Files API.")
+                        .description("Delete a file through the channel provider's Files API.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(AiFileDeletion.class)))
                 .POST("/aichannels/{name}/-/anthropic-files", this::uploadAnthropicFile, builder -> builder
@@ -147,13 +159,13 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
                         .response(responseBuilder().implementation(AiOcrResult.class)))
                 .POST("/aichannels/{name}/-/tts", this::synthesize, builder -> builder
                         .operationId("synthesizeAiChannelSpeech")
-                        .description("Synthesize speech through the DeepSeek Text to Speech API.")
+                        .description("Synthesize speech through the channel provider's Text to Speech API.")
                         .tag(TAG)
                         .requestBody(jsonRequest(AiSpeechRequest.class))
                         .response(responseBuilder().responseCode("200").description("Audio stream")))
                 .POST("/aichannels/{name}/-/asr", this::transcribe, builder -> builder
                         .operationId("transcribeAiChannelAudio")
-                        .description("Transcribe audio through the DeepSeek Speech to Text API.")
+                        .description("Transcribe audio through the channel provider's Speech to Text API.")
                         .tag(TAG)
                         .requestBody(multipartRequest())
                         .response(responseBuilder().implementation(AiTranscriptionResult.class)))
@@ -165,25 +177,29 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
                         .response(responseBuilder().implementation(AiFimResult.class)))
                 .POST("/aichannels/{name}/-/chat-completions", this::chatCompletions, builder -> builder
                         .operationId("createAiChannelChatCompletion")
-                        .description("Call the DeepSeek Chat Completions API with a raw JSON body.")
+                        .description("Call the channel provider's Chat Completions API with a raw JSON body.")
                         .tag(TAG)
                         .requestBody(jsonObjectRequest())
                         .response(responseBuilder().responseCode("200").description("Provider JSON")))
                 .POST("/aichannels/{name}/-/messages", this::messages, builder -> builder
                         .operationId("createAiChannelMessage")
-                        .description("Call the DeepSeek Anthropic Messages API with a raw JSON body.")
+                        .description("Call the channel provider's Messages API with a raw JSON body.")
                         .tag(TAG)
                         .requestBody(jsonObjectRequest())
                         .response(responseBuilder().responseCode("200").description("Provider JSON")))
-                .POST("/aichannels/{name}/-/anthropic/messages", this::anthropicMessages, builder -> builder
+                .POST(
+                        "/aichannels/{name}/-/anthropic/messages",
+                        this::anthropicMessages,
+                        builder -> builder
                         .operationId("createAiChannelAnthropicMessage")
-                        .description("Call the DeepSeek Anthropic Messages compatibility alias with a raw JSON body.")
+                        .description("Call the channel provider's Anthropic Messages compatibility alias "
+                                + "with a raw JSON body.")
                         .tag(TAG)
                         .requestBody(jsonObjectRequest())
                         .response(responseBuilder().responseCode("200").description("Provider JSON")))
                 .POST("/aichannels/{name}/-/responses", this::responses, builder -> builder
                         .operationId("createAiChannelResponse")
-                        .description("Call the DeepSeek Responses API with a raw JSON body.")
+                        .description("Call the channel provider's Responses API with a raw JSON body.")
                         .tag(TAG)
                         .requestBody(jsonObjectRequest())
                         .response(responseBuilder().responseCode("200").description("Provider JSON")))
@@ -197,7 +213,7 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
                     return readFile(parts, "file", uploadLimit(purpose, parts.getFirst("file")))
                             .flatMap(file -> {
                                 var expires = expiresSeconds(parts);
-                                return gateway
+                                return gateway(resolved)
                                         .uploadFile(
                                                 resolved.channel(),
                                                 resolved.credentials(),
@@ -214,7 +230,7 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> listFiles(ServerRequest request) {
         return channel(request)
-                .flatMap(resolved -> gateway
+                .flatMap(resolved -> gateway(resolved)
                         .listFiles(
                                 resolved.channel(),
                                 resolved.credentials(),
@@ -227,7 +243,7 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> retrieveFile(ServerRequest request) {
         return channel(request)
-                .flatMap(resolved -> gateway
+                .flatMap(resolved -> gateway(resolved)
                         .retrieveFile(
                                 resolved.channel(),
                                 resolved.credentials(),
@@ -235,9 +251,22 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
                         .flatMap(result -> ServerResponse.ok().bodyValue(result)));
     }
 
+    private Mono<ServerResponse> downloadFile(ServerRequest request) {
+        return channel(request)
+                .flatMap(resolved -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .body(
+                                gateway(resolved)
+                                        .downloadFile(
+                                                resolved.channel(),
+                                                resolved.credentials(),
+                                                request.pathVariable("fileId")),
+                                DataBuffer.class));
+    }
+
     private Mono<ServerResponse> deleteFile(ServerRequest request) {
         return channel(request)
-                .flatMap(resolved -> gateway
+                .flatMap(resolved -> gateway(resolved)
                         .deleteFile(
                                 resolved.channel(),
                                 resolved.credentials(),
@@ -246,11 +275,11 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> uploadAnthropicFile(ServerRequest request) {
-        return channel(request).flatMap(resolved -> request.multipartData()
+        return deepSeek(request).flatMap(resolved -> request.multipartData()
                 .flatMap(parts -> {
                     var purpose = optionalForm(parts, "purpose");
                     return readFile(parts, "file", uploadLimit(purpose, parts.getFirst("file")))
-                            .flatMap(file -> gateway
+                            .flatMap(file -> deepSeekGateway
                                     .uploadAnthropicFile(
                                             resolved.channel(),
                                             resolved.credentials(),
@@ -265,8 +294,8 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> listAnthropicFiles(ServerRequest request) {
-        return channel(request)
-                .flatMap(resolved -> gateway
+        return deepSeek(request)
+                .flatMap(resolved -> deepSeekGateway
                         .listAnthropicFiles(
                                 resolved.channel(),
                                 resolved.credentials(),
@@ -277,8 +306,8 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> retrieveAnthropicFile(ServerRequest request) {
-        return channel(request)
-                .flatMap(resolved -> gateway
+        return deepSeek(request)
+                .flatMap(resolved -> deepSeekGateway
                         .retrieveAnthropicFile(
                                 resolved.channel(),
                                 resolved.credentials(),
@@ -287,8 +316,8 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> deleteAnthropicFile(ServerRequest request) {
-        return channel(request)
-                .flatMap(resolved -> gateway
+        return deepSeek(request)
+                .flatMap(resolved -> deepSeekGateway
                         .deleteAnthropicFile(
                                 resolved.channel(),
                                 resolved.credentials(),
@@ -297,31 +326,31 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> balance(ServerRequest request) {
-        return channel(request)
-                .flatMap(resolved -> gateway
+        return deepSeek(request)
+                .flatMap(resolved -> deepSeekGateway
                         .balance(resolved.channel(), resolved.credentials())
                         .flatMap(result -> ServerResponse.ok().bodyValue(result)));
     }
 
     private Mono<ServerResponse> search(ServerRequest request) {
-        return channel(request).flatMap(resolved -> jsonBody(request, AiSearchRequest.class)
-                .flatMap(body -> gateway
+        return deepSeek(request).flatMap(resolved -> jsonBody(request, AiSearchRequest.class)
+                .flatMap(body -> deepSeekGateway
                         .search(resolved.channel(), resolved.credentials(), body)
                         .flatMap(result -> ServerResponse.ok().bodyValue(result))));
     }
 
     private Mono<ServerResponse> fetch(ServerRequest request) {
-        return channel(request).flatMap(resolved -> jsonBody(request, AiFetchRequest.class)
-                .flatMap(body -> gateway
+        return deepSeek(request).flatMap(resolved -> jsonBody(request, AiFetchRequest.class)
+                .flatMap(body -> deepSeekGateway
                         .fetch(resolved.channel(), resolved.credentials(), body)
                         .flatMap(result -> ServerResponse.ok().bodyValue(result))));
     }
 
     private Mono<ServerResponse> ocr(ServerRequest request) {
-        return channel(request).flatMap(resolved -> request.multipartData()
+        return deepSeek(request).flatMap(resolved -> request.multipartData()
                 .flatMap(parts -> {
                     var purpose = requiredForm(parts, "purpose");
-                    return readFile(parts, "file", MAX_DOCUMENT_BYTES).flatMap(file -> gateway
+                    return readFile(parts, "file", MAX_DOCUMENT_BYTES).flatMap(file -> deepSeekGateway
                         .ocr(
                                 resolved.channel(),
                                 resolved.credentials(),
@@ -336,7 +365,7 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> synthesize(ServerRequest request) {
         return channel(request).flatMap(resolved -> jsonBody(request, AiSpeechRequest.class)
-                .flatMap(body -> gateway
+                .flatMap(body -> gateway(resolved)
                         .synthesize(resolved.channel(), resolved.credentials(), body)
                         .flatMap(speech -> ServerResponse.ok()
                                 .contentType(MediaType.parseMediaType(speech.contentType()))
@@ -345,27 +374,33 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> transcribe(ServerRequest request) {
         return channel(request).flatMap(resolved -> request.multipartData()
-                .flatMap(parts -> readFile(parts, "file", MAX_TRANSCRIPTION_BYTES).flatMap(file -> gateway
+                .flatMap(parts -> readFile(parts, "file", transcriptionLimit(resolved))
+                        .flatMap(file -> gateway(resolved)
                         .transcribe(
                                 resolved.channel(),
                                 resolved.credentials(),
                                 file.filename(),
                                 contentType(file),
-                                file.path())
+                                file.path(),
+                                new AiTranscriptionOptions(
+                                        optionalForm(parts, "model"),
+                                        optionalForm(parts, "language"),
+                                        optionalForm(parts, "response_format"),
+                                        optionalForm(parts, "timestamp_level")))
                         .flatMap(result -> ServerResponse.ok().bodyValue(result))
                         .doFinally(signal -> StorageIo.deleteQuietly(file.path())))));
     }
 
     private Mono<ServerResponse> fim(ServerRequest request) {
-        return channel(request).flatMap(resolved -> jsonBody(request, AiFimRequest.class)
+        return deepSeek(request).flatMap(resolved -> jsonBody(request, AiFimRequest.class)
                 .flatMap(body -> Boolean.TRUE.equals(body.stream())
                         ? ServerResponse.ok()
                                 .contentType(MediaType.TEXT_EVENT_STREAM)
                                 .body(
-                                        gateway.fimStream(
+                                        deepSeekGateway.fimStream(
                                                 resolved.channel(), resolved.credentials(), body),
                                         new ParameterizedTypeReference<ServerSentEvent<String>>() {})
-                        : gateway
+                        : deepSeekGateway
                                 .fim(resolved.channel(), resolved.credentials(), body)
                                 .flatMap(result -> ServerResponse.ok().bodyValue(result))));
     }
@@ -375,12 +410,12 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
                 ? ServerResponse.ok()
                         .contentType(MediaType.TEXT_EVENT_STREAM)
                         .body(
-                                gateway.chatCompletionsStream(
+                                gateway(resolved).chatCompletionsStream(
                                         resolved.channel(), resolved.credentials(), body),
                                 new ParameterizedTypeReference<ServerSentEvent<String>>() {})
-                : gateway
+                : gateway(resolved)
                         .chatCompletions(resolved.channel(), resolved.credentials(), body)
-                        .flatMap(DeepSeekRawJson::response)));
+                        .flatMap(AiProviderRawJson::response)));
     }
 
     private Mono<ServerResponse> messages(ServerRequest request) {
@@ -397,12 +432,12 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
                 ? ServerResponse.ok()
                         .contentType(MediaType.TEXT_EVENT_STREAM)
                         .body(
-                                gateway.messagesStream(
+                                gateway(resolved).messagesStream(
                                         resolved.channel(), resolved.credentials(), body, beta, versioned),
                                 new ParameterizedTypeReference<ServerSentEvent<String>>() {})
-                : gateway
+                : gateway(resolved)
                         .messages(resolved.channel(), resolved.credentials(), body, beta, versioned)
-                        .flatMap(DeepSeekRawJson::response)));
+                        .flatMap(AiProviderRawJson::response)));
     }
 
     private Mono<ServerResponse> responses(ServerRequest request) {
@@ -410,30 +445,32 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
                 ? ServerResponse.ok()
                         .contentType(MediaType.TEXT_EVENT_STREAM)
                         .body(
-                                gateway.responsesStream(
+                                gateway(resolved).responsesStream(
                                         resolved.channel(), resolved.credentials(), body),
                                 new ParameterizedTypeReference<ServerSentEvent<String>>() {})
-                : gateway
+                : gateway(resolved)
                         .responses(resolved.channel(), resolved.credentials(), body)
-                        .flatMap(DeepSeekRawJson::response)));
+                        .flatMap(AiProviderRawJson::response)));
     }
 
     private Mono<AiChannels.ResolvedChannel> channel(ServerRequest request) {
-        var id = channelId(request);
-        return identity
-                .resolve(request)
-                .flatMap(owner -> channels.resolve(owner.workspaceId(), id))
-                .flatMap(resolved -> provider.descriptor().provider().equals(resolved.channel().getProvider())
-                        ? Mono.just(resolved)
-                        : Mono.error(new ApiException(
-                                HttpStatus.BAD_REQUEST,
-                                "ai-channel-provider-unsupported",
-                                "该渠道不是 DeepSeek 渠道。")));
+        return resolver.require(request);
     }
 
-    private static UUID channelId(ServerRequest request) {
-        return AiEndpointSupport.uuid(
-                request.pathVariable("name"), "ai-channel-id-invalid", "渠道标识不是有效 UUID。");
+    private Mono<AiChannels.ResolvedChannel> deepSeek(ServerRequest request) {
+        return resolver.require(request, deepSeekProvider.descriptor().provider());
+    }
+
+    private AiCapabilityGateway gateway(AiChannels.ResolvedChannel resolved) {
+        for (var gateway : gateways) {
+            if (gateway.provider().equals(resolved.channel().getProvider())) {
+                return gateway;
+            }
+        }
+        throw new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "ai-channel-capability-unsupported",
+                "当前渠道不支持该能力。");
     }
 
     private Mono<UploadFile> readFile(
@@ -544,13 +581,23 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
                 "上传文件不能超过 " + maxBytes / (1024 * 1024) + " MiB。");
     }
 
+    private static long transcriptionLimit(AiChannels.ResolvedChannel resolved) {
+        return "minimax".equals(resolved.channel().getProvider())
+                ? MAX_MINIMAX_TRANSCRIPTION_BYTES
+                : MAX_TRANSCRIPTION_BYTES;
+    }
+
     private static long uploadLimit(String purpose, Part part) {
-        if (purpose != null
-                && ("text_recognition".equalsIgnoreCase(purpose.trim())
-                        || "rich_layout_recognition".equalsIgnoreCase(purpose.trim()))) {
-            return MAX_DOCUMENT_BYTES;
-        }
-        return image(part) ? MAX_IMAGE_BYTES : MAX_USER_DATA_BYTES;
+        var normalized = purpose == null ? "" : purpose.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (normalized) {
+            case "text_recognition", "rich_layout_recognition", "t2a_async_input" ->
+                    MAX_DOCUMENT_BYTES;
+            case "voice_clone", "prompt_audio" -> MAX_AUDIO_CLONE_BYTES;
+            case "video_understanding" -> MAX_MEDIA_BYTES;
+            case "video_generation_input" -> MAX_GENERATION_INPUT_BYTES;
+            case "image_generation_input" -> MAX_IMAGE_BYTES;
+            default -> image(part) ? MAX_IMAGE_BYTES : MAX_USER_DATA_BYTES;
+        };
     }
 
     private static boolean image(Part part) {
@@ -566,7 +613,9 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
                 || filename.endsWith(".jpeg")
                 || filename.endsWith(".png")
                 || filename.endsWith(".gif")
-                || filename.endsWith(".webp");
+                || filename.endsWith(".webp")
+                || filename.endsWith(".heic")
+                || filename.endsWith(".heif");
     }
 
     private Path uploadDirectory() {
@@ -595,22 +644,4 @@ public class AiChannelCapabilityEndpoint implements CustomEndpoint {
 
     private record UploadFile(String filename, MediaType contentType, Path path) {}
 
-    private static final class DeepSeekRawJson {
-
-        private DeepSeekRawJson() {}
-
-        private static Mono<ServerResponse> response(String body) {
-            try {
-                return ServerResponse.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(JsonMapper.shared().readTree(body));
-            } catch (Exception error) {
-                return Mono.error(new ApiException(
-                        HttpStatus.BAD_GATEWAY,
-                        "ai-provider-request-invalid-response",
-                        "供应商接口返回了无法解析的数据。",
-                        error));
-            }
-        }
-    }
 }

@@ -5,6 +5,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -14,13 +17,15 @@ import cn.tolim.pudans.core.ai.gateway.AiChannels;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttp;
 import cn.tolim.pudans.core.ai.provider.deepseek.DeepSeekGateway;
 import cn.tolim.pudans.core.ai.provider.deepseek.DeepSeekProvider;
-import cn.tolim.pudans.core.ai.provider.deepseek.DeepSeekSpeech;
+import cn.tolim.pudans.core.ai.provider.minimax.MiniMaxGateway;
+import cn.tolim.pudans.core.ai.provider.AiSpeech;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.r2dbc.ai.AiChannelEntity;
 import cn.tolim.pudans.infra.utils.ReactiveRequestIdentity;
 import cn.tolim.pudans.infra.utils.RequestIdentity;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +62,9 @@ class AiChannelCapabilityEndpointTest {
     DeepSeekGateway gateway;
 
     @Mock
+    MiniMaxGateway miniMaxGateway;
+
+    @Mock
     AiProviderHttp http;
 
     @Mock
@@ -75,8 +83,14 @@ class AiChannelCapabilityEndpointTest {
         properties.setWorkDir(workDir);
         channelId = UUID.randomUUID();
         var provider = new DeepSeekProvider(http);
+        lenient().when(gateway.provider()).thenReturn("deepseek");
+        lenient().when(miniMaxGateway.provider()).thenReturn("minimax");
         var endpoint = new AiChannelCapabilityEndpoint(
-                channels, gateway, provider, identity, properties);
+                new AiChannelResolver(channels, identity),
+                gateway,
+                provider,
+                List.of(gateway, miniMaxGateway),
+                properties);
         var codecs = ServerCodecConfigurer.create();
         var partReader = new DefaultPartHttpMessageReader();
         partReader.setMaxInMemorySize(256 * 1024);
@@ -97,7 +111,7 @@ class AiChannelCapabilityEndpointTest {
     void streamsSynthesizedAudioFromTheDeepSeekTtsApi() {
         resolved("deepseek");
         when(gateway.synthesize(any(), anyMap(), any(AiSpeechRequest.class)))
-                .thenReturn(Mono.just(new DeepSeekSpeech(
+                .thenReturn(Mono.just(new AiSpeech(
                         "audio/pcm",
                         Flux.just(DefaultDataBufferFactory.sharedInstance.wrap(
                                 "wave".getBytes(StandardCharsets.UTF_8))))));
@@ -112,6 +126,27 @@ class AiChannelCapabilityEndpointTest {
                 .contentType(MediaType.parseMediaType("audio/pcm"))
                 .expectBody(String.class)
                 .isEqualTo("wave");
+    }
+
+    @Test
+    void dispatchesSharedCapabilitiesToTheProviderGateway() {
+        resolved("minimax");
+        when(miniMaxGateway.synthesize(any(), anyMap(), any(AiSpeechRequest.class)))
+                .thenReturn(Mono.just(new AiSpeech(
+                        "audio/pcm",
+                        Flux.just(DefaultDataBufferFactory.sharedInstance.wrap(
+                                "wave".getBytes(StandardCharsets.UTF_8))))));
+
+        client.post()
+                .uri("/aichannels/{name}/-/tts", channelId)
+                .bodyValue(new AiSpeechRequest("Hello", "tide", "pcm", false))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(String.class)
+                .isEqualTo("wave");
+
+        verify(gateway, never()).synthesize(any(), anyMap(), any(AiSpeechRequest.class));
     }
 
     @Test

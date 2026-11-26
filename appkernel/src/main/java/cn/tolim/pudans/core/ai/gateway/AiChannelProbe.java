@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.ai.gateway;
 import cn.tolim.pudans.contract.ai.dto.AiChannelTestResult;
 import cn.tolim.pudans.core.ai.protocol.AiProtocol;
 import cn.tolim.pudans.core.ai.protocol.systemone.SystemOneDecisionClient;
+import cn.tolim.pudans.core.ai.provider.AiProvider;
 import cn.tolim.pudans.core.ai.provider.AiProviderAuth;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttp;
 import cn.tolim.pudans.core.ai.provider.AiProviders;
@@ -91,7 +92,7 @@ public class AiChannelProbe {
                         timeout,
                         messages ? AiProviderAuth.X_API_KEY : AiProviderAuth.BEARER);
         return request
-                .map(response -> testResult(response, protocol, model))
+                .map(response -> testResult(response, protocol, model, provider))
                 .onErrorResume(ApiException.class, error -> Mono.just(new AiChannelTestResult(
                         false,
                         protocol,
@@ -111,7 +112,10 @@ public class AiChannelProbe {
     }
 
     private static AiChannelTestResult testResult(
-            AiProviderHttp.UpstreamResponse response, String protocol, String model) {
+            AiProviderHttp.UpstreamResponse response,
+            String protocol,
+            String model,
+            AiProvider provider) {
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
             return new AiChannelTestResult(
                     false,
@@ -122,7 +126,9 @@ public class AiChannelProbe {
                     "供应商返回非成功状态。",
                     Instant.now());
         }
-        if (StringUtils.hasText(model) && !containsModel(response.body(), model)) {
+        if (StringUtils.hasText(model)
+                && provider.verifiesModelInList(model)
+                && !containsModel(response.body(), model)) {
             return new AiChannelTestResult(
                     false,
                     protocol,
