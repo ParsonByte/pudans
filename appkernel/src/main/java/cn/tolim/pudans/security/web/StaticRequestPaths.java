@@ -1,10 +1,13 @@
 package cn.tolim.pudans.security.web;
 
+import cn.tolim.pudans.extension.contract.ApiGroups;
 import org.springframework.web.server.ServerWebExchange;
 
 public final class StaticRequestPaths {
 
-    private static final String[] PREFIXES = {"/assets/", "/brand/", "/webjars/"};
+    private static final String[] PREFIXES = {
+        "/assets/", "/brand/", "/webjars/", ApiGroups.API_PREFIX + "/site-assets/"
+    };
 
     private static final String[] FILES = {"/favicon.ico", "/login-bg.mp4"};
 

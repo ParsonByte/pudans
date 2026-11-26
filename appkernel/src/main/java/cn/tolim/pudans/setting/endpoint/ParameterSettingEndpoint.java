@@ -12,12 +12,16 @@ import cn.tolim.pudans.infra.contract.ValidationUtils;
 import cn.tolim.pudans.infra.setting.MailSettings;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 import cn.tolim.pudans.security.authentication.AuthenticationConnectionTester;
+import cn.tolim.pudans.setting.SiteAssets;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.http.codec.multipart.FormFieldPart;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -38,6 +42,8 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
     private final MailSettings mailSettings;
 
     private final AuthenticationConnectionTester connectionTester;
+
+    private final SiteAssets siteAssets;
 
     // 注册参数读写与连通性测试等管理接口
     @Override
@@ -67,6 +73,17 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                                 .response(responseBuilder()
                                         .responseCode(String.valueOf(HttpStatus.NO_CONTENT))
                                         .implementation(Void.class)))
+                .POST(
+                        "/parameter-settings/site/-/assets",
+                        this::uploadSiteAsset,
+                        builder -> builder.operationId("UploadParameterSettingSiteAsset")
+                                .description("Upload a site image asset and return its absolute URL.")
+                                .tag(tag)
+                                .requestBody(requestBodyBuilder()
+                                        .required(true)
+                                        .content(contentBuilder()
+                                                .mediaType(MediaType.MULTIPART_FORM_DATA_VALUE)))
+                                .response(responseBuilder().implementation(SiteAssetView.class)))
                 .GET(
                         "/parameter-settings/{group}",
                         this::getGroup,
@@ -145,6 +162,23 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 校验字段与文件后存储站点图片
+    private Mono<ServerResponse> uploadSiteAsset(ServerRequest request) {
+        return request.multipartData().flatMap(parts -> {
+            var fieldPart = parts.getFirst("field");
+            if (!(fieldPart instanceof FormFieldPart field) || !StringUtils.hasText(field.value())) {
+                return Mono.error(new ServerWebInputException("需要名为 field 的 multipart 文本字段。"));
+            }
+            var filePart = parts.getFirst("file");
+            if (!(filePart instanceof FilePart file)) {
+                return Mono.error(new ServerWebInputException("需要名为 file 的 multipart 文件字段。"));
+            }
+            return siteAssets
+                    .store(field.value(), file, request.exchange().getRequest())
+                    .flatMap(url -> ServerResponse.ok().bodyValue(new SiteAssetView(url)));
+        });
+    }
+
     // 读取分组参数并按要求脱敏敏感字段
     private Mono<ServerResponse> getGroup(ServerRequest request) {
         var group = request.pathVariable(GROUP_PARAMETER);
@@ -187,6 +221,8 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
     }
 
     public record TestMailRequest(String to) {}
+
+    public record SiteAssetView(String url) {}
 
     // 端点挂在核心 API 组下
     @Override

@@ -40,6 +40,7 @@ class AuthorizationExchangeConfigurers {
                         ApiGroups.API_PREFIX + "/captcha/**",
                         ApiGroups.API_PREFIX + "/auth/**",
                         ApiGroups.API_PREFIX + "/avatars/**",
+                        ApiGroups.API_PREFIX + "/site-assets/**",
                         "/avatars/**")
                 .permitAll()
                 .pathMatchers(
