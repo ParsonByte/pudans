@@ -69,6 +69,60 @@ class BuiltinRoleDefinitionsTest {
     }
 
     @Test
+    void systemAdminGetsEveryDansConsoleMenu() {
+        var dansMenus = definitions.allRoles().stream()
+                .filter(role -> "dans".equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_GROUP_KEY_ANNO)))
+                .toList();
+
+        assertThat(dansMenus)
+                .extracting(role -> MetadataUtil.nullSafeAnnotations(role).get(Role.UI_COMPONENT_ANNO))
+                .containsExactlyInAnyOrder(
+                        "dans-overview",
+                        "ai-channels",
+                        "ai-models",
+                        "ai-billing",
+                        "ai-catalog",
+                        "model-plaza",
+                        "agent-sessions",
+                        "agent-sandboxes",
+                        "agent-memory",
+                        "creation-tasks",
+                        "creation-assets",
+                        "creation-content");
+        assertThat(dansMenus).allSatisfy(role -> {
+            var annotations = MetadataUtil.nullSafeAnnotations(role);
+            assertThat(annotations.get(Role.UI_WORKSPACE_ANNO)).isEqualTo("console");
+            assertThat(annotations.get(Role.UI_GROUP_ANNO)).isEqualTo("DANS 管控");
+            assertThat(annotations.get(Role.UI_PARENT_ANNO)).isNotBlank();
+        });
+        assertThat(dependencyClosure(BuiltinEntities.SYSTEM_ADMIN_ROLE))
+                .containsAll(dansMenus.stream()
+                        .map(role -> role.getMetadata().getName())
+                        .toList());
+    }
+
+    @Test
+    void systemAdminGetsEveryDansAdminCapability() {
+        assertThat(dependencyClosure(BuiltinEntities.SYSTEM_ADMIN_ROLE))
+                .contains(
+                        "role-template-view-all-ai-channels",
+                        "role-template-view-all-ai-catalog",
+                        "role-template-view-all-ai-default-models",
+                        "role-template-view-all-agent-sessions",
+                        "role-template-view-all-agent-sandboxes",
+                        "role-template-view-all-memory-jobs",
+                        "role-template-view-all-generation-tasks",
+                        "role-template-force-cancel-generation-tasks",
+                        "role-template-view-all-creation-assets",
+                        "role-template-view-all-creation-content",
+                        "role-template-approve-creation-content",
+                        "role-template-reject-creation-content",
+                        "role-template-publish-creation-content",
+                        "role-template-unpublish-creation-content");
+    }
+
+    @Test
     void normalRoleDoesNotGrantConsoleMenus() {
         var closure = dependencyClosure(BuiltinEntities.NORMAL_ROLE);
 

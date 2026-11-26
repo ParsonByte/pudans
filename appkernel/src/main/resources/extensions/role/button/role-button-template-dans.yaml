@@ -1,0 +1,99 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-approve-creation-content
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-creation-content" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.creation-content"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "approve"
+    rbac.authorization.pudans.tolim.cn/ui-label: "审核通过"
+    rbac.authorization.pudans.tolim.cn/ui-description: "通过作品、模板或活动的发布审核。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["creation-content:approve"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "works/approve"
+      - "templates/approve"
+      - "activities/approve"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-reject-creation-content
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-creation-content" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.creation-content"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "reject"
+    rbac.authorization.pudans.tolim.cn/ui-label: "审核拒绝"
+    rbac.authorization.pudans.tolim.cn/ui-description: "拒绝作品、模板或活动的发布审核。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["creation-content:reject"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "works/reject"
+      - "templates/reject"
+      - "activities/reject"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-publish-creation-content
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-creation-content" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.creation-content"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "publish"
+    rbac.authorization.pudans.tolim.cn/ui-label: "上架"
+    rbac.authorization.pudans.tolim.cn/ui-description: "上架审核通过的作品、模板或活动。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["creation-content:publish"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "works/publish"
+      - "templates/publish"
+      - "activities/publish"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-unpublish-creation-content
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-creation-content" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.creation-content"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "unpublish"
+    rbac.authorization.pudans.tolim.cn/ui-label: "下架"
+    rbac.authorization.pudans.tolim.cn/ui-description: "下架已上架的作品、模板或活动。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "40"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["creation-content:unpublish"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "works/unpublish"
+      - "templates/unpublish"
+      - "activities/unpublish"
+    verbs:
+      - "create"

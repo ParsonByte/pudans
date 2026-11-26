@@ -1,0 +1,213 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-all-ai-channels
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-ai-config" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台 AI 渠道查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aichannels/all"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-all-ai-catalog
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-ai-catalog" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台 AI 能力目录查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "catalogentries"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-all-ai-default-models
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-ai-config" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台 AI 默认模型查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aidefaultmodels/all"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-all-agent-sessions
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-agent-sessions" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台 Agent 会话查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "agentsessions/all"
+      - "agentsessions/all-summary"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-all-agent-sandboxes
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-agent-sandboxes" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台 Agent 沙箱查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "sandboxes/all"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-all-memory-jobs
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-review-memory-pool" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS Agent"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台记忆任务查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memoryjobs/all"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-all-generation-tasks
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-generation-tasks" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS Creation"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台生成任务查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "generationtasks/all"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-force-cancel-generation-tasks
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-all-generation-tasks" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS Creation"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台生成任务强制取消"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "generationtasks/force-cancel"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-all-creation-assets
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-use-index-assets" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS Creation"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台创作资产与主体查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "assets/all"
+      - "assets/all-facets"
+      - "subjects/all"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-all-creation-content
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-use-index-content" ]
+    rbac.authorization.pudans.tolim.cn/module: "DANS Creation"
+    rbac.authorization.pudans.tolim.cn/display-name: "全平台创作内容查看"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "works/all"
+      - "templates/all"
+      - "activities/all"
+    verbs:
+      - "get"
+      - "list"
