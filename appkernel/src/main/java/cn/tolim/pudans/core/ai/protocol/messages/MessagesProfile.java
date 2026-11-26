@@ -36,6 +36,11 @@ public interface MessagesProfile extends AiProtocolProfile {
         return bodyParams;
     }
 
+    default Map<String, Object> reasoningBodyParams(
+            boolean reasoningSupported, String reasoning) {
+        return Map.of();
+    }
+
     default Integer maxOutputTokens(Integer requested) {
         return requested;
     }

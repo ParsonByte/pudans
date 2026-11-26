@@ -10,5 +10,9 @@ public interface ResponsesProfile extends AiProtocolProfile {
         return headers;
     }
 
+    default String reasoningEffort(boolean reasoningSupported, String reasoning) {
+        return null;
+    }
+
     default void customize(OpenAiResponsesStreamingChatModel.Builder builder) {}
 }

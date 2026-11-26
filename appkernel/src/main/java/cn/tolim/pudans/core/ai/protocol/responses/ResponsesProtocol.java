@@ -10,6 +10,7 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiResponsesStreamingChatModel;
 import java.time.Duration;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class ResponsesProtocol implements AiChatProtocol {
@@ -49,6 +50,10 @@ public class ResponsesProtocol implements AiChatProtocol {
                         .readTimeout(Duration.ofMillis(request.timeoutMs())));
         if (request.maxOutputTokens() != null && request.maxOutputTokens() > 0) {
             builder.maxOutputTokens(request.maxOutputTokens());
+        }
+        var effort = resolved.reasoningEffort(request.reasoningSupported(), request.reasoning());
+        if (StringUtils.hasText(effort)) {
+            builder.reasoningEffort(effort.trim());
         }
         resolved.customize(builder);
         return builder.build();

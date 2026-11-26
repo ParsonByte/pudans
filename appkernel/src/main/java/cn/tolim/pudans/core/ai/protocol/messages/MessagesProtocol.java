@@ -9,6 +9,7 @@ import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -48,13 +49,17 @@ public class MessagesProtocol implements AiChatProtocol {
         if (resolved.authentication() == MessagesProfile.Authentication.BEARER) {
             headers.put("Authorization", "Bearer " + request.apiKey());
         }
+        var bodyParams = new LinkedHashMap<>(
+                resolved.additionalBodyParams(request.additionalBodyParams()));
+        bodyParams.putAll(
+                resolved.reasoningBodyParams(request.reasoningSupported(), request.reasoning()));
         var builder = AnthropicStreamingChatModel.builder()
                 .baseUrl(request.baseUrl())
                 .apiKey(request.apiKey())
                 .version(ANTHROPIC_VERSION)
                 .modelName(request.modelId())
                 .customHeaders(headers)
-                .customParameters(resolved.additionalBodyParams(request.additionalBodyParams()))
+                .customParameters(Map.copyOf(bodyParams))
                 .timeout(Duration.ofMillis(request.timeoutMs()))
                 .returnThinking(true)
                 .sendThinking(true);
