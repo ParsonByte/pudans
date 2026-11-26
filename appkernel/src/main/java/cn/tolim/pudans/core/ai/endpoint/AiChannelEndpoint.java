@@ -7,6 +7,7 @@ import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
 
 import cn.tolim.pudans.contract.ai.AiChannel;
 import cn.tolim.pudans.contract.ai.dto.AiChannelCreateRequest;
+import cn.tolim.pudans.contract.ai.dto.AiChannelTestRequest;
 import cn.tolim.pudans.contract.ai.dto.AiChannelTestResult;
 import cn.tolim.pudans.contract.ai.dto.AiChannelUpdateRequest;
 import cn.tolim.pudans.contract.ai.dto.AiModelDiscovery;
@@ -49,11 +50,11 @@ public class AiChannelEndpoint implements CustomEndpoint {
                 .GET("/aichannels", this::list, builder -> builder.operationId("listAiChannels")
                         .description("List AI channels in the current workspace without credentials.")
                         .tag(TAG)
-                        .response(responseBuilder().responseCode("200").description("AI channels")))
+                        .response(responseBuilder().responseCode("200").implementationArray(AiChannel.class)))
                 .GET("/aichannels/-/all", this::all, builder -> builder.operationId("listAllAiChannels")
                         .description("List AI channels across the platform for administration without credentials.")
                         .tag(TAG)
-                        .response(responseBuilder().responseCode("200").description("AI channels")))
+                        .response(responseBuilder().responseCode("200").implementationArray(AiChannel.class)))
                 .POST("/aichannels", this::create, builder -> builder.operationId("createAiChannel")
                         .description("Create an AI channel with write-only credentials.")
                         .tag(TAG)
@@ -83,6 +84,11 @@ public class AiChannelEndpoint implements CustomEndpoint {
                 .POST("/aichannels/{name}/-/test", this::test, builder -> builder.operationId("testAiChannel")
                         .description("Test an AI channel with its resolved credentials.")
                         .tag(TAG)
+                        .requestBody(requestBodyBuilder()
+                                .required(false)
+                                .content(contentBuilder()
+                                        .mediaType(MediaType.APPLICATION_JSON_VALUE)
+                                        .schema(schemaBuilder().implementation(AiChannelTestRequest.class))))
                         .response(responseBuilder().implementation(AiChannelTestResult.class)))
                 .GET("/aichannels/{name}/-/models", this::discover, builder -> builder
                         .operationId("discoverAiChannelModels")
@@ -155,8 +161,10 @@ public class AiChannelEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> test(ServerRequest request) {
         var id = AiEndpointSupport.uuid(
                 request.pathVariable("name"), "ai-channel-id-invalid", "渠道标识不是有效 UUID。");
-        return identity.resolve(request)
-                .flatMap(owner -> channels.test(owner.workspaceId(), id))
+        return request.bodyToMono(AiChannelTestRequest.class)
+                .defaultIfEmpty(new AiChannelTestRequest(null))
+                .flatMap(body -> identity.resolve(request)
+                        .flatMap(owner -> channels.test(owner.workspaceId(), id, body.model())))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 

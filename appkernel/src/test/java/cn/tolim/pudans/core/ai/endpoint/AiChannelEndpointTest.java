@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiChannel;
 import cn.tolim.pudans.contract.ai.dto.AiChannelCreateRequest;
+import cn.tolim.pudans.contract.ai.dto.AiChannelTestRequest;
+import cn.tolim.pudans.contract.ai.dto.AiChannelTestResult;
 import cn.tolim.pudans.core.ai.gateway.AiChannels;
 import cn.tolim.pudans.core.ai.provider.AiModelDiscoveries;
 import cn.tolim.pudans.core.ai.provider.AiModelImports;
@@ -95,6 +97,29 @@ class AiChannelEndpointTest {
                 .isEqualTo("workspace-a");
 
         verify(channels).listAll();
+    }
+
+    @Test
+    void testsAChannelWithTheSelectedModel() {
+        var channel = channel();
+        var result = new AiChannelTestResult(
+                true, "chat-completions", 200, null, null, "ok", Instant.now());
+        when(identity.resolve(any())).thenReturn(Mono.just(new RequestIdentity("alice", "workspace-a")));
+        when(channels.test("workspace-a", channel.id(), "deepseek-flash")).thenReturn(Mono.just(result));
+
+        client.post()
+                .uri("/aichannels/{name}/-/test", channel.id())
+                .bodyValue(new AiChannelTestRequest("deepseek-flash"))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.success")
+                .isEqualTo(true)
+                .jsonPath("$.message")
+                .isEqualTo("ok");
+
+        verify(channels).test("workspace-a", channel.id(), "deepseek-flash");
     }
 
     private static AiChannel channel() {
