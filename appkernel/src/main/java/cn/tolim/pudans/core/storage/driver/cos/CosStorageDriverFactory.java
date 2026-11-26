@@ -17,6 +17,7 @@ import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;
 import com.qcloud.cos.endpoint.UserSpecifiedEndpointBuilder;
+import com.qcloud.cos.http.HttpProtocol;
 import com.qcloud.cos.region.Region;
 
 @Component
@@ -52,8 +53,18 @@ public class CosStorageDriverFactory implements StorageDriverFactory {
         var configuration = new ClientConfig(new Region(region));
         configuration.setRedirectsEnabled(false);
         if (StringUtils.hasText(spec.getServer())) {
-            var endpoint = spec.getServer().replaceFirst("^https?://", "");
-            configuration.setEndpointBuilder(new UserSpecifiedEndpointBuilder(endpoint, endpoint));
+            var server = spec.getServer();
+            var endpoint = server.replaceFirst("^https?://", "");
+            // COS SDK 的自定义端点不会自动拼接存储桶域名，这里按 <bucket>.<endpoint> 组装。
+            var bucket = spec.getBucketName();
+            var host = StringUtils.hasText(bucket) && !endpoint.startsWith(bucket + ".")
+                    ? bucket + "." + endpoint
+                    : endpoint;
+            configuration.setEndpointBuilder(new UserSpecifiedEndpointBuilder(host, host));
+            // 端点声明 http 时同步切换客户端协议，否则 SDK 默认仍按 https 请求。
+            if (server.startsWith("http://")) {
+                configuration.setHttpProtocol(HttpProtocol.http);
+            }
         }
         var client = new COSClient(
                 new BasicCOSCredentials(
