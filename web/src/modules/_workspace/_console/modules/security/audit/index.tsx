@@ -122,9 +122,12 @@ export function AuditView() {
         },
         {
             cell: ({ row }) => (
-                <span className="text-xs" style={{ color: token.colorTextTertiary }}>
-                    {row.requestMethod} {row.requestPath}
-                </span>
+                <div className="flex min-w-0 items-center gap-1 text-xs" style={{ color: token.colorTextTertiary }}>
+                    {row.requestMethod ? <span className="shrink-0">{row.requestMethod}</span> : null}
+                    <span className="min-w-0 truncate" title={row.requestPath ?? undefined}>
+                        {row.requestPath ?? "—"}
+                    </span>
+                </div>
             ),
             colKey: "request",
             title: "请求",

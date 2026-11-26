@@ -26,6 +26,7 @@ import { CopyableIdentifier } from "./copyable-identifier";
 import { DescriptionGrid } from "./description-grid";
 
 type TraceWaterfallProps = {
+    layout?: "page" | "dialog";
     session?: AuditSessionSummary;
     steps?: ReplayStep[];
 };
@@ -38,7 +39,7 @@ type JourneyPage = {
     step: ReplayStep;
 };
 
-const ASSOCIATED_STEP_LIMIT = 6;
+const ASSOCIATED_GROUP_LIMIT = 6;
 const PAGE_DUPLICATE_WINDOW_MS = 10_000;
 const ACTION_PREVIEW_LIMIT = 8;
 const ACTION_EXPANSION_SIZE = 40;
@@ -63,6 +64,42 @@ function isPageStep(step: ReplayStep): boolean {
     }
 
     return step.operation === "NAVIGATION" && Boolean(step.requestPath) && !step.requestPath?.startsWith("/apis/");
+}
+
+function isSameRequest(step: ReplayStep, other: ReplayStep): boolean {
+    return (
+        Boolean(step.traceFlowId) &&
+        step.traceFlowId === other.traceFlowId &&
+        Boolean(step.requestMethod) &&
+        step.requestMethod === other.requestMethod &&
+        Boolean(step.requestPath) &&
+        step.requestPath === other.requestPath
+    );
+}
+
+type OperationStepGroup = {
+    operation: string;
+    steps: ReplayStep[];
+};
+
+function groupStepsByOperation(steps: ReplayStep[]): OperationStepGroup[] {
+    const groups: OperationStepGroup[] = [];
+    const groupIndexByOperation = new Map<string, number>();
+
+    steps.forEach((step) => {
+        const operation = step.operation ?? "";
+        const groupIndex = groupIndexByOperation.get(operation);
+
+        if (groupIndex === undefined) {
+            groupIndexByOperation.set(operation, groups.length);
+            groups.push({ operation, steps: [step] });
+            return;
+        }
+
+        groups[groupIndex].steps.push(step);
+    });
+
+    return groups;
 }
 
 function pathOf(step?: ReplayStep): string {
@@ -107,8 +144,9 @@ function derivedStatus(steps: ReplayStep[]): string {
     return "SUCCESS";
 }
 
-export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
+export function TraceWaterfall({ layout = "page", session, steps }: TraceWaterfallProps) {
     const { token, tone } = useDashboardTheme();
+    const dialogLayout = layout === "dialog";
     const [selectedAuditId, setSelectedAuditId] = useState<string>();
     const [actionLimits, setActionLimits] = useState<Record<string, number>>({});
     const sorted = useMemo(
@@ -187,8 +225,14 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
         ? sorted.findIndex((step) => step.auditId === selected.parentAuditId)
         : -1;
     const parent = parentIndex >= 0 ? sorted[parentIndex] : undefined;
-    const children = sorted.filter((step) => Boolean(selected.auditId) && step.parentAuditId === selected.auditId);
-    const visibleChildren = children.slice(0, ASSOCIATED_STEP_LIMIT);
+    const sameRequestParent = parent && isSameRequest(selected, parent) ? parent : undefined;
+    const children = sorted.filter(
+        (step) => Boolean(selected.auditId) && step.parentAuditId === selected.auditId && isSameRequest(selected, step),
+    );
+    const childGroups = groupStepsByOperation(children);
+    const visibleChildGroups = childGroups.slice(0, ASSOCIATED_GROUP_LIMIT);
+    const visibleChildCount = visibleChildGroups.reduce((count, group) => count + group.steps.length, 0);
+    const hiddenChildCount = children.length - visibleChildCount;
     const selectedPageIndex = pageNodes.findIndex(
         (node) =>
             node.step.auditId === selected.auditId || node.actions.some((step) => step.auditId === selected.auditId),
@@ -292,81 +336,99 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
     };
 
     return (
-        <div>
-            <div
-                className="rounded-2xl border p-4"
-                style={{
-                    background: token.colorFillQuaternary,
-                    borderColor: token.colorBorderSecondary,
-                }}
-            >
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,0.9fr)_auto_minmax(0,1fr)] lg:items-stretch">
-                    <div className="min-w-0 rounded-xl p-3" style={{ background: token.colorBgContainer }}>
-                        <LoginIcon aria-label="入口" size={15} style={{ color: token.colorTextTertiary }} />
-                        <div className="mt-2 font-mono text-xs leading-5 break-all" style={{ color: token.colorText }}>
-                            {entryPath}
+        <div className={dialogLayout ? "flex h-full min-h-0 flex-col" : undefined}>
+            {dialogLayout ? null : (
+                <div
+                    className="rounded-2xl border p-4"
+                    style={{
+                        background: token.colorFillQuaternary,
+                        borderColor: token.colorBorderSecondary,
+                    }}
+                >
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,0.9fr)_auto_minmax(0,1fr)] lg:items-stretch">
+                        <div className="min-w-0 rounded-xl p-3" style={{ background: token.colorBgContainer }}>
+                            <LoginIcon aria-label="入口" size={15} style={{ color: token.colorTextTertiary }} />
+                            <div
+                                className="mt-2 font-mono text-xs leading-5 break-all"
+                                style={{ color: token.colorText }}
+                            >
+                                {entryPath}
+                            </div>
+                        </div>
+                        <div
+                            className="hidden items-center justify-center lg:flex"
+                            style={{ color: token.colorTextTertiary }}
+                        >
+                            <ArrowRightIcon size={18} />
+                        </div>
+                        <div className="min-w-0 rounded-xl p-3" style={{ background: token.colorBgContainer }}>
+                            <MapRoutePlanningIcon
+                                aria-label="过程"
+                                size={15}
+                                style={{ color: token.colorTextTertiary }}
+                            />
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                <Tag theme="primary" variant="light">
+                                    {formatCount(pageCount)} 页
+                                </Tag>
+                                <Tag variant="light">{formatCount(actionCount)} 操作</Tag>
+                                <Tag variant="light">{formatCount(recordCount)} 记录</Tag>
+                            </div>
+                            {pageNodes.length > 0 ? (
+                                <div className="mt-2 font-mono text-[11px]" style={{ color: token.colorTextSecondary }}>
+                                    {pageSequence}
+                                    {hiddenPageCount > 0 ? ` +${hiddenPageCount}` : ""}
+                                </div>
+                            ) : null}
+                        </div>
+                        <div
+                            className="hidden items-center justify-center lg:flex"
+                            style={{ color: token.colorTextTertiary }}
+                        >
+                            <ArrowRightIcon size={18} />
+                        </div>
+                        <div className="min-w-0 rounded-xl p-3" style={{ background: token.colorBgContainer }}>
+                            <LogoutIcon aria-label="出口" size={15} style={{ color: token.colorTextTertiary }} />
+                            <div
+                                className="mt-2 font-mono text-xs leading-5 break-all"
+                                style={{ color: token.colorText }}
+                            >
+                                {exitPath}
+                            </div>
                         </div>
                     </div>
                     <div
-                        className="hidden items-center justify-center lg:flex"
-                        style={{ color: token.colorTextTertiary }}
+                        className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px]"
+                        style={{ color: token.colorTextSecondary }}
                     >
-                        <ArrowRightIcon size={18} />
-                    </div>
-                    <div className="min-w-0 rounded-xl p-3" style={{ background: token.colorBgContainer }}>
-                        <MapRoutePlanningIcon aria-label="过程" size={15} style={{ color: token.colorTextTertiary }} />
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            <Tag theme="primary" variant="light">
-                                {formatCount(pageCount)} 页
+                        <span className="inline-flex items-center gap-1.5">
+                            <FlagIcon size={13} />
+                            {formatDateTime(session?.start ?? sorted[0].timestamp)}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                            <TimeIcon size={13} />
+                            {formatDuration(
+                                session?.durationMs ??
+                                    Math.max(0, timestampOf(sorted[sorted.length - 1].timestamp) - startOf(sorted[0])),
+                            )}
+                        </span>
+                        <ResultTag result={status} />
+                        {session?.archived ? (
+                            <Tag theme="warning" variant="light">
+                                含归档
                             </Tag>
-                            <Tag variant="light">{formatCount(actionCount)} 操作</Tag>
-                            <Tag variant="light">{formatCount(recordCount)} 记录</Tag>
-                        </div>
-                        {pageNodes.length > 0 ? (
-                            <div className="mt-2 font-mono text-[11px]" style={{ color: token.colorTextSecondary }}>
-                                {pageSequence}
-                                {hiddenPageCount > 0 ? ` +${hiddenPageCount}` : ""}
-                            </div>
                         ) : null}
                     </div>
-                    <div
-                        className="hidden items-center justify-center lg:flex"
-                        style={{ color: token.colorTextTertiary }}
-                    >
-                        <ArrowRightIcon size={18} />
-                    </div>
-                    <div className="min-w-0 rounded-xl p-3" style={{ background: token.colorBgContainer }}>
-                        <LogoutIcon aria-label="出口" size={15} style={{ color: token.colorTextTertiary }} />
-                        <div className="mt-2 font-mono text-xs leading-5 break-all" style={{ color: token.colorText }}>
-                            {exitPath}
-                        </div>
-                    </div>
                 </div>
-                <div
-                    className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px]"
-                    style={{ color: token.colorTextSecondary }}
-                >
-                    <span className="inline-flex items-center gap-1.5">
-                        <FlagIcon size={13} />
-                        {formatDateTime(session?.start ?? sorted[0].timestamp)}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                        <TimeIcon size={13} />
-                        {formatDuration(
-                            session?.durationMs ??
-                                Math.max(0, timestampOf(sorted[sorted.length - 1].timestamp) - startOf(sorted[0])),
-                        )}
-                    </span>
-                    <ResultTag result={status} />
-                    {session?.archived ? (
-                        <Tag theme="warning" variant="light">
-                            含归档
-                        </Tag>
-                    ) : null}
-                </div>
-            </div>
+            )}
 
-            <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div
+                className={
+                    dialogLayout
+                        ? "flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+                        : "mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+                }
+            >
                 <div className="flex flex-wrap gap-x-5 gap-y-2 text-[11px]" style={{ color: token.colorTextSecondary }}>
                     <span className="inline-flex items-center gap-1.5">
                         <GitCommitIcon size={13} />
@@ -430,8 +492,14 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
                 </div>
             </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
-                <ScrollArea className="max-h-[640px] pr-1">
+            <div
+                className={
+                    dialogLayout
+                        ? "mt-4 grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4 xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] xl:grid-rows-[minmax(0,1fr)]"
+                        : "mt-4 grid gap-4 xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"
+                }
+            >
+                <ScrollArea className={dialogLayout ? "min-h-0 pr-1" : "max-h-[640px] pr-1"}>
                     {prelude.length > 0 ? <div className="mb-3">{renderActions(prelude, "prelude", true)}</div> : null}
                     {pageNodes.length === 0 ? (
                         <div>{renderActions(sorted, "session")}</div>
@@ -545,7 +613,7 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
                 </ScrollArea>
 
                 <ScrollArea
-                    className="max-h-[640px] rounded-2xl border p-4"
+                    className={`${dialogLayout ? "min-h-0" : "max-h-[640px]"} rounded-2xl border p-4`}
                     style={{
                         background: selectedDenied
                             ? token.colorWarningBg
@@ -634,37 +702,40 @@ export function TraceWaterfall({ session, steps }: TraceWaterfallProps) {
                         ]}
                     />
 
-                    <div className="mt-4 border-t pt-3" style={{ borderColor: token.colorBorderSecondary }}>
-                        <div
-                            className="flex items-center gap-1.5 text-[11px] font-medium"
-                            style={{ color: token.colorTextSecondary }}
-                        >
-                            <LinkIcon size={13} />
-                            同一请求关联
+                    {!selectedIsPage && (sameRequestParent || childGroups.length > 0) ? (
+                        <div className="mt-4 border-t pt-3" style={{ borderColor: token.colorBorderSecondary }}>
+                            <div
+                                className="flex items-center gap-1.5 text-[11px] font-medium"
+                                style={{ color: token.colorTextSecondary }}
+                            >
+                                <LinkIcon size={13} />
+                                同一请求关联
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                                {sameRequestParent ? (
+                                    <Button onClick={() => select(sameRequestParent)} size="small" variant="text">
+                                        上一步 · {operationLabel(sameRequestParent.operation)}
+                                    </Button>
+                                ) : null}
+                                {visibleChildGroups.map((group) => (
+                                    <Button
+                                        key={group.operation || stepKey(group.steps[0], 0)}
+                                        onClick={() => select(group.steps[0])}
+                                        size="small"
+                                        variant="text"
+                                    >
+                                        下一步 · {operationLabel(group.operation)}
+                                        {group.steps.length > 1 ? ` × ${group.steps.length}` : ""}
+                                    </Button>
+                                ))}
+                                {hiddenChildCount > 0 ? (
+                                    <span className="text-[11px]" style={{ color: token.colorTextTertiary }}>
+                                        另有 {hiddenChildCount} 条关联记录
+                                    </span>
+                                ) : null}
+                            </div>
                         </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                            {parent ? (
-                                <Button onClick={() => select(parent)} size="small" variant="text">
-                                    上一步 · {operationLabel(parent.operation)}
-                                </Button>
-                            ) : null}
-                            {visibleChildren.map((child, index) => (
-                                <Button
-                                    key={stepKey(child, index)}
-                                    onClick={() => select(child)}
-                                    size="small"
-                                    variant="text"
-                                >
-                                    下一步 · {operationLabel(child.operation)}
-                                </Button>
-                            ))}
-                            {children.length > visibleChildren.length ? (
-                                <span className="text-[11px]" style={{ color: token.colorTextTertiary }}>
-                                    另有 {children.length - visibleChildren.length} 个下游步骤
-                                </span>
-                            ) : null}
-                        </div>
-                    </div>
+                    ) : null}
 
                     <div className="mt-4 border-t pt-3" style={{ borderColor: token.colorBorderSecondary }}>
                         <div className="flex items-center gap-3">
