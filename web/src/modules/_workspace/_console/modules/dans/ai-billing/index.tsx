@@ -1,24 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { useQuery } from "@tanstack/react-query";
-import { RefreshIcon, TagIcon } from "tdesign-icons-react";
-import { Button, Tabs, Tag } from "tdesign-react";
-import type { TableProps } from "tdesign-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AddIcon, BillIcon, RefreshIcon } from "tdesign-icons-react";
+import { Button, RadioGroup } from "tdesign-react";
 
-import { ConsoleTable } from "../../../components/console-table";
-import { EmptyValue } from "../../../components/empty-value";
-import { formatCountOrDash, formatDateTime } from "../../../composables/_format";
+import { confirmGlobalDialog } from "@/components/ui";
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { usePermission } from "@/hooks/utils/use-permission";
+
+import { consoleErrorMessage } from "../../../composables/_errors";
+import { useConsoleSession } from "../../../composables/_session";
 import { DansPage } from "../components/page";
 import {
     type AiPriceRule,
     type AiQuotaAssignment,
     type AiQuotaPlan,
+    deleteAiPriceRule,
+    deleteAiQuotaAssignment,
+    deleteAiQuotaPlan,
     listAiPriceRules,
     listAiQuotaAssignments,
     listAiQuotaPlans,
 } from "../composables/_dans";
+import { PriceRuleDialog } from "./components/price-rule-dialog";
+import { PriceRules } from "./components/price-rules";
+import { QuotaAssignmentDialog } from "./components/quota-assignment-dialog";
+import { QuotaAssignments } from "./components/quota-assignments";
+import { QuotaPlanDialog } from "./components/quota-plan-dialog";
+import { QuotaPlans } from "./components/quota-plans";
 
 const TABS = [
     { label: "价格规则", value: "prices" },
@@ -28,174 +39,187 @@ const TABS = [
 
 type BillingTab = (typeof TABS)[number]["value"];
 
+type BillingDialog =
+    | { kind: "price"; rule?: AiPriceRule }
+    | { kind: "plan"; plan?: AiQuotaPlan }
+    | { kind: "assignment"; assignment?: AiQuotaAssignment }
+    | null;
+
 export function AiBillingView() {
     const [tab, setTab] = useState<BillingTab>("prices");
+    const [dialog, setDialog] = useState<BillingDialog>(null);
+    const prompt = useMessagePrompt();
+    const queryClient = useQueryClient();
+    const sessionQuery = useConsoleSession();
+    const { allowed: canManage } = usePermission(
+        { permissions: sessionQuery.data?.uiPermissions },
+        "ai-billing:manage",
+    );
     const pricesQuery = useQuery({ queryFn: listAiPriceRules, queryKey: ["dans", "ai", "price-rules"] });
     const plansQuery = useQuery({ queryFn: listAiQuotaPlans, queryKey: ["dans", "ai", "quota-plans"] });
     const assignmentsQuery = useQuery({
         queryFn: listAiQuotaAssignments,
         queryKey: ["dans", "ai", "quota-assignments"],
     });
-    const prices = pricesQuery.data ?? [];
-    const plans = plansQuery.data ?? [];
-    const assignments = assignmentsQuery.data ?? [];
-    const activeQuery = tab === "prices" ? pricesQuery : tab === "plans" ? plansQuery : assignmentsQuery;
+    const prices = useMemo<AiPriceRule[]>(() => pricesQuery.data ?? [], [pricesQuery.data]);
+    const plans = useMemo<AiQuotaPlan[]>(() => plansQuery.data ?? [], [plansQuery.data]);
+    const assignments = useMemo<AiQuotaAssignment[]>(() => assignmentsQuery.data ?? [], [assignmentsQuery.data]);
+    const assignmentCounts = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const assignment of assignments) {
+            if (!assignment.planId) {
+                continue;
+            }
+            counts.set(assignment.planId, (counts.get(assignment.planId) ?? 0) + 1);
+        }
+
+        return counts;
+    }, [assignments]);
+    const refreshing = pricesQuery.isFetching || plansQuery.isFetching || assignmentsQuery.isFetching;
     const refresh = () => {
         void pricesQuery.refetch();
         void plansQuery.refetch();
         void assignmentsQuery.refetch();
     };
-    const planLabel = (id?: string) => {
-        const plan = plans.find((item) => item.id === id);
-
-        return plan ? (plan.displayName ?? plan.name ?? plan.id) : (id ?? "—");
+    const invalidatePrices = () => void queryClient.invalidateQueries({ queryKey: ["dans", "ai", "price-rules"] });
+    const invalidatePlans = () => void queryClient.invalidateQueries({ queryKey: ["dans", "ai", "quota-plans"] });
+    const invalidateAssignments = () =>
+        void queryClient.invalidateQueries({ queryKey: ["dans", "ai", "quota-assignments"] });
+    const deleteMutation = useMutation({
+        mutationFn: async (target: Exclude<BillingDialog, null>) => {
+            if (target.kind === "price" && target.rule) {
+                await deleteAiPriceRule(target.rule.id);
+                return "价格规则已删除。";
+            }
+            if (target.kind === "plan" && target.plan) {
+                await deleteAiQuotaPlan(target.plan.id);
+                return "配额计划已删除。";
+            }
+            if (target.kind === "assignment" && target.assignment) {
+                await deleteAiQuotaAssignment(target.assignment.id);
+                return "配额分配已删除。";
+            }
+            throw new Error("删除目标不存在。");
+        },
+        onError: (error) => prompt.error({ content: consoleErrorMessage(error) }),
+        onSuccess: (message, target) => {
+            if (target.kind === "price") {
+                invalidatePrices();
+            } else if (target.kind === "plan") {
+                invalidatePlans();
+            } else {
+                invalidateAssignments();
+            }
+            prompt.success({ content: message });
+        },
+    });
+    const deleteRule = (rule: AiPriceRule) =>
+        confirmGlobalDialog({
+            content: `删除后不可恢复，确定删除价格规则“${rule.targetKey ?? rule.mcpToolKey ?? rule.modelId ?? rule.id}”吗？`,
+            danger: true,
+            onConfirm: () => deleteMutation.mutate({ kind: "price", rule }),
+            title: "删除价格规则",
+        });
+    const deletePlan = (plan: AiQuotaPlan) =>
+        confirmGlobalDialog({
+            content: `删除后不可恢复，确定删除配额计划“${plan.displayName ?? plan.name ?? plan.id}”吗？`,
+            danger: true,
+            onConfirm: () => deleteMutation.mutate({ kind: "plan", plan }),
+            title: "删除配额计划",
+        });
+    const deleteAssignment = (assignment: AiQuotaAssignment) =>
+        confirmGlobalDialog({
+            content: `删除后不可恢复，确定删除主体“${assignment.subjectId}”的配额分配吗？`,
+            danger: true,
+            onConfirm: () => deleteMutation.mutate({ kind: "assignment", assignment }),
+            title: "删除配额分配",
+        });
+    const createDialog = () => {
+        if (tab === "prices") {
+            setDialog({ kind: "price" });
+        } else if (tab === "plans") {
+            setDialog({ kind: "plan" });
+        } else {
+            setDialog({ kind: "assignment" });
+        }
     };
-    const priceColumns: TableProps<AiPriceRule>["columns"] = [
-        {
-            cell: ({ row }) => (
-                <div className="flex min-w-0 flex-col gap-1">
-                    <span className="font-medium">{row.targetType ?? <EmptyValue />}</span>
-                    <span className="truncate font-mono text-xs text-[var(--td-text-color-secondary)]">
-                        {row.targetKey ?? row.modelId ?? row.mcpToolKey ?? row.id}
-                    </span>
-                </div>
-            ),
-            colKey: "targetType",
-            title: "计费对象",
-        },
-        { cell: ({ row }) => row.pricingMode ?? <EmptyValue />, colKey: "pricingMode", title: "计价模式" },
-        {
-            cell: ({ row }) => `${row.unitCredits ?? row.baseCredits ?? "—"} / ${row.minimumCredits ?? "—"}`,
-            colKey: "unitCredits",
-            title: "单价 / 最低消耗",
-        },
-        { cell: ({ row }) => row.unit ?? <EmptyValue />, colKey: "unit", title: "计费单位" },
-        { cell: ({ row }) => row.quotaBucket ?? <EmptyValue />, colKey: "quotaBucket", title: "配额桶" },
-        {
-            cell: ({ row }) => (
-                <div className="flex flex-col gap-1 text-xs">
-                    <span>起 {formatDateTime(row.effectiveFrom)}</span>
-                    <span>止 {formatDateTime(row.effectiveTo)}</span>
-                </div>
-            ),
-            colKey: "effectiveFrom",
-            title: "生效区间",
-        },
-    ];
-    const planColumns: TableProps<AiQuotaPlan>["columns"] = [
-        {
-            cell: ({ row }) => (
-                <div className="flex min-w-0 flex-col gap-1">
-                    <span className="font-medium">{row.displayName ?? row.name ?? <EmptyValue />}</span>
-                    <span className="truncate font-mono text-xs text-[var(--td-text-color-secondary)]">{row.id}</span>
-                </div>
-            ),
-            colKey: "name",
-            title: "配额计划",
-        },
-        {
-            cell: ({ row }) => `${row.fiveHourCredits ?? "—"} / ${row.weeklyCredits ?? "—"}`,
-            colKey: "fiveHourCredits",
-            title: "5 小时 / 每周额度",
-        },
-        {
-            cell: ({ row }) => (
-                <Tag theme={row.status === "active" ? "success" : "default"} variant="light">
-                    {row.status ?? "未设置"}
-                </Tag>
-            ),
-            colKey: "status",
-            title: "状态",
-        },
-    ];
-    const assignmentColumns: TableProps<AiQuotaAssignment>["columns"] = [
-        {
-            cell: ({ row }) => (
-                <div className="flex min-w-0 flex-col gap-1">
-                    <span className="font-medium">{row.subjectType ?? <EmptyValue />}</span>
-                    <span className="truncate font-mono text-xs text-[var(--td-text-color-secondary)]">
-                        {row.subjectId ?? row.id}
-                    </span>
-                </div>
-            ),
-            colKey: "subjectId",
-            title: "分配主体",
-        },
-        { cell: ({ row }) => planLabel(row.planId), colKey: "planId", title: "配额计划" },
-        {
-            cell: ({ row }) => (
-                <div className="flex flex-col gap-1 text-xs">
-                    <span>起 {formatDateTime(row.effectiveFrom)}</span>
-                    <span>止 {formatDateTime(row.effectiveTo)}</span>
-                </div>
-            ),
-            colKey: "effectiveFrom",
-            title: "生效区间",
-        },
-        {
-            cell: ({ row }) => (
-                <Tag theme={row.status === "active" ? "success" : "default"} variant="light">
-                    {row.status ?? "未设置"}
-                </Tag>
-            ),
-            colKey: "status",
-            title: "状态",
-        },
-    ];
+    const createLabel = tab === "prices" ? "新建价格规则" : tab === "plans" ? "新建配额计划" : "新建配额分配";
 
     return (
         <DansPage
             actions={
-                <Button icon={<RefreshIcon />} loading={activeQuery.isFetching} onClick={refresh} variant="outline">
-                    刷新
-                </Button>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                    {canManage ? (
+                        <Button icon={<AddIcon />} onClick={createDialog} theme="primary">
+                            {createLabel}
+                        </Button>
+                    ) : null}
+                    <Button icon={<RefreshIcon />} loading={refreshing} onClick={refresh} variant="outline">
+                        刷新
+                    </Button>
+                </div>
             }
-            description="价格规则、配额计划和主体配额分配分别对应 AI 计费与配额接口。"
-            icon={<TagIcon size={22} />}
-            metrics={[
-                { label: "价格规则", value: formatCountOrDash(pricesQuery.data?.length) },
-                { label: "配额计划", value: formatCountOrDash(plansQuery.data?.length) },
-                { label: "配额分配", value: formatCountOrDash(assignmentsQuery.data?.length) },
-            ]}
+            icon={<BillIcon size={22} />}
             section="AI"
+            showOverview={false}
             title="计费与配额"
         >
-            <Tabs
-                list={TABS.map((item) => ({ label: item.label, value: item.value }))}
+            <RadioGroup
+                className="w-fit"
                 onChange={(value) => setTab(String(value) as BillingTab)}
+                options={TABS.map((item) => ({ label: item.label, value: item.value }))}
+                theme="button"
                 value={tab}
+                variant="default-filled"
             />
             {tab === "prices" ? (
-                <ConsoleTable
-                    columns={priceColumns}
-                    data={prices}
+                <PriceRules
                     error={pricesQuery.error}
                     loading={pricesQuery.isPending}
+                    onCreate={canManage ? () => setDialog({ kind: "price" }) : undefined}
+                    onDelete={canManage ? deleteRule : undefined}
+                    onEdit={canManage ? (rule) => setDialog({ kind: "price", rule }) : undefined}
                     onRetry={() => void pricesQuery.refetch()}
-                    rowKey="id"
-                    title="价格规则"
+                    rules={prices}
                 />
             ) : tab === "plans" ? (
-                <ConsoleTable
-                    columns={planColumns}
-                    data={plans}
+                <QuotaPlans
+                    assignmentCounts={assignmentCounts}
                     error={plansQuery.error}
                     loading={plansQuery.isPending}
+                    onCreate={canManage ? () => setDialog({ kind: "plan" }) : undefined}
+                    onDelete={canManage ? deletePlan : undefined}
+                    onEdit={canManage ? (plan) => setDialog({ kind: "plan", plan }) : undefined}
                     onRetry={() => void plansQuery.refetch()}
-                    rowKey="id"
-                    title="配额计划"
+                    plans={plans}
                 />
             ) : (
-                <ConsoleTable
-                    columns={assignmentColumns}
-                    data={assignments}
+                <QuotaAssignments
+                    assignments={assignments}
                     error={assignmentsQuery.error}
                     loading={assignmentsQuery.isPending}
+                    onCreate={canManage ? () => setDialog({ kind: "assignment" }) : undefined}
+                    onDelete={canManage ? deleteAssignment : undefined}
+                    onEdit={canManage ? (assignment) => setDialog({ kind: "assignment", assignment }) : undefined}
                     onRetry={() => void assignmentsQuery.refetch()}
-                    rowKey="id"
-                    title="配额分配"
+                    onShowPlans={() => setTab("plans")}
+                    plans={plans}
                 />
             )}
+            {dialog?.kind === "price" ? (
+                <PriceRuleDialog onClose={() => setDialog(null)} onSaved={invalidatePrices} rule={dialog.rule} />
+            ) : null}
+            {dialog?.kind === "plan" ? (
+                <QuotaPlanDialog onClose={() => setDialog(null)} onSaved={invalidatePlans} plan={dialog.plan} />
+            ) : null}
+            {dialog?.kind === "assignment" ? (
+                <QuotaAssignmentDialog
+                    assignment={dialog.assignment}
+                    onClose={() => setDialog(null)}
+                    onSaved={invalidateAssignments}
+                    plans={plans}
+                />
+            ) : null}
         </DansPage>
     );
 }
