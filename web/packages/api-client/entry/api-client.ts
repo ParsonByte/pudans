@@ -2,6 +2,8 @@ import axios, { type AxiosInstance } from "axios";
 import QueryString from "qs";
 
 import {
+    AgentRunV1alpha1Api,
+    AgentSessionV1alpha1Api,
     AiCatalogV1alpha1Api,
     AiChannelCapabilityV1alpha1Api,
     AiChannelModelV1alpha1Api,
@@ -74,6 +76,8 @@ export function createApiClient(axiosInstance: AxiosInstance = defaultAxiosInsta
     const baseURL = axiosInstance.defaults.baseURL ?? "";
 
     return {
+        agentRun: new AgentRunV1alpha1Api(undefined, baseURL, axiosInstance),
+        agentSession: new AgentSessionV1alpha1Api(undefined, baseURL, axiosInstance),
         aiCatalog: new AiCatalogV1alpha1Api(undefined, baseURL, axiosInstance),
         aiChannel: new AiChannelV1alpha1Api(undefined, baseURL, axiosInstance),
         aiChannelCapability: new AiChannelCapabilityV1alpha1Api(undefined, baseURL, axiosInstance),

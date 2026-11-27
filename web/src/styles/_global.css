@@ -243,6 +243,87 @@
     text-align: center;
 }
 
+.index-sidebar__conversation-add {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: var(--td-radius-small);
+    background: transparent;
+    color: var(--td-text-color-secondary);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.index-sidebar__conversation-add:hover {
+    background: var(--td-bg-color-container-hover);
+    color: var(--td-text-color-primary);
+}
+
+.index-sidebar__conversation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 10px;
+}
+
+.index-sidebar__conversation-item {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 0;
+    border-radius: var(--td-radius-medium);
+    background: transparent;
+    padding: 8px 9px;
+    color: var(--td-text-color-secondary);
+    cursor: pointer;
+    text-align: left;
+}
+
+.index-sidebar__conversation-item:hover {
+    background: var(--td-bg-color-container-hover);
+    color: var(--td-text-color-primary);
+}
+
+.index-sidebar__conversation-item--active {
+    background: var(--td-brand-color-light);
+    color: var(--td-brand-color);
+}
+
+.index-sidebar__conversation-title {
+    min-width: 0;
+    overflow: hidden;
+    font: var(--td-font-body-small);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.index-sidebar__conversation-meta {
+    flex-shrink: 0;
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-extra-small);
+}
+
+.index-sidebar__conversation-error {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 10px;
+    border: 1px solid var(--td-error-color-3);
+    border-radius: var(--td-radius-medium);
+    background: var(--td-error-color-1);
+    padding: 9px;
+    color: var(--td-error-color-7);
+    font: var(--td-font-body-small);
+}
+
 .index-sidebar[data-collapsed="true"] .index-sidebar__conversations {
     display: none;
 }

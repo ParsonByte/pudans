@@ -1,0 +1,514 @@
+.page {
+    display: flex;
+    height: calc(100dvh - var(--app-shell-header-height) - 48px);
+    min-height: 520px;
+    min-width: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: var(--td-radius-large);
+    background: var(--td-bg-color-container);
+}
+
+.header {
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    justify-content: space-between;
+    flex: 0 0 auto;
+    gap: 16px;
+    border-bottom: 1px solid var(--td-component-stroke);
+    padding: 8px 16px;
+}
+
+.headerIdentity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+}
+
+.headerIcon {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: var(--td-radius-medium);
+    background: var(--td-brand-color-light);
+    color: var(--td-brand-color);
+}
+
+.headerText {
+    min-width: 0;
+}
+
+.title {
+    overflow: hidden;
+    margin: 0;
+    color: var(--td-text-color-primary);
+    font: var(--td-font-title-medium);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.subtitle {
+    overflow: hidden;
+    margin-top: 2px;
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.headerActions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.tabs {
+    display: flex;
+    min-height: 43px;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 4px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--td-component-stroke);
+    padding: 5px 12px;
+    scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.tab {
+    display: inline-flex;
+    max-width: 220px;
+    min-height: 32px;
+    align-items: center;
+    flex: 0 0 auto;
+    border: 1px solid transparent;
+    border-radius: var(--td-radius-medium);
+    background: transparent;
+}
+
+.tab:hover {
+    background: var(--td-bg-color-container-hover);
+}
+
+.tabActive {
+    border-color: color-mix(in srgb, var(--td-brand-color) 20%, transparent);
+    background: var(--td-brand-color-light);
+}
+
+.tabLabel {
+    min-width: 0;
+    overflow: hidden;
+    padding: 6px 4px 6px 10px;
+    color: var(--td-text-color-secondary);
+    font: var(--td-font-body-medium);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tabActive .tabLabel {
+    color: var(--td-brand-color);
+}
+
+.tabClose {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 4px;
+    border: 0;
+    border-radius: var(--td-radius-small);
+    background: transparent;
+    color: var(--td-text-color-placeholder);
+    cursor: pointer;
+}
+
+.tabClose:hover {
+    background: var(--td-bg-color-container-active);
+    color: var(--td-text-color-primary);
+}
+
+.tabAdd {
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: var(--td-radius-medium);
+    background: transparent;
+    color: var(--td-text-color-secondary);
+    cursor: pointer;
+}
+
+.tabAdd:hover {
+    background: var(--td-bg-color-container-hover);
+    color: var(--td-text-color-primary);
+}
+
+.body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
+.main {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
+
+.thread {
+    position: relative;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.threadInner {
+    display: flex;
+    width: 100%;
+    max-width: 940px;
+    min-height: 100%;
+    flex-direction: column;
+    gap: 22px;
+    margin: 0 auto;
+    padding: 24px 28px 16px;
+}
+
+.threadStart {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 4px;
+}
+
+.message {
+    display: block;
+    min-width: 0;
+}
+
+.message :global(t-chat-item) {
+    display: block;
+    width: 100%;
+}
+
+.message :global(.t-chat__item__inner) {
+    width: 100%;
+}
+
+.message :global(.t-chat__item__content) {
+    min-width: 0;
+}
+
+.assistantAvatar {
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--td-brand-color) 14%, var(--td-bg-color-container));
+    color: var(--td-brand-color);
+}
+
+.attachmentBlock {
+    max-width: 680px;
+    margin-top: 8px;
+}
+
+.attachmentBlockUser {
+    margin-left: auto;
+}
+
+.attachmentLoading {
+    width: 220px;
+    padding-block: 4px;
+}
+
+.errorNotice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 8px;
+    border: 1px solid var(--td-error-color-3);
+    border-radius: var(--td-radius-medium);
+    background: var(--td-error-color-1);
+    padding: 9px 12px;
+    color: var(--td-error-color-7);
+    font: var(--td-font-body-small);
+}
+
+.empty {
+    display: flex;
+    min-height: 100%;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 48px 24px;
+    text-align: center;
+}
+
+.emptyIcon {
+    display: flex;
+    width: 58px;
+    height: 58px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    border-radius: 18px;
+    background: var(--td-brand-color-light);
+    color: var(--td-brand-color);
+}
+
+.emptyTitle {
+    margin: 0;
+    color: var(--td-text-color-primary);
+    font: var(--td-font-title-medium);
+}
+
+.emptyDescription {
+    max-width: 440px;
+    margin: 8px 0 0;
+    color: var(--td-text-color-secondary);
+    font: var(--td-font-body-medium);
+}
+
+.loadArea {
+    display: flex;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+.threadState {
+    display: flex;
+    min-height: 100%;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    padding: 32px;
+    text-align: center;
+}
+
+.composerDock {
+    flex: 0 0 auto;
+    border-top: 1px solid var(--td-component-stroke);
+    background: color-mix(in srgb, var(--td-bg-color-container) 94%, var(--td-bg-color-page));
+    padding: 10px 24px 14px;
+}
+
+.composerInner {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.composerStatus {
+    display: flex;
+    min-height: 20px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-bottom: 4px;
+    color: var(--td-text-color-secondary);
+    font: var(--td-font-body-small);
+}
+
+.composerStatusError {
+    color: var(--td-error-color);
+}
+
+.composerSurface {
+    border: 1px solid var(--td-component-stroke);
+    border-radius: var(--td-radius-large);
+    background: var(--td-bg-color-container);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 4%);
+}
+
+.composerSurface:focus-within {
+    border-color: var(--td-brand-color);
+    box-shadow: 0 0 0 2px var(--td-brand-color-light);
+}
+
+.composerSender {
+    display: block;
+    width: 100%;
+}
+
+.composerAttachments {
+    padding: 10px 12px 0;
+}
+
+.composerToolbar {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 2px 2px;
+}
+
+.composerToolbarStart,
+.composerToolbarEnd {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.composerHint {
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+}
+
+.iconButton {
+    color: var(--td-text-color-secondary);
+}
+
+.sendButton {
+    min-width: 34px;
+}
+
+.activityPanel {
+    display: flex;
+    width: clamp(320px, 32vw, 440px);
+    min-width: 0;
+    min-height: 0;
+    flex: 0 0 auto;
+    flex-direction: column;
+    border-left: 1px solid var(--td-component-stroke);
+    background: var(--td-bg-color-container);
+}
+
+.activityHeader {
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--td-component-stroke);
+    padding: 10px 12px 10px 16px;
+}
+
+.activityHeading {
+    min-width: 0;
+}
+
+.activityTitle {
+    margin: 0;
+    color: var(--td-text-color-primary);
+    font: var(--td-font-title-small);
+}
+
+.activityType {
+    overflow: hidden;
+    margin-top: 2px;
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activityBody {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 14px;
+}
+
+.activityFallback {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.activityFallbackText {
+    margin: 0;
+    color: var(--td-text-color-secondary);
+    font: var(--td-font-body-small);
+}
+
+.activityJson {
+    max-height: 420px;
+    overflow: auto;
+    border-radius: var(--td-radius-medium);
+    background: var(--td-bg-color-secondarycontainer);
+    padding: 10px;
+    font: var(--td-font-body-small);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+@media (max-width: 1023px) {
+    .activityPanel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 10;
+        width: min(420px, 88vw);
+        box-shadow: -10px 0 28px rgb(0 0 0 / 14%);
+    }
+
+    .body {
+        position: relative;
+    }
+}
+
+@media (max-width: 767px) {
+    .page {
+        height: calc(100dvh - var(--app-shell-header-height) - 32px);
+        min-height: 460px;
+        border-radius: var(--td-radius-medium);
+    }
+
+    .header {
+        min-height: 52px;
+        padding-inline: 12px;
+    }
+
+    .subtitle {
+        display: none;
+    }
+
+    .headerActions :global(.t-button__text) {
+        display: none;
+    }
+
+    .threadInner {
+        gap: 18px;
+        padding: 18px 12px 8px;
+    }
+
+    .composerDock {
+        padding: 8px 12px 12px;
+    }
+
+    .composerHint {
+        display: none;
+    }
+}

@@ -31,6 +31,13 @@
     box-shadow: var(--chat-input-shadow), var(--chat-input-focus-shadow);
 }
 
+.attachmentList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 18px 0;
+}
+
 .sender {
     --td-bg-color-container-hover: var(--chat-input-option);
     --td-bg-color-secondarycontainer: var(--chat-input-option-strong);

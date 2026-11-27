@@ -3,16 +3,28 @@
 import { useState } from "react";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import { Layers2 } from "lucide-react";
+import { MessagePlugin } from "tdesign-react";
+
+import { consoleErrorMessage } from "@/modules/_workspace/_console/composables/_errors";
+import { INDEX_PAGE_KEYS, indexPageHref } from "@/routes/(_workspace)/(_index)/paths";
 
 import { AiChatComposer } from "../../components/ai-chat-composer";
 import type { AiChatComposerVariant } from "../../components/ai-chat-composer/chat-input-types";
+import { conversationTitleFromPrompt } from "../../components/conversation/conversation-utils";
 import { TypewriterText } from "../../components/typewriter-text";
+import {
+    createConversationSession,
+    startConversationRun,
+    uploadConversationAssets,
+} from "../../composables/_conversation";
 import { CHAT_RECOMMENDATIONS, WORK_RECOMMENDATIONS } from "./composables/_dans";
 import styles from "./styles/dans.module.css";
 
 export function DansView() {
+    const router = useRouter();
     const [variant, setVariant] = useState<AiChatComposerVariant>("chat");
     const [prompt, setPrompt] = useState("");
     const title = variant === "work" ? "DANS 工作，让 AI 帮你干活" : "有什么我能帮你的吗？";
@@ -24,6 +36,23 @@ export function DansView() {
 
         setVariant(nextVariant);
         setPrompt("");
+    };
+    const handleSubmit = async (value: string, files: File[]) => {
+        try {
+            const session = await createConversationSession(conversationTitleFromPrompt(value));
+            const assetIds = files.length > 0 ? await uploadConversationAssets(files) : [];
+            const run = await startConversationRun({
+                assetIds,
+                content: value,
+                sessionId: session.id,
+            });
+
+            setPrompt("");
+            router.push(indexPageHref(INDEX_PAGE_KEYS.conversation, [session.id], run.id));
+        } catch (error) {
+            MessagePlugin.error(consoleErrorMessage(error, error instanceof Error ? error.message : "发送失败。"));
+            throw error;
+        }
     };
 
     return (
@@ -88,7 +117,13 @@ export function DansView() {
                     </div>
                 </div>
 
-                <AiChatComposer key={variant} onValueChange={setPrompt} value={prompt} variant={variant} />
+                <AiChatComposer
+                    key={variant}
+                    onSubmit={handleSubmit}
+                    onValueChange={setPrompt}
+                    value={prompt}
+                    variant={variant}
+                />
             </div>
         </section>
     );

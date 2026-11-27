@@ -3,7 +3,7 @@
 import { type ChangeEvent, useRef, useState } from "react";
 
 import { type TdChatSenderParams } from "@tdesign-react/chat";
-import { MessagePlugin } from "tdesign-react";
+import { MessagePlugin, Tag } from "tdesign-react";
 
 import styles from "../../styles/ai-chat-composer.module.css";
 import { ChatSenderWithSlots } from "../chat-sender-with-slots";
@@ -28,7 +28,7 @@ const ADD_ACTION_LABELS: Record<AiChatComposerAddAction, string> = {
 };
 
 type AiChatComposerProps = {
-    onSubmit?: (value: string) => void;
+    onSubmit?: (value: string, files: File[]) => Promise<void> | void;
     onValueChange?: (value: string) => void;
     placeholder?: string;
     value?: string;
@@ -43,6 +43,8 @@ export function AiChatComposer({
     variant = "chat",
 }: AiChatComposerProps) {
     const [internalValue, setInternalValue] = useState("");
+    const [files, setFiles] = useState<File[]>([]);
+    const [submitting, setSubmitting] = useState(false);
     const [answerMode, setAnswerMode] = useState<AiChatComposerMode>("fast");
     const [activeTool, setActiveTool] = useState<AiChatComposerTool>("chat");
     const [selectedSkill, setSelectedSkill] = useState<AiChatComposerSkill | null>(null);
@@ -66,24 +68,33 @@ export function AiChatComposer({
         requestAnimationFrame(() => senderRef.current?.focus());
     };
 
-    const submit = (promptValue: string) => {
+    const submit = async (promptValue: string) => {
         const prompt = promptValue.trim();
 
-        if (!prompt) {
+        if (!prompt || submitting) {
             return;
         }
 
-        if (onSubmit) {
-            onSubmit(prompt);
-        } else {
-            void MessagePlugin.info("发送接口待接入");
-        }
+        setSubmitting(true);
 
-        updateValue("");
+        try {
+            if (onSubmit) {
+                await onSubmit(prompt, files);
+            } else {
+                void MessagePlugin.info("发送接口待接入");
+            }
+
+            updateValue("");
+            setFiles([]);
+        } catch {
+            return;
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleSend = (event: CustomEvent<TdChatSenderParams>) => {
-        submit(event.detail.value);
+        void submit(event.detail.value);
     };
 
     const handleAddAction = (action: AiChatComposerAddAction) => {
@@ -99,7 +110,7 @@ export function AiChatComposer({
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         if (event.currentTarget.files?.length) {
-            void MessagePlugin.info("文件上传接口待接入");
+            setFiles((current) => [...current, ...Array.from(event.currentTarget.files ?? [])]);
         }
 
         event.currentTarget.value = "";
@@ -159,11 +170,27 @@ export function AiChatComposer({
                 type="file"
             />
             <div className={`${styles.surface} ${panel ? styles.surfaceActive : ""}`}>
+                {files.length > 0 ? (
+                    <div className={styles.attachmentList}>
+                        {files.map((file, index) => (
+                            <Tag
+                                closable
+                                key={`${file.name}-${index}`}
+                                onClose={() =>
+                                    setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))
+                                }
+                            >
+                                {file.name}
+                            </Tag>
+                        ))}
+                    </div>
+                ) : null}
                 <ChatSenderWithSlots
                     actions={false}
                     autosize={{ maxRows: 7, minRows: 1 }}
                     className={`${styles.sender} ${variant === "work" ? styles.senderWork : ""}`}
                     footerPrefix={toolbar}
+                    loading={submitting}
                     onChange={(event) => updateValue(event.detail)}
                     onSend={handleSend}
                     placeholder={resolvedPlaceholder}
