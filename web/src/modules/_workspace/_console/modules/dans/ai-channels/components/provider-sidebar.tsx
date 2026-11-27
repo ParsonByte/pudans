@@ -3,8 +3,8 @@
 import { AddIcon, RefreshIcon, SearchIcon } from "tdesign-icons-react";
 import { Button, Input, Skeleton, Tooltip } from "tdesign-react";
 
+import { ProviderMark } from "../../components/provider-mark";
 import type { AiChannel, AiProviderDescriptor } from "../../composables/_dans";
-import { ProviderMark } from "./provider-mark";
 
 export type ProviderEntry = {
     channel?: AiChannel;

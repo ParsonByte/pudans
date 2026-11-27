@@ -8,8 +8,8 @@ import { Button, Input, Select, Switch, Tag, Tooltip } from "tdesign-react";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { consoleErrorMessage } from "@/modules/_workspace/_console/composables/_errors";
 
+import { ProviderMark } from "../../components/provider-mark";
 import type { AiChannel, AiChannelTestResult, AiProviderDescriptor } from "../../composables/_dans";
-import { ProviderMark } from "./provider-mark";
 import { ProviderSecretInput } from "./provider-secret-input";
 
 export type ProviderDraft = {

@@ -7,6 +7,8 @@ import Image from "next/image";
 
 import {
     AppIcon,
+    CloudIcon,
+    CpuIcon,
     DataBaseIcon,
     FileIcon,
     FileSettingIcon,
@@ -38,6 +40,8 @@ type MenuIconProps = {
 type TDesignIcon = typeof AppIcon;
 
 const MENU_ICONS: Record<string, TDesignIcon> = {
+    cloud: CloudIcon,
+    cpu: CpuIcon,
     "file-cog": FileSettingIcon,
     fingerprint: FingerprintIcon,
     "folder-open": FolderOpenIcon,

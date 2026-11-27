@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { DataBaseIcon } from "tdesign-icons-react";
+import { CloudIcon } from "tdesign-icons-react";
 import { Alert, Button, Loading } from "tdesign-react";
 
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
@@ -235,13 +235,7 @@ export function AiChannelsView() {
     );
 
     return (
-        <DansPage
-            description="服务商凭据与代理地址加密保存；模型列表仅使用服务商真实模型接口返回的数据。"
-            icon={<DataBaseIcon size={22} />}
-            section="AI"
-            showOverview={false}
-            title="AI 服务商"
-        >
+        <DansPage icon={<CloudIcon size={22} />} section="AI" showOverview={false} title="AI 服务商">
             {firstError ? (
                 <Alert
                     message={consoleErrorMessage(firstError)}
