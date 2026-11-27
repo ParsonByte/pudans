@@ -40,7 +40,7 @@ public class AiQuotaAssignmentEndpoint implements CustomEndpoint {
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").implementationArray(AiQuotaAssignment.class)))
                 .POST("/aiquotaassignments", this::create, builder -> builder.operationId("createAiQuotaAssignment")
-                        .description("Assign an AI quota plan to a user, workspace or role.")
+                        .description("Assign an AI quota plan to a user group.")
                         .tag(TAG)
                         .requestBody(requestBodyBuilder()
                                 .required(true)

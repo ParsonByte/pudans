@@ -395,10 +395,18 @@ CREATE TABLE IF NOT EXISTS ai_quota_assignments (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (subject_type, subject_id, effective_from),
-    CHECK (subject_type IN ('user', 'workspace', 'role')),
+    CONSTRAINT ai_quota_assignments_subject_type_check
+        CHECK (subject_type IN ('user', 'user_group', 'workspace', 'role')),
     CHECK (btrim(subject_id) <> ''),
     CHECK (effective_to IS NULL OR effective_to > effective_from)
 );
+@
+ALTER TABLE ai_quota_assignments
+    DROP CONSTRAINT IF EXISTS ai_quota_assignments_subject_type_check;
+@
+ALTER TABLE ai_quota_assignments
+    ADD CONSTRAINT ai_quota_assignments_subject_type_check
+        CHECK (subject_type IN ('user', 'user_group', 'workspace', 'role'));
 @
 CREATE INDEX IF NOT EXISTS idx_ai_quota_assignments_subject
     ON ai_quota_assignments (subject_type, subject_id, status, effective_from DESC);
