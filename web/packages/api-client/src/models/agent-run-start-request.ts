@@ -16,6 +16,7 @@
 
 export interface AgentRunStartRequest {
     'answerMode'?: string;
+    'assetIds'?: Array<string>;
     'content'?: string;
     'modelId'?: string;
     'reasoning'?: string;

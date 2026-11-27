@@ -53,6 +53,7 @@ public class AgentMessageEntity {
             UUID sessionId,
             UUID runId,
             Map<String, Object> content,
+            List<UUID> assetIds,
             OffsetDateTime now) {
         var entity = new AgentMessageEntity();
         entity.setId(UUID.randomUUID());
@@ -60,7 +61,7 @@ public class AgentMessageEntity {
         entity.setRunId(runId);
         entity.setRole("user");
         entity.setContentJson(JsonUtils.objectToJson(content));
-        entity.setAssetIdsJson("[]");
+        entity.setAssetIdsJson(JsonUtils.objectToJson(assetIds == null ? List.of() : assetIds));
         entity.setToolCallsJson("[]");
         entity.setUsageJson("{}");
         entity.setCreatedAt(now);

@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.agent.dto.AgentApprovalDecisionRequest;
 import cn.tolim.pudans.contract.agent.dto.AgentRunStartRequest;
+import cn.tolim.pudans.contract.creation.Asset;
+import cn.tolim.pudans.core.creation.archive.Assets;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentApprovalEntity;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentApprovalRepository;
@@ -53,6 +55,9 @@ class AgentRunsTest {
     AgentSessions sessions;
 
     @Mock
+    Assets assets;
+
+    @Mock
     ObjectProvider<AgentRuntime> runtimes;
 
     @Mock
@@ -62,7 +67,7 @@ class AgentRunsTest {
 
     @BeforeEach
     void setUp() {
-        service = new AgentRuns(runs, messages, approvals, sessions, runtimes, events);
+        service = new AgentRuns(runs, messages, approvals, sessions, assets, runtimes, events);
     }
 
     @Test
@@ -70,7 +75,7 @@ class AgentRunsTest {
         when(runtimes.getIfAvailable()).thenReturn(null);
 
         StepVerifier.create(service.start(OWNER, Set.of("agent-user"), new AgentRunStartRequest(
-                        UUID.randomUUID(), "hello", null, null, null, null)))
+                        UUID.randomUUID(), "hello", null, null, null, null, null)))
                 .expectErrorSatisfies(error -> assertThat(error)
                         .isInstanceOfSatisfying(ApiException.class, api -> assertThat(api.getCode())
                                 .isEqualTo("agent-runtime-not-configured")))
@@ -92,7 +97,13 @@ class AgentRunsTest {
         when(events.publish(any(), any(), any(), anyMap())).thenReturn(Mono.empty());
 
         var result = service.start(OWNER, Set.of("agent-user"), new AgentRunStartRequest(
-                        session.getId(), "hello", null, "fast", "medium", List.of("generate_media")))
+                        session.getId(),
+                        "hello",
+                        null,
+                        "fast",
+                        "medium",
+                        List.of("generate_media"),
+                        null))
                 .block();
 
         assertThat(result).isNotNull();
@@ -107,6 +118,33 @@ class AgentRunsTest {
         verify(runtime).start(contextCaptor.capture());
         assertThat(contextCaptor.getValue().roles()).containsExactly("agent-user");
         verify(events).publish(any(), eq(session.getId()), eq(AgentRunEvents.RUN_QUEUED), anyMap());
+    }
+
+    @Test
+    void persistsValidatedAssetIdsWithTheUserMessage() {
+        var session = session();
+        var assetId = UUID.randomUUID();
+        var runtime = org.mockito.Mockito.mock(AgentRuntime.class);
+        when(runtimes.getIfAvailable()).thenReturn(runtime);
+        when(sessions.require(OWNER, session.getId())).thenReturn(Mono.just(session));
+        when(assets.require(OWNER, assetId)).thenReturn(Mono.just(asset(assetId)));
+        when(messages.save(any(AgentMessageEntity.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(runs.save(any(AgentRunEntity.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(sessions.touch(eq(OWNER), eq(session.getId()), any())).thenReturn(Mono.empty());
+        when(runtime.start(any())).thenReturn(Mono.empty());
+        when(events.publish(any(), any(), any(), anyMap())).thenReturn(Mono.empty());
+
+        service.start(OWNER, Set.of("agent-user"), new AgentRunStartRequest(
+                        session.getId(), "看图", null, null, null, null, List.of(assetId)))
+                .block();
+
+        var messageCaptor = ArgumentCaptor.forClass(AgentMessageEntity.class);
+        verify(messages, org.mockito.Mockito.times(2)).save(messageCaptor.capture());
+        assertThat(messageCaptor.getAllValues().getFirst().toContract().assetIds())
+                .containsExactly(assetId);
+        verify(assets).require(OWNER, assetId);
     }
 
     @Test
@@ -232,5 +270,31 @@ class AgentRunsTest {
                 null,
                 null,
                 OffsetDateTime.now(ZoneOffset.UTC));
+    }
+
+    private static Asset asset(UUID id) {
+        return new Asset(
+                id,
+                OWNER.ownerId(),
+                OWNER.workspaceId(),
+                "image",
+                "chat",
+                "storage-file",
+                null,
+                null,
+                "reference.png",
+                null,
+                null,
+                Map.of(),
+                "image/png",
+                1024L,
+                null,
+                null,
+                null,
+                List.of(),
+                Map.of(),
+                "active",
+                OffsetDateTime.now(ZoneOffset.UTC).toInstant(),
+                OffsetDateTime.now(ZoneOffset.UTC).toInstant());
     }
 }

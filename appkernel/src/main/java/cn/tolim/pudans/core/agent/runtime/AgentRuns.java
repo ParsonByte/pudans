@@ -4,6 +4,7 @@ import cn.tolim.pudans.contract.agent.AgentApproval;
 import cn.tolim.pudans.contract.agent.AgentRun;
 import cn.tolim.pudans.contract.agent.dto.AgentApprovalDecisionRequest;
 import cn.tolim.pudans.contract.agent.dto.AgentRunStartRequest;
+import cn.tolim.pudans.core.creation.archive.Assets;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.agent.AgentApprovalEntity;
@@ -21,6 +22,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -49,6 +52,8 @@ public class AgentRuns {
     private final AgentApprovalRepository approvals;
 
     private final AgentSessions sessions;
+
+    private final Assets assets;
 
     private final ObjectProvider<AgentRuntime> runtimes;
 
@@ -75,35 +80,44 @@ public class AgentRuns {
         }
         return sessions.require(identity, request.sessionId()).flatMap(session -> {
             var now = now();
-            var message = AgentMessageEntity.userMessage(
-                    session.getId(),
-                    null,
-                    Map.of("type", "text", "text", request.content().trim()),
-                    now);
-            return messages
-                    .save(message)
-                    .flatMap(saved -> {
-                        var run = AgentRunEntity.queued(
+            var requestedAssetIds = request.assetIds() == null
+                    ? List.<UUID>of()
+                    : request.assetIds().stream().filter(Objects::nonNull).distinct().toList();
+            return Flux.fromIterable(requestedAssetIds)
+                    .concatMap(assetId -> assets.require(identity, assetId).map(asset -> asset.id()))
+                    .collectList()
+                    .flatMap(assetIds -> {
+                        var message = AgentMessageEntity.userMessage(
                                 session.getId(),
-                                saved.getId(),
-                                modelId(request, session),
-                                request.answerMode(),
-                                request.reasoning(),
-                                request.toolIds(),
+                                null,
+                                Map.of("type", "text", "text", request.content().trim()),
+                                assetIds,
                                 now);
-                        saved.setRunId(run.getId());
                         return messages
-                                .save(saved)
-                                .then(runs.save(run));
-                    })
-                    .flatMap(run -> sessions
-                            .touch(identity, session.getId(), now.toInstant())
-                            .then(events.publish(
-                                    run.getId(),
-                                    run.getSessionId(),
-                                    AgentRunEvents.RUN_QUEUED,
-                                    Map.of("status", QUEUED)))
-                            .thenReturn(run));
+                                .save(message)
+                                .flatMap(saved -> {
+                                    var run = AgentRunEntity.queued(
+                                            session.getId(),
+                                            saved.getId(),
+                                            modelId(request, session),
+                                            request.answerMode(),
+                                            request.reasoning(),
+                                            request.toolIds(),
+                                            now);
+                                    saved.setRunId(run.getId());
+                                    return messages
+                                            .save(saved)
+                                            .then(runs.save(run));
+                                })
+                                .flatMap(run -> sessions
+                                        .touch(identity, session.getId(), now.toInstant())
+                                        .then(events.publish(
+                                                run.getId(),
+                                                run.getSessionId(),
+                                                AgentRunEvents.RUN_QUEUED,
+                                                Map.of("status", QUEUED)))
+                                        .thenReturn(run));
+                    });
         }).flatMap(run -> runtime
                 .start(new AgentRunContext(
                         run.getId(),
