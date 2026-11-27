@@ -26,7 +26,7 @@ import {
     modelFeatures,
     modelParameters,
     modelTypeOf,
-} from "../composables/model-types";
+} from "../../composables/_model-meta";
 
 const CONTEXT_MAX = 2_147_483_647;
 const CONTEXT_STEP = 1_024;

@@ -22,6 +22,7 @@ import { Button, Dropdown, Empty, Input, Skeleton, Switch, Tabs, Tag, Tooltip } 
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { consoleErrorMessage } from "@/modules/_workspace/_console/composables/_errors";
 
+import { ProviderMark } from "../../components/provider-mark";
 import type { AiChannel, AiChannelModel, AiModel, AiProviderDescriptor } from "../../composables/_dans";
 import {
     MODEL_FEATURE_LABELS,
@@ -32,8 +33,7 @@ import {
     modelFeatures,
     modelModalities,
     modelTypeOf,
-} from "../composables/model-types";
-import { ProviderMark } from "./provider-mark";
+} from "../../composables/_model-meta";
 
 type ChannelModelsProps = {
     channel?: AiChannel;
@@ -330,7 +330,7 @@ export function ChannelModels({
 
             <Tabs
                 action={refreshing ? <Skeleton animation="gradient" theme="text" /> : undefined}
-                className="mt-2"
+                className="console-tabs--flat-action mt-2"
                 list={visibleTabs.map((item) => {
                     const Icon = TAB_ICONS[item.value];
 

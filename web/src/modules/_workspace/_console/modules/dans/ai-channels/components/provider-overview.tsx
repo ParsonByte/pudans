@@ -7,7 +7,7 @@ import { Switch } from "tdesign-react";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { consoleErrorMessage } from "@/modules/_workspace/_console/composables/_errors";
 
-import { ProviderMark } from "./provider-mark";
+import { ProviderMark } from "../../components/provider-mark";
 import { type ProviderEntry, isProviderEnabled, matchesProviderSearch } from "./provider-sidebar";
 
 type ProviderOverviewProps = {

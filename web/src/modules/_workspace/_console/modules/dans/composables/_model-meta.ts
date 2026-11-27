@@ -1,4 +1,4 @@
-import type { AiModel } from "../../composables/_dans";
+import type { AiModel } from "./_dans";
 
 export type ModelType = "chat" | "image" | "video" | "audio" | "embedding" | "3d" | "rerank";
 
@@ -15,6 +15,14 @@ export const MODEL_TYPE_OPTIONS: Array<{ label: string; value: ModelType }> = [
 export const MODEL_TYPE_LABELS: Record<string, string> = Object.fromEntries(
     MODEL_TYPE_OPTIONS.map((option) => [option.value, option.label]),
 );
+
+export function capabilityLabel(code?: string): string {
+    if (!code) {
+        return "未命名能力";
+    }
+
+    return MODEL_TYPE_LABELS[code] ?? code;
+}
 
 export type ModelTab = "all" | "chat" | "image" | "video" | "audio" | "embedding";
 
@@ -41,6 +49,18 @@ export const MODEL_FEATURE_LABELS: Record<string, string> = {
     asr: "语音识别",
 };
 
+const MODALITY_LABELS: Record<string, string> = {
+    audio: "音频",
+    file: "文件",
+    image: "图片",
+    text: "文本",
+    video: "视频",
+};
+
+export function modalityLabel(code: string): string {
+    return MODALITY_LABELS[code] ?? code;
+}
+
 type UnknownRecord = Record<string, unknown>;
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -62,11 +82,46 @@ export function modelTypeOf(model?: AiModel): string {
     return supported ?? "unknown";
 }
 
+export function modelProvider(model?: AiModel): string {
+    const catalog = modelCapabilityDetails(model).catalog;
+    if (isRecord(catalog)) {
+        const provider = catalog.provider;
+        if (typeof provider === "string" && provider.trim()) {
+            return provider.trim();
+        }
+    }
+    const prefix = model?.logicalName?.split("/")[0]?.trim();
+
+    return prefix || "unknown";
+}
+
+export function modelLabel(model?: AiModel): string {
+    return model?.displayName ?? model?.logicalName ?? model?.id ?? "未命名模型";
+}
+
+export function modelCapabilityCodes(model?: AiModel): string[] {
+    return Object.keys(model?.capabilities ?? {});
+}
+
 function modelCapabilityDetails(model?: AiModel): UnknownRecord {
     const capabilities = model?.capabilities ?? {};
     const entry = Object.entries(capabilities).find(([key]) => MODEL_TYPE_LABELS[key]);
 
     return entry && isRecord(entry[1]) ? entry[1] : {};
+}
+
+export function modelDescription(model?: AiModel): string | undefined {
+    const description = model?.description?.trim();
+    if (description) {
+        return description;
+    }
+    const catalog = modelCapabilityDetails(model).catalog;
+    if (!isRecord(catalog)) {
+        return undefined;
+    }
+    const catalogDescription = catalog.description;
+
+    return typeof catalogDescription === "string" && catalogDescription.trim() ? catalogDescription.trim() : undefined;
 }
 
 export function modelFeatures(model?: AiModel): string[] {
