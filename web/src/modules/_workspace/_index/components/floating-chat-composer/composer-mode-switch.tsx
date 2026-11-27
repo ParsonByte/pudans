@@ -29,12 +29,17 @@ const MEDIA_MODE_OPTIONS = [
 
 type ComposerModeSwitchProps = {
     onChange: (mode: ComposerMediaMode) => void;
+    options?: readonly ComposerMediaMode[];
     value: ComposerMediaMode;
 };
 
-export function ComposerModeSwitch({ onChange, value }: ComposerModeSwitchProps) {
+export function ComposerModeSwitch({ onChange, options, value }: ComposerModeSwitchProps) {
     const [visible, setVisible] = useState(false);
-    const currentOption = MEDIA_MODE_OPTIONS.find((option) => option.value === value) ?? MEDIA_MODE_OPTIONS[0];
+    const visibleOptions = options
+        ? MEDIA_MODE_OPTIONS.filter((option) => options.includes(option.value))
+        : MEDIA_MODE_OPTIONS;
+    const currentOption =
+        visibleOptions.find((option) => option.value === value) ?? visibleOptions[0] ?? MEDIA_MODE_OPTIONS[0];
 
     const selectMode = (mode: ComposerMediaMode) => {
         onChange(mode);
@@ -46,7 +51,7 @@ export function ComposerModeSwitch({ onChange, value }: ComposerModeSwitchProps)
             content={
                 <div className={`${styles.theme} ${styles.modelPanel} ${styles.modePanel}`}>
                     <span className={styles.modelPanelTitle}>生成类型</span>
-                    {MEDIA_MODE_OPTIONS.map((option) => {
+                    {visibleOptions.map((option) => {
                         const active = option.value === value;
 
                         return (
