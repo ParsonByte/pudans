@@ -61,7 +61,7 @@ public class AiModelRepository {
                 .all();
     }
 
-    public Flux<AiModel> findAvailable(String workspaceId) {
+    public Flux<AiModel> findAvailable() {
         return databaseClient
                 .sql(COLUMNS + """
                          WHERE status = 'active'
@@ -71,11 +71,9 @@ public class AiModelRepository {
                                  JOIN ai_channels channel ON channel.id = channel_model.channel_id
                                 WHERE channel_model.model_id = ai_models.id
                                   AND channel_model.enabled = TRUE
-                                  AND channel.status = 'active'
-                                  AND channel.workspace_id = :workspaceId)
+                                  AND channel.status = 'active')
                          ORDER BY logical_name, id
                         """)
-                .bind("workspaceId", workspaceId)
                 .map((row, metadata) -> map(row))
                 .all();
     }
@@ -88,7 +86,7 @@ public class AiModelRepository {
                 .one();
     }
 
-    public Mono<Boolean> existsAvailable(UUID id, String workspaceId) {
+    public Mono<Boolean> existsAvailable(UUID id) {
         return databaseClient
                 .sql("""
                         SELECT EXISTS (
@@ -99,11 +97,9 @@ public class AiModelRepository {
                              WHERE model.id = :id
                                AND model.status = 'active'
                                AND channel_model.enabled = TRUE
-                               AND channel.status = 'active'
-                               AND channel.workspace_id = :workspaceId)
+                               AND channel.status = 'active')
                         """)
                 .bind("id", id)
-                .bind("workspaceId", workspaceId)
                 .map((row, metadata) -> row.get(0, Boolean.class))
                 .one()
                 .defaultIfEmpty(false);

@@ -147,7 +147,7 @@ class GenerationTasksTest {
     void failsExplicitlyWhenTheResolvedProviderHasNoGateway() {
         when(store.findByIdempotencyKey(anyString())).thenReturn(Mono.empty());
         when(catalogs.getIfAvailable()).thenReturn(catalog);
-        when(catalog.resolve(MODEL_ID, "workspace-a")).thenReturn(Mono.just(profile()));
+        when(catalog.resolve(MODEL_ID)).thenReturn(Mono.just(profile()));
         when(gateways.find("provider-a")).thenReturn(Optional.empty());
 
         StepVerifier.create(tasks.start(ALICE, request(), "request-1"))
@@ -172,7 +172,7 @@ class GenerationTasksTest {
                 null);
         when(store.findByIdempotencyKey(anyString())).thenReturn(Mono.empty());
         when(catalogs.getIfAvailable()).thenReturn(catalog);
-        when(catalog.resolve(MODEL_ID, "workspace-a")).thenReturn(Mono.just(profile()));
+        when(catalog.resolve(MODEL_ID)).thenReturn(Mono.just(profile()));
         when(catalog.validate(
                         any(GenerationModelProfile.class),
                         eq(GenerationTask.MediaType.IMAGE),
@@ -314,7 +314,7 @@ class GenerationTasksTest {
         when(store.findById(withAttempt.id())).thenReturn(Mono.just(withAttempt));
         when(cancellations.markTask(withAttempt.id())).thenReturn(Mono.empty());
         when(catalogs.getIfAvailable()).thenReturn(catalog);
-        when(catalog.resolve(MODEL_ID, "workspace-a")).thenReturn(Mono.just(profile()));
+        when(catalog.resolve(MODEL_ID)).thenReturn(Mono.just(profile()));
         when(gateways.find("provider-a")).thenReturn(Optional.of(gateway));
         when(store.listAttempts(withAttempt.id())).thenReturn(Flux.just(attempt));
         when(gateway.cancel(any())).thenReturn(Mono.empty());
@@ -350,7 +350,7 @@ class GenerationTasksTest {
         when(store.findById(failed.id())).thenReturn(Mono.just(failed));
         when(store.countAttempts(failed.id())).thenReturn(Mono.just(1L));
         when(catalogs.getIfAvailable()).thenReturn(catalog);
-        when(catalog.resolve(MODEL_ID, "workspace-a")).thenReturn(Mono.just(profile()));
+        when(catalog.resolve(MODEL_ID)).thenReturn(Mono.just(profile()));
         when(gateways.find("provider-a")).thenReturn(Optional.of(gateway));
         when(store.listAttempts(failed.id())).thenReturn(Flux.just(attempt));
         when(gateway.find(any())).thenReturn(Mono.just(new MediaGenerationGateway.State(
@@ -387,7 +387,7 @@ class GenerationTasksTest {
         when(store.findById(failed.id())).thenReturn(Mono.just(failed));
         when(store.countAttempts(failed.id())).thenReturn(Mono.just(1L));
         when(catalogs.getIfAvailable()).thenReturn(catalog);
-        when(catalog.resolve(MODEL_ID, "workspace-a")).thenReturn(Mono.just(profile()));
+        when(catalog.resolve(MODEL_ID)).thenReturn(Mono.just(profile()));
         when(gateways.find("provider-a")).thenReturn(Optional.of(gateway));
         when(store.listAttempts(failed.id())).thenReturn(Flux.just(attempt));
         when(gateway.find(any())).thenReturn(Mono.just(new MediaGenerationGateway.State(

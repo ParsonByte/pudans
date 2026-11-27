@@ -27,10 +27,10 @@ public class AgentModelRouteResolver {
         return models
                 .resolve(workspaceId, modelId == null ? null : modelId.toString(), CHAT)
                 .flatMap(model -> channelModels
-                        .findEnabledRoute(model.id(), workspaceId)
+                        .findEnabledRoute(model.id())
                         .switchIfEmpty(Mono.error(routeMissing()))
                         .flatMap(channelModel -> channels
-                                .get(workspaceId, channelModel.channelId())
+                                .get(channelModel.channelId())
                                 .flatMap(channel -> channels
                                         .credentials(channel.id())
                                         .map(credentials -> new AgentModelRoute(

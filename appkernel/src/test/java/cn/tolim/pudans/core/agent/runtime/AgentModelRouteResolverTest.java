@@ -52,7 +52,7 @@ class AgentModelRouteResolverTest {
                 Instant.now());
         when(models.resolve(eq("workspace-a"), anyString(), eq("chat")))
                 .thenReturn(Mono.just(model));
-        when(channelModels.findEnabledRoute(model.id(), "workspace-a"))
+        when(channelModels.findEnabledRoute(model.id()))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(resolver.resolve("workspace-a", model.id()))

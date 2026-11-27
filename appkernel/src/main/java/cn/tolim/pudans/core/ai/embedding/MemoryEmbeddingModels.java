@@ -46,20 +46,19 @@ public class MemoryEmbeddingModels {
                                 HttpStatus.SERVICE_UNAVAILABLE,
                                 "memory-vector-space-not-configured",
                                 "Embedding 模型尚未配置可用的向量空间。")))
-                        .flatMap(space -> embeddingModel(workspaceId, model, space.getDimension())
+                        .flatMap(space -> embeddingModel(model, space.getDimension())
                                 .map(embeddingModel -> new Space(space, embeddingModel, model))));
     }
 
-    private Mono<EmbeddingModel> embeddingModel(
-            String workspaceId, AiModel model, int dimensions) {
+    private Mono<EmbeddingModel> embeddingModel(AiModel model, int dimensions) {
         return channelModels
-                .findEnabledRoute(model.id(), workspaceId)
+                .findEnabledRoute(model.id())
                 .switchIfEmpty(Mono.error(new ApiException(
                         HttpStatus.SERVICE_UNAVAILABLE,
                         "memory-embedding-channel-unavailable",
                         "Embedding 模型没有启用的渠道。")))
                 .flatMap(channelModel -> channels
-                        .get(workspaceId, channelModel.channelId())
+                        .get(channelModel.channelId())
                         .flatMap(channel -> channels
                                 .credentials(channel.id())
                                 .map(credentials -> build(

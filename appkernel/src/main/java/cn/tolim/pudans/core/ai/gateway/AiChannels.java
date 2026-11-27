@@ -52,6 +52,14 @@ public class AiChannels {
         return require(workspaceId, id).map(AiChannelEntity::toContract);
     }
 
+    public Mono<AiChannel> get(UUID id) {
+        return channels
+                .findById(id)
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND, "ai-channel-not-found", "AI 渠道不存在。")))
+                .map(AiChannelEntity::toContract);
+    }
+
     public Mono<AiChannel> create(String workspaceId, AiChannelCreateRequest request) {
         if (request == null) {
             return Mono.error(requestRequired());

@@ -36,7 +36,6 @@ public class AiChannelModelRepository {
               JOIN ai_channels c ON c.id = m.channel_id
              WHERE m.model_id = :modelId
                AND m.enabled = TRUE
-               AND c.workspace_id = :workspaceId
                AND c.status = 'active'
              ORDER BY m.priority ASC NULLS LAST, m.weight DESC NULLS LAST, m.id
              LIMIT 1
@@ -100,12 +99,11 @@ public class AiChannelModelRepository {
                 .one();
     }
 
-    // 联合渠道状态与工作区筛选当前模型可用的最高优先级路由。
-    public Mono<AiChannelModel> findEnabledRoute(UUID modelId, String workspaceId) {
+    // 联合渠道状态筛选当前模型可用的最高优先级路由。
+    public Mono<AiChannelModel> findEnabledRoute(UUID modelId) {
         return databaseClient
                 .sql(ENABLED_ROUTE)
                 .bind("modelId", modelId)
-                .bind("workspaceId", workspaceId)
                 .map((row, metadata) -> map(row))
                 .one();
     }

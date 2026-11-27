@@ -101,7 +101,7 @@ public class MemoryVectorSpaces {
                             && model.capabilities() != null
                             && model.capabilities().containsKey("embedding"))
                     .flatMap(model -> models
-                            .existsAvailable(normalized.embeddingModelId(), workspaceId)
+                            .existsAvailable(normalized.embeddingModelId())
                             .flatMap(available -> Boolean.TRUE.equals(available)
                                     ? physical(normalized)
                                     : Mono.just(invalid(

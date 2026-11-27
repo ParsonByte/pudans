@@ -36,8 +36,8 @@ public class AiGenerationModelCatalog implements GenerationModelCatalog {
     private final AiChannelRepository channels;
 
     @Override
-    public Mono<GenerationModelProfile> resolve(UUID modelId, String workspaceId) {
-        if (modelId == null || !StringUtils.hasText(workspaceId)) {
+    public Mono<GenerationModelProfile> resolve(UUID modelId) {
+        if (modelId == null) {
             return Mono.empty();
         }
         return models.findById(modelId)
@@ -48,11 +48,9 @@ public class AiGenerationModelCatalog implements GenerationModelCatalog {
                         return Mono.empty();
                     }
                     return channelModels
-                            .findEnabledRoute(modelId, workspaceId.trim())
+                            .findEnabledRoute(modelId)
                             .flatMap(route -> channels
                                     .findById(route.channelId())
-                                    .filter(channel -> channel.getWorkspaceId() != null
-                                            && channel.getWorkspaceId().equals(workspaceId.trim()))
                                     .filter(channel -> AiSupport.ACTIVE.equals(channel.getStatus()))
                                     .map(channel -> profile(
                                             model,
@@ -140,32 +138,65 @@ public class AiGenerationModelCatalog implements GenerationModelCatalog {
             return explicit;
         }
         var id = normalize(model.logicalName() + " " + model.displayName());
+        var inputModalities = inputModalities(model, mediaType);
+        var description = normalize(providerDescription(model, mediaType));
         if (mediaType == GenerationTask.MediaType.IMAGE) {
-            if (id.contains("edit")) {
-                return Set.of(
-                        GenerationTask.Operation.TEXT,
-                        GenerationTask.Operation.EDIT,
-                        GenerationTask.Operation.REFERENCE);
+            var operations = new LinkedHashSet<GenerationTask.Operation>();
+            operations.add(GenerationTask.Operation.TEXT);
+            if (inputModalities.contains("image")
+                    || id.contains("edit")
+                    || description.contains("参考图")
+                    || description.contains("编辑")) {
+                operations.add(GenerationTask.Operation.REFERENCE);
+                operations.add(GenerationTask.Operation.EDIT);
             }
-            return Set.of(GenerationTask.Operation.TEXT);
+            return Set.copyOf(operations);
         }
-        if (id.contains("videoedit") || id.contains("video-edit")) {
-            return Set.of(
-                    GenerationTask.Operation.EDIT,
-                    GenerationTask.Operation.REFERENCE);
+        var operations = new LinkedHashSet<GenerationTask.Operation>();
+        operations.add(GenerationTask.Operation.TEXT);
+        if (inputModalities.contains("image")
+                || id.contains("r2v")
+                || id.contains("i2v")
+                || description.contains("图生")) {
+            operations.add(GenerationTask.Operation.REFERENCE);
         }
-        if (id.contains("r2v")) {
-            return Set.of(
-                    GenerationTask.Operation.TEXT,
-                    GenerationTask.Operation.REFERENCE);
+        if (id.contains("frame")
+                || id.contains("fl2v")
+                || description.contains("首尾帧")) {
+            operations.add(GenerationTask.Operation.FRAME);
         }
-        if (id.contains("i2v")) {
-            return Set.of(
-                    GenerationTask.Operation.TEXT,
-                    GenerationTask.Operation.REFERENCE,
-                    GenerationTask.Operation.FRAME);
+        return Set.copyOf(operations);
+    }
+
+    private static Set<String> inputModalities(AiModel model, GenerationTask.MediaType mediaType) {
+        var capabilities = model.capabilities();
+        if (capabilities == null) {
+            return Set.of();
         }
-        return Set.of(GenerationTask.Operation.TEXT);
+        var entry = capabilities.get(mediaType.getCode());
+        if (!(entry instanceof Map<?, ?> details)
+                || !(details.get("modalities") instanceof Map<?, ?> modalities)) {
+            return Set.of();
+        }
+        var values = new LinkedHashSet<String>();
+        for (var value : listValue(modalities.get("input"))) {
+            values.add(value.toLowerCase(Locale.ROOT));
+        }
+        return Set.copyOf(values);
+    }
+
+    private static String providerDescription(AiModel model, GenerationTask.MediaType mediaType) {
+        var capabilities = model.capabilities();
+        if (capabilities == null) {
+            return "";
+        }
+        var entry = capabilities.get(mediaType.getCode());
+        if (!(entry instanceof Map<?, ?> details)
+                || !(details.get("catalog") instanceof Map<?, ?> catalog)) {
+            return "";
+        }
+        var description = catalog.get("description");
+        return description == null ? "" : description.toString();
     }
 
     private static Set<GenerationTask.Operation> explicitOperations(

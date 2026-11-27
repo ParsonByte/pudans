@@ -31,7 +31,7 @@ public class AiModelDirectory {
                         "ai-model-default-missing",
                         "当前工作区尚未配置该能力的默认模型。")))
                 .map(AiDefaultModel::modelId)
-                .flatMap(modelId -> requireAvailable(workspaceId, modelId, normalized));
+                .flatMap(modelId -> requireAvailable(modelId, normalized));
     }
 
     public Mono<AiModel> resolve(String workspaceId, String requestedModel, String capability) {
@@ -45,11 +45,10 @@ public class AiModelDirectory {
             return Mono.error(new ApiException(
                     HttpStatus.BAD_REQUEST, "ai-model-id-invalid", "模型标识不是有效 UUID。"));
         }
-        return requireAvailable(workspaceId, modelId, capability);
+        return requireAvailable(modelId, capability);
     }
 
-    private Mono<AiModel> requireAvailable(
-            String workspaceId, UUID modelId, String capability) {
+    private Mono<AiModel> requireAvailable(UUID modelId, String capability) {
         return models
                 .findById(modelId)
                 .switchIfEmpty(Mono.error(new ApiException(
@@ -68,7 +67,7 @@ public class AiModelDirectory {
                                 "模型不支持请求的能力。"));
                     }
                     return models
-                            .existsAvailable(modelId, workspaceId)
+                            .existsAvailable(modelId)
                             .flatMap(available -> Boolean.TRUE.equals(available)
                                     ? Mono.just(model)
                                     : Mono.error(unavailable()));
@@ -79,6 +78,6 @@ public class AiModelDirectory {
         return new ApiException(
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "ai-model-unavailable",
-                "模型在当前工作区没有可用渠道。");
+                "模型没有可用渠道。");
     }
 }
