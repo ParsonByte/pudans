@@ -4,6 +4,7 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
@@ -12,6 +13,8 @@ public enum AiSupport {
     ;
 
     public static final String ACTIVE = "active";
+
+    public static final String DISABLED = "disabled";
 
     public static final String RELEASED = "released";
 
@@ -48,6 +51,19 @@ public enum AiSupport {
                     HttpStatus.BAD_REQUEST,
                     "ai-status-invalid",
                     "AI 配置状态长度不能超过 32 个字符。");
+        }
+        return status;
+    }
+
+    public static String normalizeEnabledStatus(String value, String defaultStatus) {
+        var status = StringUtils.hasText(value)
+                ? value.trim().toLowerCase(Locale.ROOT)
+                : defaultStatus;
+        if (!ACTIVE.equals(status) && !DISABLED.equals(status)) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "ai-quota-status-invalid",
+                    "配额状态必须为 active 或 disabled。");
         }
         return status;
     }

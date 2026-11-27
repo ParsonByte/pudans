@@ -92,7 +92,7 @@ public class AiQuotaPlans {
                     windowSeconds(request.fiveHourWindowSeconds()),
                     weeklyDays(request.weeklyWindowDays()),
                     anchorMode(request.weeklyAnchorMode()),
-                    AiSupport.normalizeStatus(request.status(), AiSupport.ACTIVE),
+                    AiSupport.normalizeEnabledStatus(request.status(), AiSupport.ACTIVE),
                     now,
                     now);
             return plans.insert(plan);
@@ -159,7 +159,7 @@ public class AiQuotaPlans {
                             : anchorMode(request.weeklyAnchorMode()),
                     request.status() == null
                             ? existing.status()
-                            : AiSupport.normalizeStatus(request.status(), AiSupport.ACTIVE),
+                            : AiSupport.normalizeEnabledStatus(request.status(), AiSupport.ACTIVE),
                     existing.createdAt(),
                     Instant.now(clock));
             return plans.update(plan);

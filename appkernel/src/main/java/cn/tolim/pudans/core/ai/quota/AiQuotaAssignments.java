@@ -4,7 +4,9 @@ import cn.tolim.pudans.contract.ai.AiQuotaAssignment;
 import cn.tolim.pudans.contract.ai.AiQuotaPlan;
 import cn.tolim.pudans.contract.ai.dto.AiQuotaAssignmentCreateRequest;
 import cn.tolim.pudans.contract.ai.dto.AiQuotaAssignmentUpdateRequest;
+import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.core.ai.AiSupport;
+import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.quota.AiQuotaAssignmentRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.quota.AiQuotaPlanRepository;
@@ -25,11 +27,13 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AiQuotaAssignments {
 
-    private static final Set<String> SUBJECT_TYPES = Set.of("user", "workspace", "role");
+    private static final Set<String> SUBJECT_TYPES = Set.of("user", "user_group", "workspace", "role");
 
     private final AiQuotaAssignmentRepository assignments;
 
     private final AiQuotaPlanRepository plans;
+
+    private final Groups groups;
 
     private Clock clock = Clock.systemUTC();
 
@@ -64,10 +68,10 @@ public class AiQuotaAssignments {
                     effectiveFrom,
                     request.effectiveTo(),
                     request.weeklyAnchorAt() == null ? effectiveFrom : request.weeklyAnchorAt(),
-                    AiSupport.normalizeStatus(request.status(), AiSupport.ACTIVE),
+                    AiSupport.normalizeEnabledStatus(request.status(), AiSupport.ACTIVE),
                     now,
                     now);
-            return validate(assignment).then(assignments.insert(assignment));
+            return validate(assignment).then(Mono.defer(() -> assignments.insert(assignment)));
         });
     }
 
@@ -97,10 +101,10 @@ public class AiQuotaAssignments {
                             : request.weeklyAnchorAt(),
                     request.status() == null
                             ? existing.status()
-                            : AiSupport.normalizeStatus(request.status(), AiSupport.ACTIVE),
+                            : AiSupport.normalizeEnabledStatus(request.status(), AiSupport.ACTIVE),
                     existing.createdAt(),
                     Instant.now(clock));
-            return validate(assignment).then(assignments.update(assignment));
+            return validate(assignment).then(Mono.defer(() -> assignments.update(assignment)));
         }));
     }
 
@@ -126,6 +130,7 @@ public class AiQuotaAssignments {
     public Mono<ResolvedQuota> findForIdentity(
             String ownerId, String workspaceId, Collection<String> roles) {
         return find("user", ownerId)
+                .switchIfEmpty(Mono.defer(() -> findUserGroup(ownerId)))
                 .switchIfEmpty(Mono.defer(() -> find("workspace", workspaceId)))
                 .switchIfEmpty(Mono.defer(() -> findRole(roles)));
     }
@@ -144,6 +149,16 @@ public class AiQuotaAssignments {
                 .flatMap(this::resolved);
     }
 
+    private Mono<ResolvedQuota> findUserGroup(String ownerId) {
+        if (!StringUtils.hasText(ownerId)) {
+            return Mono.empty();
+        }
+        return groups
+                .getUserGroupByUsername(ownerId.trim())
+                .onErrorResume(ExtensionNotFoundException.class, error -> Mono.empty())
+                .flatMap(group -> find("user_group", group.getMetadata().getName()));
+    }
+
     private Mono<AiQuotaAssignment> findActive(String subjectType, String subjectId) {
         if (!StringUtils.hasText(subjectId)) {
             return Mono.empty();
@@ -157,6 +172,12 @@ public class AiQuotaAssignments {
     }
 
     private Mono<Void> validate(AiQuotaAssignment assignment) {
+        if (!"user_group".equals(assignment.subjectType())) {
+            return Mono.error(new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "ai-quota-assignment-subject-type-unsupported",
+                    "配额分配只能选择用户组。"));
+        }
         if (assignment.planId() == null) {
             return Mono.error(new ApiException(
                     HttpStatus.BAD_REQUEST,
@@ -176,11 +197,34 @@ public class AiQuotaAssignments {
                     "ai-quota-assignment-anchor-invalid",
                     "周窗口锚点不能早于配额分配生效时间。"));
         }
-        return plans
-                .findById(assignment.planId())
-                .switchIfEmpty(Mono.error(new ApiException(
-                        HttpStatus.NOT_FOUND, "ai-quota-plan-not-found", "配额套餐不存在。")))
+        return validateSubject(assignment)
+                .then(Mono.defer(() -> plans
+                        .findById(assignment.planId())
+                        .switchIfEmpty(Mono.error(new ApiException(
+                                HttpStatus.NOT_FOUND, "ai-quota-plan-not-found", "配额套餐不存在。")))
+                        .flatMap(plan -> AiSupport.ACTIVE.equals(assignment.status())
+                                        && !AiSupport.ACTIVE.equals(plan.status())
+                                ? Mono.error(new ApiException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "ai-quota-plan-disabled",
+                                        "停用的配额计划不能创建生效中的配额分配。"))
+                                : Mono.just(plan))))
                 .then();
+    }
+
+    private Mono<Void> validateSubject(AiQuotaAssignment assignment) {
+        return groups
+                .getUserGroup(assignment.subjectId())
+                .switchIfEmpty(Mono.error(subjectNotFound("用户组")))
+                .onErrorMap(ExtensionNotFoundException.class, error -> subjectNotFound("用户组"))
+                .then();
+    }
+
+    private static ApiException subjectNotFound(String label) {
+        return new ApiException(
+                HttpStatus.BAD_REQUEST,
+                "ai-quota-assignment-subject-not-found",
+                "选择的" + label + "不存在。");
     }
 
     private static String subjectType(String value) {
@@ -191,7 +235,7 @@ public class AiQuotaAssignments {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "ai-quota-subject-type-invalid",
-                    "配额主体类型必须为 user、workspace 或 role。");
+                    "配额主体类型必须为 user、user_group、workspace 或 role。");
         }
         return resolved;
     }
