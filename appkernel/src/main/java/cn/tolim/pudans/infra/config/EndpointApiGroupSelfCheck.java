@@ -34,7 +34,16 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
     private static final Set<String> ALLOWED_API_GROUPS = ApiGroups.ALL;
 
     private static final Set<String> EXPLICITLY_ALLOWED_RESOURCES =
-            Set.of("system", "login", "recovery", "oauth2", "passkeys", "captcha", "auth", "avatars");
+            Set.of(
+                    "system",
+                    "login",
+                    "recovery",
+                    "oauth2",
+                    "passkeys",
+                    "captcha",
+                    "auth",
+                    "avatars",
+                    "site-assets");
 
     private static final String API_GROUP_ALL = "*";
 

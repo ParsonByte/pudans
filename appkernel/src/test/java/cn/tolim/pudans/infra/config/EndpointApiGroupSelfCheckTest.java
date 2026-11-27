@@ -53,6 +53,19 @@ class EndpointApiGroupSelfCheckTest {
     }
 
     @Test
+    void acceptsExplicitlyAllowedPublicResource() {
+        var router = RouterFunctions.route()
+                .GET("/site-assets/{filename}", request -> ServerResponse.ok().build())
+                .build();
+        when(applicationContext.getBeansOfType(CustomEndpoint.class))
+                .thenReturn(Map.of("endpoint", endpoint(router)));
+
+        assertThatCode(() -> new EndpointApiGroupSelfCheck(applicationContext, builtinRoleDefinitions)
+                        .run(new DefaultApplicationArguments(new String[0])))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void rejectsPathUnderUnknownResource() {
         var router = RouterFunctions.route()
                 .GET("/unknownresource/{name}/action", request -> ServerResponse.ok().build())
