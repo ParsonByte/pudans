@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     INDEX_LEGACY_PAGE_PARAM,
     INDEX_NAV_GROUP,
+    INDEX_RUN_PARAM,
     INDEX_SESSION_PARAM,
     type IndexPageKey,
     indexPageHref,
@@ -24,7 +25,8 @@ export function useIndexRoute(): IndexPageKey {
     );
     const search = searchParams.toString();
     const sessionIds = searchParams.getAll(INDEX_SESSION_PARAM);
-    const canonicalPath = indexPageHref(page, sessionIds);
+    const runId = searchParams.get(INDEX_RUN_PARAM) ?? undefined;
+    const canonicalPath = indexPageHref(page, sessionIds, runId);
 
     useEffect(() => {
         const currentPath = search ? `${pathname}?${search}` : pathname;

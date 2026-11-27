@@ -3,6 +3,7 @@ import { HOME_WORKSPACE_KEY } from "@/composables/workspace-navigation";
 export const INDEX_NAV_GROUP = "index";
 export const INDEX_LEGACY_PAGE_PARAM = "page";
 export const INDEX_SESSION_PARAM = "session";
+export const INDEX_RUN_PARAM = "run";
 
 export const INDEX_PAGE_KEYS = {
     create: "create",
@@ -87,7 +88,7 @@ export function resolveIndexPage(
     return legacyPage && isIndexPageKey(legacyPage) ? legacyPage : INDEX_PAGE_KEYS.create;
 }
 
-export function indexPageHref(page: IndexPageKey, sessionIds: readonly string[] = []): string {
+export function indexPageHref(page: IndexPageKey, sessionIds: readonly string[] = [], runId?: string): string {
     const params = new URLSearchParams();
 
     params.set(INDEX_NAV_GROUP, page);
@@ -95,6 +96,9 @@ export function indexPageHref(page: IndexPageKey, sessionIds: readonly string[] 
     if (page === INDEX_PAGE_KEYS.conversation) {
         for (const sessionId of sessionIds) {
             params.append(INDEX_SESSION_PARAM, sessionId);
+        }
+        if (runId) {
+            params.set(INDEX_RUN_PARAM, runId);
         }
     }
 
