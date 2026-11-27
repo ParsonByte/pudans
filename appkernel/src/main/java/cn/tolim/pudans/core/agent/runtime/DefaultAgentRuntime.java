@@ -908,6 +908,11 @@ public class DefaultAgentRuntime implements AgentRuntime {
         var content = new LinkedHashMap<String, Object>();
         content.put("type", "text");
         content.put("text", message.text() == null ? "" : message.text());
+        if (StringUtils.hasText(message.thinking())) {
+            content.put("thinking", map(
+                    "title", "思考过程",
+                    "text", message.thinking()));
+        }
         return content;
     }
 
