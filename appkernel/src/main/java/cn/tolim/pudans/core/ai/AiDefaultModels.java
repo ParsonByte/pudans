@@ -55,13 +55,13 @@ public class AiDefaultModels {
                                 "模型不支持请求的能力。"));
                     }
                     return models
-                            .existsAvailable(request.modelId(), workspace)
+                            .existsAvailable(request.modelId())
                             .flatMap(available -> Boolean.TRUE.equals(available)
                                     ? Mono.just(model)
                                     : Mono.error(new ApiException(
                                             HttpStatus.SERVICE_UNAVAILABLE,
                                             "ai-model-unavailable",
-                                            "默认模型在当前工作区没有可用渠道。")));
+                                            "默认模型没有可用渠道。")));
                 })
                 .then(defaults.findByWorkspaceAndCapability(workspace, normalizedCapability))
                 .flatMap(existing -> {

@@ -50,11 +50,11 @@ class AiCatalogsTest {
     @Test
     void returnsEmptyCatalogsWhenNothingIsConfiguredOrRegistered() {
         when(entries.findActiveByKind(anyString(), any())).thenReturn(Flux.empty());
-        when(models.findAvailable("workspace-a")).thenReturn(Flux.empty());
+        when(models.findAvailable()).thenReturn(Flux.empty());
         when(registryProvider.getIfAvailable()).thenReturn(null);
 
-        var creation = catalogs.creation("workspace-a").block();
-        var chat = catalogs.chat("workspace-a").block();
+        var creation = catalogs.creation().block();
+        var chat = catalogs.chat().block();
 
         assertThat(creation).isNotNull();
         assertThat(creation.mediaModes()).isEmpty();
@@ -90,9 +90,9 @@ class AiCatalogsTest {
                         "type", "enum",
                         "options", List.of("1:1", "16:9"))),
                 "limits", Map.of("maxQuantity", 9));
-        when(models.findAvailable("workspace-a")).thenReturn(Flux.just(model(schema)));
+        when(models.findAvailable()).thenReturn(Flux.just(model(schema)));
 
-        var creation = catalogs.creation("workspace-a").block();
+        var creation = catalogs.creation().block();
 
         assertThat(creation).isNotNull();
         assertThat(creation.mediaModes()).hasSize(1);
@@ -105,6 +105,28 @@ class AiCatalogsTest {
                 .containsExactly("ratio");
         assertThat(media.models().getFirst().limits())
                 .containsEntry("maxQuantity", 9);
+    }
+
+    @Test
+    void derivesCreationMediaModesFromAvailableModelsWithoutCatalogEntries() {
+        when(entries.findActiveByKind(anyString(), any())).thenReturn(Flux.empty());
+        when(models.findAvailable())
+                .thenReturn(Flux.just(
+                        model("test-image", Map.of("image", Map.of())),
+                        model("test-video", Map.of("video", Map.of()))));
+
+        var creation = catalogs.creation().block();
+
+        assertThat(creation).isNotNull();
+        assertThat(creation.mediaModes())
+                .extracting(item -> item.id())
+                .containsExactly("image", "video");
+        assertThat(creation.mediaModes().getFirst().models())
+                .extracting(model -> model.logicalName())
+                .containsExactly("test-image");
+        assertThat(creation.mediaModes().getLast().models())
+                .extracting(model -> model.logicalName())
+                .containsExactly("test-video");
     }
 
     @Test
@@ -125,12 +147,21 @@ class AiCatalogsTest {
     }
 
     private static AiModel model(Map<String, Object> schema) {
+        return model("test-image", Map.of("image", Map.of()), schema);
+    }
+
+    private static AiModel model(String logicalName, Map<String, Object> capabilities) {
+        return model(logicalName, capabilities, Map.of());
+    }
+
+    private static AiModel model(
+            String logicalName, Map<String, Object> capabilities, Map<String, Object> schema) {
         return new AiModel(
                 UUID.randomUUID(),
-                "test-image",
-                "Test Image",
+                logicalName,
+                logicalName,
                 null,
-                Map.of("image", Map.of()),
+                capabilities,
                 null,
                 null,
                 schema,

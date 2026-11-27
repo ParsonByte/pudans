@@ -8,8 +8,8 @@ import reactor.core.publisher.Mono;
 
 public interface GenerationModelCatalog {
 
-    // 由 P1 模型配置按工作区提供真实模型、渠道和供应商映射。
-    Mono<GenerationModelProfile> resolve(UUID modelId, String workspaceId);
+    // 由 P1 模型配置提供真实模型、渠道和供应商映射。
+    Mono<GenerationModelProfile> resolve(UUID modelId);
 
     // 参数和提示词校验由模型 schema 负责，P2 不复制规则。
     Mono<Void> validate(

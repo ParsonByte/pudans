@@ -118,7 +118,7 @@ public class GenerationTaskPipeline {
             }
             return submit(context);
         }
-        return tasks.routeFor(context.task().modelId(), context.task().workspaceId())
+        return tasks.routeFor(context.task().modelId())
                 .flatMap(route -> reconcile(context, route))
                 .onErrorResume(error -> failFromError(
                         context.task(),
@@ -186,7 +186,7 @@ public class GenerationTaskPipeline {
 
     private Mono<GenerationTask> submit(TaskContext context) {
         return tasks
-                .routeFor(context.task().modelId(), context.task().workspaceId())
+                .routeFor(context.task().modelId())
                 .map(route -> new RouteResolution(route, null))
                 .onErrorResume(error -> failFromError(
                                 context.task(),
@@ -688,7 +688,7 @@ public class GenerationTaskPipeline {
         if (!callProvider || !task.providerRequestSent()) {
             return Mono.just(Optional.empty());
         }
-        return tasks.routeFor(task.modelId(), task.workspaceId())
+        return tasks.routeFor(task.modelId())
                 .flatMap(route -> route
                         .gateway()
                         .cancel(tasks.reference(task, route.profile(), attempt))

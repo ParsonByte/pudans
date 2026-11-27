@@ -222,7 +222,7 @@ export const AiCatalogV1alpha1ApiAxiosParamCreator = function (configuration?: C
             };
         },
         /**
-         * List active models with a healthy channel in the current workspace.
+         * List active models with an enabled channel on the platform.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -394,7 +394,7 @@ export const AiCatalogV1alpha1ApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * List active models with a healthy channel in the current workspace.
+         * List active models with an enabled channel on the platform.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -476,7 +476,7 @@ export const AiCatalogV1alpha1ApiFactory = function (configuration?: Configurati
             return localVarFp.getAiUnderstandingCatalog(options).then((request) => request(axios, basePath));
         },
         /**
-         * List active models with a healthy channel in the current workspace.
+         * List active models with an enabled channel on the platform.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
@@ -552,7 +552,7 @@ export class AiCatalogV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * List active models with a healthy channel in the current workspace.
+     * List active models with an enabled channel on the platform.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */

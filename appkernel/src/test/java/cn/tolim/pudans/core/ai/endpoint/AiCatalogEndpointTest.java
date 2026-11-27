@@ -38,7 +38,7 @@ class AiCatalogEndpointTest {
     @Test
     void returnsAnEmptyModelArrayWithoutAvailableModels() {
         when(identity.resolve(any())).thenReturn(Mono.just(new RequestIdentity("alice", "workspace-a")));
-        when(catalogs.models("workspace-a")).thenReturn(Flux.empty());
+        when(catalogs.models()).thenReturn(Flux.empty());
 
         client.get()
                 .uri("/catalogs/-/models")
@@ -72,7 +72,7 @@ class AiCatalogEndpointTest {
     @Test
     void returnsAnEmptyCreationCatalogWithoutConfiguredEntries() {
         when(identity.resolve(any())).thenReturn(Mono.just(new RequestIdentity("alice", "workspace-a")));
-        when(catalogs.creation("workspace-a"))
+        when(catalogs.creation())
                 .thenReturn(Mono.just(new AiCreationCatalog(List.of())));
 
         client.get()

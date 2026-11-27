@@ -101,7 +101,7 @@ class GenerationTaskPipelineTest {
         when(tasks.beginProcessing(eq(queued), any()))
                 .thenReturn(Mono.just(new GenerationTaskStore.Processing(dispatching, attempt)));
         when(tasks.cancelled(any())).thenReturn(Mono.just(false));
-        when(tasks.routeFor(MODEL_ID, "workspace-a")).thenReturn(Mono.just(route));
+        when(tasks.routeFor(MODEL_ID)).thenReturn(Mono.just(route));
         when(tasks.markProviderRequestStarted(queued.id())).thenReturn(Mono.just(dispatching));
         when(gateway.submit(any())).thenReturn(Mono.just(submission(asset)));
         when(tasks.markAttemptSubmitted(eq(attempt.id()), anyString(), anyString(), any()))
@@ -159,7 +159,7 @@ class GenerationTaskPipelineTest {
         when(tasks.latestAttempt(running.id()))
                 .thenReturn(Mono.just(Optional.of(attempt)));
         when(tasks.cancelled(any())).thenReturn(Mono.just(false));
-        when(tasks.routeFor(MODEL_ID, "workspace-a")).thenReturn(Mono.just(route));
+        when(tasks.routeFor(MODEL_ID)).thenReturn(Mono.just(route));
         when(gateway.find(any())).thenReturn(Mono.just(providerState(asset)));
         when(tasks.archivedFiles(any())).thenReturn(Mono.just(List.of()));
         when(storageRoutes.resolve(StorageRoute.Purpose.CREATION_RESULT))
@@ -226,7 +226,7 @@ class GenerationTaskPipelineTest {
         when(tasks.latestAttempt(running.id()))
                 .thenReturn(Mono.just(Optional.of(attempt)));
         when(tasks.cancelled(any())).thenReturn(Mono.just(false));
-        when(tasks.routeFor(MODEL_ID, "workspace-a")).thenReturn(Mono.just(route));
+        when(tasks.routeFor(MODEL_ID)).thenReturn(Mono.just(route));
         when(gateway.find(any())).thenReturn(Mono.just(new MediaGenerationGateway.State(
                 MediaGenerationGateway.Phase.SUCCEEDED,
                 "provider-task-1",

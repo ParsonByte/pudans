@@ -114,7 +114,7 @@ public class GenerationTasks {
                     if (catalog == null) {
                         return Mono.error(catalogMissing());
                     }
-                    return catalog.resolve(request.modelId(), identity.workspaceId())
+                    return catalog.resolve(request.modelId())
                             .switchIfEmpty(Mono.error(modelMissing()))
                             .flatMap(profile -> {
                                 if (!profile.mediaTypes().contains(mediaType)
@@ -257,7 +257,7 @@ public class GenerationTasks {
                             "generation-task-attempts-exhausted",
                             "任务尝试次数已达上限。"));
                 }
-                return routeFor(task.modelId(), task.workspaceId()).flatMap(route -> {
+                return routeFor(task.modelId()).flatMap(route -> {
                     if (!task.providerRequestSent()) {
                         return enqueueRetry(task, false, null);
                     }
@@ -387,12 +387,12 @@ public class GenerationTasks {
                         : cancellations.cancelled(task));
     }
 
-    Mono<Route> routeFor(UUID modelId, String workspaceId) {
+    Mono<Route> routeFor(UUID modelId) {
         var catalog = catalogs.getIfAvailable();
         if (catalog == null) {
             return Mono.error(catalogMissing());
         }
-        return catalog.resolve(modelId, workspaceId)
+        return catalog.resolve(modelId)
                 .switchIfEmpty(Mono.error(modelMissing()))
                 .flatMap(profile -> {
                     var gateway = gateways.find(profile.provider()).orElse(null);
@@ -540,7 +540,7 @@ public class GenerationTasks {
         if (!task.providerRequestSent()) {
             return Mono.just(CancelOutcome.NONE);
         }
-        return routeFor(task.modelId(), task.workspaceId())
+        return routeFor(task.modelId())
                 .flatMap(route -> latestAttempt(task.id())
                         .flatMap(attempt -> route.gateway()
                                 .cancel(reference(task, route.profile(), attempt.orElse(null)))

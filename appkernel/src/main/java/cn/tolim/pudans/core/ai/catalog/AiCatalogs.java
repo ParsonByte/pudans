@@ -10,6 +10,7 @@ import cn.tolim.pudans.contract.ai.dto.AiCreationCatalog;
 import cn.tolim.pudans.contract.ai.dto.AiExploreCatalog;
 import cn.tolim.pudans.contract.ai.dto.AiMemoryCatalog;
 import cn.tolim.pudans.contract.ai.dto.AiModelCatalogItem;
+import cn.tolim.pudans.contract.ai.dto.AiProviderCapabilityCode;
 import cn.tolim.pudans.contract.ai.dto.AiSandboxCatalog;
 import cn.tolim.pudans.contract.ai.dto.AiSkillDescriptor;
 import cn.tolim.pudans.contract.ai.dto.AiToolDescriptor;
@@ -19,6 +20,7 @@ import cn.tolim.pudans.infra.r2dbc.ai.catalog.CatalogEntryRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AiCatalogs {
 
+    private static final List<AiProviderCapabilityCode> CREATION_MEDIA_CAPABILITIES = List.of(
+            AiProviderCapabilityCode.IMAGE,
+            AiProviderCapabilityCode.VIDEO,
+            AiProviderCapabilityCode.AUDIO);
+
     private final CatalogEntryRepository entries;
 
     private final AiModelRepository models;
@@ -40,51 +47,51 @@ public class AiCatalogs {
 
     private Clock clock = Clock.systemUTC();
 
-    public Flux<AiModelCatalogItem> models(String workspaceId) {
-        return models.findAvailable(workspaceId).map(AiCatalogs::modelItem);
+    public Flux<AiModelCatalogItem> models() {
+        return models.findAvailable().map(AiCatalogs::modelItem);
     }
 
-    public Mono<AiCreationCatalog> creation(String workspaceId) {
+    public Mono<AiCreationCatalog> creation() {
         var now = Instant.now(clock);
         return Mono.zip(
                         items(CatalogKind.CREATION_MEDIA_MODE, now).collectList(),
                         items(CatalogKind.CREATION_OPERATION, now).collectList(),
                         items(CatalogKind.CREATION_PARAMETER_OPTION, now).collectList(),
-                        models.findAvailable(workspaceId).collectList())
+                        models.findAvailable().collectList())
                 .map(tuple -> {
                     var mediaModes = tuple.getT1();
                     var operations = tuple.getT2();
                     var parameterOptions = tuple.getT3();
                     var available = tuple.getT4();
                     var result = new ArrayList<AiCreationCatalog.AiCreationMediaMode>();
+                    var configuredKeys = new HashSet<String>();
                     for (var mode : mediaModes) {
-                        var modeOperations = operations.stream()
-                                .filter(item -> mode.key().equals(item.parentKey()))
-                                .toList();
-                        var modeOptions = parameterOptions.stream()
-                                .filter(item -> mode.key().equals(item.parentKey()))
-                                .toList();
-                        var modeModels = available.stream()
-                                .filter(model -> supports(model, mode.key()))
-                                .map(AiCatalogs::creationModel)
-                                .toList();
-                        result.add(new AiCreationCatalog.AiCreationMediaMode(
-                                mode.key(),
-                                mode.label(),
-                                modeOperations,
-                                modeOptions,
-                                modeModels));
+                        configuredKeys.add(mode.key());
+                        result.add(creationMode(
+                                mode.key(), mode.label(), operations, parameterOptions, available));
+                    }
+                    for (var capability : CREATION_MEDIA_CAPABILITIES) {
+                        if (configuredKeys.contains(capability.code())
+                                || available.stream().noneMatch(model -> supports(model, capability.code()))) {
+                            continue;
+                        }
+                        result.add(creationMode(
+                                capability.code(),
+                                capability.label(),
+                                operations,
+                                parameterOptions,
+                                available));
                     }
                     return new AiCreationCatalog(List.copyOf(result));
                 });
     }
 
-    public Mono<AiChatCatalog> chat(String workspaceId) {
+    public Mono<AiChatCatalog> chat() {
         var now = Instant.now(clock);
         return Mono.zip(
                         items(CatalogKind.CHAT_ANSWER_MODE, now).collectList(),
                         items(CatalogKind.CHAT_REASONING_LEVEL, now).collectList(),
-                        models.findAvailable(workspaceId).collectList(),
+                        models.findAvailable().collectList(),
                         tools().collectList())
                 .map(tuple -> new AiChatCatalog(
                         tuple.getT1(),
@@ -187,6 +194,26 @@ public class AiCatalogs {
                 parameterDefinitions(model.parameterSchema()),
                 mapValue(model.parameterSchema(), "limits"),
                 model.parameterSchema());
+    }
+
+    private static AiCreationCatalog.AiCreationMediaMode creationMode(
+            String key,
+            String label,
+            List<AiCatalogItem> operations,
+            List<AiCatalogItem> parameterOptions,
+            List<AiModel> available) {
+        var modeOperations = operations.stream()
+                .filter(item -> key.equals(item.parentKey()))
+                .toList();
+        var modeOptions = parameterOptions.stream()
+                .filter(item -> key.equals(item.parentKey()))
+                .toList();
+        var modeModels = available.stream()
+                .filter(model -> supports(model, key))
+                .map(AiCatalogs::creationModel)
+                .toList();
+        return new AiCreationCatalog.AiCreationMediaMode(
+                key, label, modeOperations, modeOptions, modeModels);
     }
 
     private static boolean supports(AiModel model, String capability) {

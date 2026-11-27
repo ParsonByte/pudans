@@ -116,9 +116,9 @@ class MemoryEmbeddingModelsTest {
             AiChannel channel) {
         when(models.resolveDefault("workspace", "embedding")).thenReturn(Mono.just(model));
         when(spaces.findActiveByModelId(model.id())).thenReturn(Flux.just(space));
-        when(channelModels.findEnabledRoute(model.id(), "workspace"))
+        when(channelModels.findEnabledRoute(model.id()))
                 .thenReturn(Mono.just(channelModel));
-        when(channels.get("workspace", channel.id())).thenReturn(Mono.just(channel));
+        when(channels.get(channel.id())).thenReturn(Mono.just(channel));
     }
 
     private static AiModel model() {

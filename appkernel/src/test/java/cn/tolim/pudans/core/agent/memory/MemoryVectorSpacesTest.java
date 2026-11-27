@@ -78,7 +78,7 @@ class MemoryVectorSpacesTest {
                 new PgVectorCapability(true, true, true, "memory-vector-ready")));
         when(models.findById(request.embeddingModelId()))
                 .thenReturn(Mono.just(model(request.embeddingModelId(), Map.of("embedding", Map.of()))));
-        when(models.existsAvailable(request.embeddingModelId(), "workspace-a"))
+        when(models.existsAvailable(request.embeddingModelId()))
                 .thenReturn(Mono.just(true));
         when(spaces.tableShape(request.tableName()))
                 .thenReturn(Mono.just(new MemoryVectorSpaceRepository.TableShape("vector(3)")));
@@ -103,7 +103,7 @@ class MemoryVectorSpacesTest {
                 new PgVectorCapability(true, true, true, "memory-vector-ready")));
         when(models.findById(request.embeddingModelId()))
                 .thenReturn(Mono.just(model(request.embeddingModelId(), Map.of("embedding", Map.of()))));
-        when(models.existsAvailable(request.embeddingModelId(), "workspace-a"))
+        when(models.existsAvailable(request.embeddingModelId()))
                 .thenReturn(Mono.just(true));
         when(spaces.tableShape(request.tableName()))
                 .thenReturn(Mono.just(new MemoryVectorSpaceRepository.TableShape("vector(4)")));
@@ -125,7 +125,7 @@ class MemoryVectorSpacesTest {
                 new PgVectorCapability(true, true, true, "memory-vector-ready")));
         when(models.findById(request.embeddingModelId()))
                 .thenReturn(Mono.just(model(request.embeddingModelId(), Map.of("embedding", Map.of()))));
-        when(models.existsAvailable(request.embeddingModelId(), "workspace-a"))
+        when(models.existsAvailable(request.embeddingModelId()))
                 .thenReturn(Mono.just(true));
         when(spaces.tableShape(request.tableName()))
                 .thenReturn(Mono.just(new MemoryVectorSpaceRepository.TableShape("vector(3)")));

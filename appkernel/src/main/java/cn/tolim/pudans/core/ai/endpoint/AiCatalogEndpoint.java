@@ -36,7 +36,7 @@ public class AiCatalogEndpoint implements CustomEndpoint {
     public RouterFunction<ServerResponse> endpoint() {
         return SpringdocRouteBuilder.route()
                 .GET("/catalogs/-/models", this::models, builder -> builder.operationId("listAiCatalogModels")
-                        .description("List active models with a healthy channel in the current workspace.")
+                        .description("List active models with an enabled channel on the platform.")
                         .tag(TAG)
                         .response(responseBuilder().responseCode("200").description("Available models")))
                 .GET("/catalogs/-/creation", this::creation, builder -> builder.operationId("getAiCreationCatalog")
@@ -71,19 +71,19 @@ public class AiCatalogEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> models(ServerRequest request) {
-        return workspace(request).flatMap(workspaceId -> ServerResponse.ok()
-                .body(catalogs.models(workspaceId), AiModelCatalogItem.class));
+        return workspace(request)
+                .flatMap(ignored -> ServerResponse.ok().body(catalogs.models(), AiModelCatalogItem.class));
     }
 
     private Mono<ServerResponse> creation(ServerRequest request) {
         return workspace(request)
-                .flatMap(catalogs::creation)
+                .flatMap(ignored -> catalogs.creation())
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> chat(ServerRequest request) {
         return workspace(request)
-                .flatMap(catalogs::chat)
+                .flatMap(ignored -> catalogs.chat())
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 

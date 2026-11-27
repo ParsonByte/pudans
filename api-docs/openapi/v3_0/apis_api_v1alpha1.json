@@ -4449,7 +4449,7 @@
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/catalogs/-/models": {
       "get": {
-        "description": "List active models with a healthy channel in the current workspace.",
+        "description": "List active models with an enabled channel on the platform.",
         "operationId": "listAiCatalogModels",
         "responses": {
           "200": {
