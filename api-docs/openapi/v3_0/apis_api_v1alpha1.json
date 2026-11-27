@@ -15121,6 +15121,13 @@
           "answerMode": {
             "type": "string"
           },
+          "assetIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           "content": {
             "type": "string"
           },

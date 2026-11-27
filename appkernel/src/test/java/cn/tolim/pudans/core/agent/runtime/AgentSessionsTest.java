@@ -15,6 +15,7 @@ import cn.tolim.pudans.infra.utils.RequestIdentity;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -150,6 +151,7 @@ class AgentSessionsTest {
                 sessionId,
                 UUID.randomUUID(),
                 Map.of("type", "text", "text", "hello"),
+                List.of(),
                 OffsetDateTime.ofInstant(createdAt, ZoneOffset.UTC));
         return entity;
     }

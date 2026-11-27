@@ -9,4 +9,5 @@ public record AgentRunStartRequest(
         UUID modelId,
         String answerMode,
         String reasoning,
-        List<String> toolIds) {}
+        List<String> toolIds,
+        List<UUID> assetIds) {}
