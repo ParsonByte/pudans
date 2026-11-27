@@ -170,10 +170,22 @@ class AiRoleTemplateRulesTest {
                 "role-template-manage-ai-catalogs",
                 HttpMethod.POST,
                 API_PREFIX + "/catalogentries");
+        assertAllowed(
+                "role-template-manage-ai-catalogs",
+                HttpMethod.PATCH,
+                API_PREFIX + "/catalogentries/00000000-0000-0000-0000-000000000001");
+        assertAllowed(
+                "role-template-manage-ai-catalogs",
+                HttpMethod.DELETE,
+                API_PREFIX + "/catalogentries/00000000-0000-0000-0000-000000000001");
         assertDenied(
                 "role-template-manage-ai-quota",
                 HttpMethod.POST,
                 API_PREFIX + "/catalogentries");
+        assertDenied(
+                "role-template-view-ai-catalog",
+                HttpMethod.DELETE,
+                API_PREFIX + "/catalogentries/00000000-0000-0000-0000-000000000001");
     }
 
     @Test
