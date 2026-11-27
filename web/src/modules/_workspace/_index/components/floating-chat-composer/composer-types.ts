@@ -35,10 +35,30 @@ export type ComposerAudioSettingsValue = {
     volume: number;
 };
 
-export type ComposerModelValue = "dans";
+export type ComposerModelValue = string;
+
+export type ComposerModelOption = {
+    description?: string;
+    id: string;
+    label: string;
+};
+
+export type ComposerSubmission = {
+    advancedSettings: ComposerAdvancedSettingsValue;
+    audioEnabled: boolean;
+    audioSettings: ComposerAudioSettingsValue;
+    files: File[];
+    mediaMode: ComposerMediaMode;
+    modelId: string;
+    multiCamera: boolean;
+    prompt: string;
+    quantity: number;
+    settings: ComposerSettingsValue;
+    toolMode: ComposerToolMode;
+};
 
 export const DEFAULT_COMPOSER_MEDIA_MODE: ComposerMediaMode = "video";
-export const DEFAULT_COMPOSER_TOOL_MODE: ComposerToolMode = "text";
+const DEFAULT_COMPOSER_TOOL_MODE: ComposerToolMode = "text";
 const DEFAULT_COMPOSER_IMAGE_TOOL_MODE: ComposerToolMode = "default";
 
 export const COMPOSER_RESOLUTION_OPTIONS = ["360P", "540P", "720P", "1080P"] as const;

@@ -29,6 +29,7 @@ const TOOL_MODE_META = {
 
 type ComposerModeBarProps = {
     activeMode: ComposerToolMode;
+    mediaModes: readonly ComposerMediaMode[];
     mediaMode: ComposerMediaMode;
     onChangeMediaMode: (mode: ComposerMediaMode) => void;
     onChangeMode: (mode: ComposerToolMode) => void;
@@ -38,6 +39,7 @@ type ComposerModeBarProps = {
 
 export function ComposerModeBar({
     activeMode,
+    mediaModes,
     mediaMode,
     onChangeMediaMode,
     onChangeMode,
@@ -70,7 +72,7 @@ export function ComposerModeBar({
                 ))}
             </div>
             <div className={styles.modeBarEnd}>
-                <ComposerModeSwitch onChange={onChangeMediaMode} value={mediaMode} />
+                <ComposerModeSwitch onChange={onChangeMediaMode} options={mediaModes} value={mediaMode} />
                 <span className={styles.aiHint}>
                     <InfoCircleIcon size={14} />
                     内容由 AI 生成

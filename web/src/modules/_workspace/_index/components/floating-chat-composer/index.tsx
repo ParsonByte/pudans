@@ -17,15 +17,16 @@ import {
     COMPOSER_AUDIO_TAGS,
     type ComposerAudioSettingsValue,
     type ComposerMediaMode,
+    type ComposerModelOption,
     type ComposerModelValue,
     type ComposerSettingsValue,
+    type ComposerSubmission,
     type ComposerToolMode,
     DEFAULT_COMPOSER_ADVANCED_SETTINGS,
     DEFAULT_COMPOSER_AUDIO_SETTINGS,
     DEFAULT_COMPOSER_IMAGE_RESOLUTION,
     DEFAULT_COMPOSER_MEDIA_MODE,
     DEFAULT_COMPOSER_SETTINGS,
-    DEFAULT_COMPOSER_TOOL_MODE,
     DEFAULT_COMPOSER_VIDEO_RESOLUTION,
     getComposerToolModes,
     getDefaultComposerToolMode,
@@ -46,11 +47,18 @@ const AUDIO_PLACEHOLDER = "输入要转换为语音的文字，例如：欢迎�
 const AUDIO_TAG_PATTERN = /^【([^】]+)】/;
 const COMPOSER_MODE_BAR_HEIGHT = 48;
 const COMPOSER_HEIGHT_TRANSITION: Transition = { type: "spring", stiffness: 440, damping: 38, mass: 0.85 };
+const DEFAULT_AVAILABLE_MEDIA_MODES: readonly ComposerMediaMode[] = ["video", "image"];
+const EMPTY_MODEL_OPTIONS: readonly ComposerModelOption[] = [];
+const EMPTY_MODELS_BY_MEDIA_MODE: Partial<Record<ComposerMediaMode, readonly ComposerModelOption[]>> = {};
 
 type ChatAttachment = NonNullable<TdChatSenderParams["attachments"]>[number];
 
 type FloatingChatComposerProps = {
-    onSend?: (params: TdChatSenderParams) => void;
+    availableMediaModes?: readonly ComposerMediaMode[];
+    defaultMediaMode?: ComposerMediaMode;
+    modelsByMediaMode?: Partial<Record<ComposerMediaMode, readonly ComposerModelOption[]>>;
+    modelsLoading?: boolean;
+    onSend?: (submission: ComposerSubmission) => Promise<void>;
     placeholder?: string;
 };
 
@@ -92,9 +100,16 @@ function replaceLeadingAudioTags(value: string, tags: readonly string[]): string
 }
 
 export function FloatingChatComposer({
+    availableMediaModes = DEFAULT_AVAILABLE_MEDIA_MODES,
+    defaultMediaMode = DEFAULT_COMPOSER_MEDIA_MODE,
+    modelsByMediaMode = EMPTY_MODELS_BY_MEDIA_MODE,
+    modelsLoading = false,
     onSend,
     placeholder = "上传参考素材并描述你想生成的内容",
 }: FloatingChatComposerProps) {
+    const initialMediaMode = availableMediaModes.includes(defaultMediaMode)
+        ? defaultMediaMode
+        : (availableMediaModes[0] ?? DEFAULT_COMPOSER_MEDIA_MODE);
     const [value, setValue] = useState("");
     const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
     const [singleVideo, setSingleVideo] = useState<File | null>(null);
@@ -102,16 +117,21 @@ export function FloatingChatComposer({
     const [lastFrame, setLastFrame] = useState<File | null>(null);
     const [motionImage, setMotionImage] = useState<File | null>(null);
     const [motionVideo, setMotionVideo] = useState<File | null>(null);
-    const [mediaMode, setMediaMode] = useState<ComposerMediaMode>(DEFAULT_COMPOSER_MEDIA_MODE);
-    const [toolMode, setToolMode] = useState<ComposerToolMode>(DEFAULT_COMPOSER_TOOL_MODE);
-    const [settings, setSettings] = useState<ComposerSettingsValue>(DEFAULT_COMPOSER_SETTINGS);
+    const [mediaMode, setMediaMode] = useState<ComposerMediaMode>(initialMediaMode);
+    const [toolMode, setToolMode] = useState<ComposerToolMode>(getDefaultComposerToolMode(initialMediaMode));
+    const [settings, setSettings] = useState<ComposerSettingsValue>(() => ({
+        ...DEFAULT_COMPOSER_SETTINGS,
+        resolution:
+            initialMediaMode === "image" ? DEFAULT_COMPOSER_IMAGE_RESOLUTION : DEFAULT_COMPOSER_VIDEO_RESOLUTION,
+    }));
     const [advancedSettings, setAdvancedSettings] = useState(DEFAULT_COMPOSER_ADVANCED_SETTINGS);
     const [audioEnabled, setAudioEnabled] = useState(false);
     const [audioSettings, setAudioSettings] = useState<ComposerAudioSettingsValue>(DEFAULT_COMPOSER_AUDIO_SETTINGS);
     const [audioTags, setAudioTags] = useState<string[]>([]);
     const [multiCamera, setMultiCamera] = useState(false);
-    const [model, setModel] = useState<ComposerModelValue>("dans");
+    const [model, setModel] = useState<ComposerModelValue>("");
     const [quantity, setQuantity] = useState(1);
+    const [submitting, setSubmitting] = useState(false);
     const [collapsed, setCollapsed] = useState(true);
     const [collapsedHeight, setCollapsedHeight] = useState(0);
     const [expandedHeight, setExpandedHeight] = useState(0);
@@ -167,6 +187,8 @@ export function FloatingChatComposer({
     const videoCount = attachments.filter((attachment) => attachment.type?.startsWith("video/")).length;
     const isImageMode = mediaMode === "image";
     const isAudioMode = mediaMode === "audio";
+    const modelOptions = modelsByMediaMode[mediaMode] ?? EMPTY_MODEL_OPTIONS;
+    const selectedModel = modelOptions.some((option) => option.id === model) ? model : (modelOptions[0]?.id ?? "");
     const isReferenceMode = toolMode === "reference";
     const isFrameMode = toolMode === "frame";
     const isEditVideoMode = mediaMode === "video" && toolMode === "edit";
@@ -274,31 +296,60 @@ export function FloatingChatComposer({
         return [firstFrame, lastFrame].flatMap((file) => (file ? [toAttachment(file)] : []));
     };
 
-    const submitPrompt = (promptValue: string, promptAttachments?: ChatAttachment[]) => {
-        const prompt = promptValue.trim();
-
-        if (!prompt || (isSingleVideoMode && !singleVideo) || (isMotionMode && (!motionImage || !motionVideo))) {
-            return;
-        }
-
-        onSend?.({ value: prompt, attachments: promptAttachments });
+    const clearComposerInput = () => {
         setValue("");
+        setAudioTags([]);
         setAttachments([]);
         setSingleVideo(null);
         setFirstFrame(null);
         setLastFrame(null);
         setMotionImage(null);
         setMotionVideo(null);
-        setAudioTags([]);
+    };
+
+    const submitPrompt = async (promptValue: string, promptAttachments?: ChatAttachment[]) => {
+        const prompt = promptValue.trim();
+        const files = (promptAttachments ?? resolvePromptAttachments()).flatMap((attachment) =>
+            attachment.raw ? [attachment.raw] : [],
+        );
+
+        if (
+            !prompt ||
+            !onSend ||
+            !selectedModel ||
+            isAudioMode ||
+            submitting ||
+            (isSingleVideoMode && !singleVideo) ||
+            (isMotionMode && (!motionImage || !motionVideo))
+        ) {
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await onSend({
+                advancedSettings,
+                audioEnabled,
+                audioSettings,
+                files,
+                mediaMode,
+                modelId: selectedModel,
+                multiCamera,
+                prompt,
+                quantity,
+                settings,
+                toolMode,
+            });
+            clearComposerInput();
+        } catch {
+            return;
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleSend = (event: CustomEvent<TdChatSenderParams>) => {
-        submitPrompt(
-            event.detail.value,
-            isAudioMode || isFrameMode || isSingleVideoMode || isMotionMode
-                ? resolvePromptAttachments()
-                : event.detail.attachments,
-        );
+        void submitPrompt(event.detail.value, resolvePromptAttachments());
     };
 
     const updateSettings = (next: Partial<ComposerSettingsValue>) => {
@@ -379,17 +430,6 @@ export function FloatingChatComposer({
         if (nextToolMode === "text") {
             setAttachments((current) => current.filter((attachment) => !attachment.type?.startsWith("video/")));
         }
-    };
-
-    const clearComposerInput = () => {
-        setValue("");
-        setAudioTags([]);
-        setAttachments([]);
-        setSingleVideo(null);
-        setFirstFrame(null);
-        setLastFrame(null);
-        setMotionImage(null);
-        setMotionVideo(null);
     };
 
     const changeComposerValue = (nextValue: string) => {
@@ -503,13 +543,19 @@ export function FloatingChatComposer({
                                 audioSettings={audioSettings}
                                 canSubmit={
                                     value.trim().length > 0 &&
+                                    Boolean(onSend) &&
+                                    Boolean(selectedModel) &&
+                                    !isAudioMode &&
+                                    !submitting &&
                                     (!isSingleVideoMode || singleVideo !== null) &&
                                     (!isMotionMode || (motionImage !== null && motionVideo !== null))
                                 }
                                 characterCount={value.length}
                                 maxLength={maxPromptLength}
                                 mediaMode={mediaMode}
-                                model={model}
+                                model={selectedModel}
+                                models={modelOptions}
+                                modelsLoading={modelsLoading}
                                 multiCamera={multiCamera}
                                 onChangeAdvancedSettings={(next) =>
                                     setAdvancedSettings((current) => ({ ...current, ...next }))
@@ -522,10 +568,11 @@ export function FloatingChatComposer({
                                 onChangeMultiCamera={setMultiCamera}
                                 onChangeQuantity={setQuantity}
                                 onChangeSettings={updateSettings}
-                                onSubmit={() => submitPrompt(value, resolvePromptAttachments())}
+                                onSubmit={() => void submitPrompt(value, resolvePromptAttachments())}
                                 quantity={quantity}
                                 selectedAudioTags={audioTags}
                                 settings={settings}
+                                submitting={submitting}
                                 toolMode={toolMode}
                                 onToggleAudioTag={toggleAudioTag}
                             />
@@ -538,6 +585,7 @@ export function FloatingChatComposer({
                             >
                                 <ComposerModeBar
                                     activeMode={toolMode}
+                                    mediaModes={availableMediaModes}
                                     mediaMode={mediaMode}
                                     onChangeMediaMode={changeMediaMode}
                                     onChangeMode={changeToolMode}

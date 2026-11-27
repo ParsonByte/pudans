@@ -24,11 +24,13 @@ const INDEX_PAGE_VALUES = new Set<string>(Object.values(INDEX_PAGE_KEYS));
 const INDEX_DETAIL_PATH_KEYS = {
     activity: "activity",
     explore: "explore",
+    generation: "generation",
     work: "work",
 } as const;
 const INDEX_DETAIL_PAGES = new Map<string, IndexPageKey>([
     [INDEX_DETAIL_PATH_KEYS.activity, INDEX_PAGE_KEYS.create],
     [INDEX_DETAIL_PATH_KEYS.explore, INDEX_PAGE_KEYS.explore],
+    [INDEX_DETAIL_PATH_KEYS.generation, INDEX_PAGE_KEYS.create],
     [INDEX_DETAIL_PATH_KEYS.work, INDEX_PAGE_KEYS.create],
 ]);
 
@@ -109,6 +111,10 @@ export function indexPageHref(page: IndexPageKey, sessionIds: readonly string[] 
 
 export function indexWorkHref(name: string): string {
     return `${INDEX_BASE_PATH}/${INDEX_DETAIL_PATH_KEYS.work}/${encodeURIComponent(name)}`;
+}
+
+export function indexGenerationHref(name: string): string {
+    return `${INDEX_BASE_PATH}/${INDEX_DETAIL_PATH_KEYS.generation}/${encodeURIComponent(name)}`;
 }
 
 export function indexExploreWorkHref(name: string): string {

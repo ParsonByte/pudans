@@ -19,6 +19,7 @@ import {
     type ComposerAdvancedSettingsValue,
     type ComposerAudioSettingsValue,
     type ComposerMediaMode,
+    type ComposerModelOption,
     type ComposerModelValue,
     type ComposerSettingsValue,
     type ComposerToolMode,
@@ -34,6 +35,8 @@ type ComposerToolbarProps = {
     maxLength: number;
     mediaMode: ComposerMediaMode;
     model: ComposerModelValue;
+    models: readonly ComposerModelOption[];
+    modelsLoading: boolean;
     multiCamera: boolean;
     onChangeAdvancedSettings: (next: Partial<ComposerAdvancedSettingsValue>) => void;
     onChangeAudioEnabled: (audioEnabled: boolean) => void;
@@ -46,6 +49,7 @@ type ComposerToolbarProps = {
     quantity: number;
     selectedAudioTags: readonly string[];
     settings: ComposerSettingsValue;
+    submitting: boolean;
     toolMode: ComposerToolMode;
     onToggleAudioTag: (tag: string) => void;
 };
@@ -59,6 +63,8 @@ export function ComposerToolbar({
     maxLength,
     mediaMode,
     model,
+    models,
+    modelsLoading,
     multiCamera,
     onChangeAdvancedSettings,
     onChangeAudioEnabled,
@@ -71,6 +77,7 @@ export function ComposerToolbar({
     quantity,
     selectedAudioTags,
     settings,
+    submitting,
     toolMode,
     onToggleAudioTag,
 }: ComposerToolbarProps) {
@@ -78,6 +85,8 @@ export function ComposerToolbar({
     const [modelVisible, setModelVisible] = useState(false);
     const [settingsVisible, setSettingsVisible] = useState(false);
     const isAudioMode = mediaMode === "audio";
+    const currentModel = models.find((option) => option.id === model);
+    const currentModelLabel = currentModel?.label ?? (modelsLoading ? "加载模型" : "暂无模型");
     const backgroundLabel = getComposerBackgroundLabel(settings.background);
     const settingsSummary =
         toolMode === "frame" || toolMode === "continue"
@@ -239,7 +248,9 @@ export function ComposerToolbar({
                     <Popup
                         content={
                             <ComposerModelPanel
+                                loading={modelsLoading}
                                 mediaMode={mediaMode}
+                                models={models}
                                 onChange={(nextModel) => {
                                     onChangeModel(nextModel);
                                     setModelVisible(false);
@@ -254,7 +265,7 @@ export function ComposerToolbar({
                         visible={modelVisible}
                     >
                         <Button
-                            aria-label={`模型：${model.toUpperCase()}`}
+                            aria-label={`模型：${currentModelLabel}`}
                             className={styles.modelButton}
                             icon={
                                 mediaMode === "video" ? (
@@ -268,7 +279,7 @@ export function ComposerToolbar({
                             type="button"
                             variant="text"
                         >
-                            {model.toUpperCase()}
+                            {currentModelLabel}
                         </Button>
                     </Popup>
                     {isAudioMode ? null : (
@@ -282,9 +293,15 @@ export function ComposerToolbar({
                             value={quantity}
                         />
                     )}
-                    <Button className={styles.sendButton} disabled={!canSubmit} onClick={onSubmit} type="button">
+                    <Button
+                        className={styles.sendButton}
+                        disabled={!canSubmit || submitting}
+                        loading={submitting}
+                        onClick={onSubmit}
+                        type="button"
+                    >
                         生成
-                        <ThunderIcon />
+                        {submitting ? null : <ThunderIcon />}
                     </Button>
                 </div>
             </div>
