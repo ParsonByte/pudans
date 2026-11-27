@@ -96,6 +96,7 @@ class AuditLogTest {
         verify(auditStore, timeout(2_000)).append(captor.capture());
         assertThat(captor.getValue().getTraceFlowId()).isNotBlank();
         assertThat(captor.getValue().isSyntheticFlow()).isTrue();
+        assertThat(captor.getValue().getDurationMs()).isZero();
     }
 
     @Test
