@@ -46,6 +46,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -174,7 +175,11 @@ class DefaultAgentRuntimeTest {
         assertThat(completed.await(5, TimeUnit.SECONDS))
                 .as("published=%s status=%s error=%s", published, run.getStatus(), run.getErrorMessage())
                 .isTrue();
-        verify(messages).save(any());
+        var messageCaptor = ArgumentCaptor.forClass(cn.tolim.pudans.infra.r2dbc.agent.AgentMessageEntity.class);
+        verify(messages).save(messageCaptor.capture());
+        assertThat(messageCaptor.getValue().getContentJson())
+                .contains("\"thinking\"")
+                .contains("\"text\":\"model reasoning\"");
         assertThat(run.getStatus()).isEqualTo("completed");
     }
 
@@ -396,7 +401,10 @@ class DefaultAgentRuntimeTest {
         @Override
         public Flow.Publisher<ChatModelStreamingEvent> doChat(ChatRequest request) {
             return publisher(new PartialResponse("hello"), new CompleteResponse(ChatResponse.builder()
-                    .aiMessage(AiMessage.from("hello"))
+                    .aiMessage(AiMessage.builder()
+                            .text("hello")
+                            .thinking("model reasoning")
+                            .build())
                     .tokenUsage(new TokenUsage(3, 2))
                     .build()));
         }
