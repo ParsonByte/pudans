@@ -172,11 +172,14 @@ public class AuditLog {
         }
     }
 
-    // 补齐追踪流编号并截断超长字段以适配存储。
+    // 补齐追踪流编号和时长并截断超长字段以适配存储。
     private void normalize(AuditRecord record) {
         if (record.getTraceFlowId() == null || record.getTraceFlowId().isBlank()) {
             record.setTraceFlowId(AuditIdGenerator.next());
             record.markSyntheticFlow();
+        }
+        if (record.getDurationMs() == null) {
+            record.setDurationMs(0L);
         }
         record.setTraceId(cut(record.getTraceId(), TRACE_ID_LENGTH));
         record.setTraceFlowId(cut(record.getTraceFlowId(), AUDIT_ID_LENGTH));
