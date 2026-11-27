@@ -536,6 +536,12 @@
     overflow-y: auto;
 }
 
+.console-tabs--flat-action .t-tabs__operations--right .t-tabs__btn.t-tabs__nav-action {
+    border-left: 0;
+    background-color: var(--td-bg-color-container);
+    box-shadow: none;
+}
+
 @media (max-width: 767px) {
     .app-shell__header .t-head-menu__inner {
         padding-inline: 12px;

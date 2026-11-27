@@ -5,6 +5,12 @@ import {
     type AiChannelUpdateRequest,
     type AiModelCreateRequest,
     type AiModelUpdateRequest,
+    type AiPriceRuleCreateRequest,
+    type AiPriceRuleUpdateRequest,
+    type AiQuotaAssignmentCreateRequest,
+    type AiQuotaAssignmentUpdateRequest,
+    type AiQuotaPlanCreateRequest,
+    type AiQuotaPlanUpdateRequest,
     type AiChannel as ApiAiChannel,
     type AiChannelModel as ApiAiChannelModel,
     type AiChannelTestResult as ApiAiChannelTestResult,
@@ -17,6 +23,8 @@ import {
     type AiQuotaPlan as ApiAiQuotaPlan,
     type AiToolDescriptor as ApiAiToolDescriptor,
     type CatalogEntry as ApiCatalogEntry,
+    type CatalogEntryCreateRequest,
+    type CatalogEntryUpdateRequest,
     apiClient,
     axiosInstance,
 } from "@pudans-dev/api-client";
@@ -65,7 +73,15 @@ export type AiToolDescriptor = ApiAiToolDescriptor & { key: string };
 export type AiPriceRule = ApiAiPriceRule & { id: string };
 export type AiQuotaPlan = ApiAiQuotaPlan & { id: string };
 export type AiQuotaAssignment = ApiAiQuotaAssignment & { id: string };
+export type AiPriceRuleInput = AiPriceRuleCreateRequest;
+export type AiPriceRuleUpdateInput = AiPriceRuleUpdateRequest;
+export type AiQuotaPlanInput = AiQuotaPlanCreateRequest;
+export type AiQuotaPlanUpdateInput = AiQuotaPlanUpdateRequest;
+export type AiQuotaAssignmentInput = AiQuotaAssignmentCreateRequest;
+export type AiQuotaAssignmentUpdateInput = AiQuotaAssignmentUpdateRequest;
 export type CatalogEntry = ApiCatalogEntry & { id: string };
+export type CatalogEntryInput = CatalogEntryCreateRequest;
+export type CatalogEntryUpdateInput = CatalogEntryUpdateRequest;
 
 export type AgentSession = {
     createdAt?: string;
@@ -337,23 +353,111 @@ export async function updateAiChannelModel(name: string, input: AiChannelModelUp
 }
 
 export async function listAiDefaultModels(): Promise<AiDefaultModel[]> {
-    return (await apiClient.aiDefaultModel.listAllAiDefaultModels()).data as AiDefaultModel[];
+    return (await apiClient.aiDefaultModel.listAiDefaultModels()).data as AiDefaultModel[];
+}
+
+export async function putAiDefaultModel(capability: string, modelId: string): Promise<AiDefaultModel> {
+    return (
+        await apiClient.aiDefaultModel.putAiDefaultModel({
+            aiDefaultModelRequest: { modelId },
+            capability,
+        })
+    ).data as AiDefaultModel;
 }
 
 export async function listAiPriceRules(): Promise<AiPriceRule[]> {
     return (await apiClient.aiPriceRule.listAiPriceRules()).data as AiPriceRule[];
 }
 
+export async function createAiPriceRule(input: AiPriceRuleInput): Promise<AiPriceRule> {
+    return (await apiClient.aiPriceRule.createAiPriceRule({ aiPriceRuleCreateRequest: input })).data as AiPriceRule;
+}
+
+export async function updateAiPriceRule(id: string, input: AiPriceRuleUpdateInput): Promise<AiPriceRule> {
+    return (
+        await apiClient.aiPriceRule.updateAiPriceRule({
+            aiPriceRuleUpdateRequest: input,
+            name: id,
+        })
+    ).data as AiPriceRule;
+}
+
+export async function deleteAiPriceRule(id: string): Promise<void> {
+    await apiClient.aiPriceRule.deleteAiPriceRule({ name: id });
+}
+
 export async function listAiQuotaPlans(): Promise<AiQuotaPlan[]> {
     return (await apiClient.aiQuotaPlan.listAiQuotaPlans()).data as AiQuotaPlan[];
+}
+
+export async function createAiQuotaPlan(input: AiQuotaPlanInput): Promise<AiQuotaPlan> {
+    return (await apiClient.aiQuotaPlan.createAiQuotaPlan({ aiQuotaPlanCreateRequest: input })).data as AiQuotaPlan;
+}
+
+export async function updateAiQuotaPlan(id: string, input: AiQuotaPlanUpdateInput): Promise<AiQuotaPlan> {
+    return (
+        await apiClient.aiQuotaPlan.updateAiQuotaPlan({
+            aiQuotaPlanUpdateRequest: input,
+            name: id,
+        })
+    ).data as AiQuotaPlan;
+}
+
+export async function deleteAiQuotaPlan(id: string): Promise<void> {
+    await apiClient.aiQuotaPlan.deleteAiQuotaPlan({ name: id });
 }
 
 export async function listAiQuotaAssignments(): Promise<AiQuotaAssignment[]> {
     return (await apiClient.aiQuotaAssignment.listAiQuotaAssignments()).data as AiQuotaAssignment[];
 }
 
+export async function createAiQuotaAssignment(input: AiQuotaAssignmentInput): Promise<AiQuotaAssignment> {
+    return (
+        await apiClient.aiQuotaAssignment.createAiQuotaAssignment({
+            aiQuotaAssignmentCreateRequest: input,
+        })
+    ).data as AiQuotaAssignment;
+}
+
+export async function updateAiQuotaAssignment(
+    id: string,
+    input: AiQuotaAssignmentUpdateInput,
+): Promise<AiQuotaAssignment> {
+    return (
+        await apiClient.aiQuotaAssignment.updateAiQuotaAssignment({
+            aiQuotaAssignmentUpdateRequest: input,
+            name: id,
+        })
+    ).data as AiQuotaAssignment;
+}
+
+export async function deleteAiQuotaAssignment(id: string): Promise<void> {
+    await apiClient.aiQuotaAssignment.deleteAiQuotaAssignment({ name: id });
+}
+
 export async function listCatalogEntries(kind?: string): Promise<CatalogEntry[]> {
     return getCollection<CatalogEntry>("/catalogentries", { kind });
+}
+
+export async function createCatalogEntry(input: CatalogEntryInput): Promise<CatalogEntry> {
+    return (
+        await apiClient.catalogEntry.createCatalogEntry({
+            catalogEntryCreateRequest: input,
+        })
+    ).data as CatalogEntry;
+}
+
+export async function updateCatalogEntry(id: string, input: CatalogEntryUpdateInput): Promise<CatalogEntry> {
+    return (
+        await apiClient.catalogEntry.updateCatalogEntry({
+            catalogEntryUpdateRequest: input,
+            name: id,
+        })
+    ).data as CatalogEntry;
+}
+
+export async function deleteCatalogEntry(id: string): Promise<void> {
+    await apiClient.catalogEntry.deleteCatalogEntry({ name: id });
 }
 
 export async function listAiTools(): Promise<AiToolDescriptor[]> {

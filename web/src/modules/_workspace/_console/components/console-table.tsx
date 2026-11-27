@@ -13,6 +13,7 @@ type ConsoleTableProps<T extends TableRowData> = {
     cardless?: boolean;
     columns: TableProps<T>["columns"];
     data?: T[];
+    empty?: ReactNode;
     error?: unknown;
     extra?: ReactNode;
     loading?: boolean;
@@ -28,6 +29,7 @@ export function ConsoleTable<T extends TableRowData>({
     cardless = false,
     columns,
     data,
+    empty,
     error,
     extra,
     loading,
@@ -71,7 +73,7 @@ export function ConsoleTable<T extends TableRowData>({
                 columns={columns}
                 data={data}
                 disableDataPage
-                empty={<Empty description="暂无数据" />}
+                empty={empty ?? <Empty description="暂无数据" />}
                 loading={loading}
                 pagination={pagination === false ? undefined : pagination}
                 rowKey={rowKey}
