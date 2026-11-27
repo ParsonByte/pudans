@@ -291,6 +291,38 @@ public class AiProviderHttp {
                                 error));
     }
 
+    // 下载供应商返回的公开结果地址。
+    public Flux<DataBuffer> getBinaryStream(URI uri, Duration timeout) {
+        return webClient
+                .get()
+                .uri(uri)
+                .exchangeToFlux(response -> {
+                    if (response.statusCode().is2xxSuccessful()) {
+                        return response.bodyToFlux(DataBuffer.class);
+                    }
+                    return response.releaseBody()
+                            .thenMany(Flux.error(new ApiException(
+                                    HttpStatus.BAD_GATEWAY,
+                                    "ai-provider-request-http-error",
+                                    "供应商接口返回 HTTP "
+                                            + response.statusCode().value()
+                                            + "。")));
+                })
+                .timeout(timeout == null ? responseTimeout() : timeout)
+                .onErrorMap(WebClientRequestException.class, error -> new ApiException(
+                        HttpStatus.BAD_GATEWAY,
+                        "ai-provider-request-unreachable",
+                        "无法连接供应商结果地址。",
+                        error))
+                .onErrorMap(
+                        java.util.concurrent.TimeoutException.class,
+                        error -> new ApiException(
+                                HttpStatus.GATEWAY_TIMEOUT,
+                                "ai-provider-request-timeout",
+                                "供应商结果下载超时。",
+                                error));
+    }
+
     public Flux<DataBuffer> postBinaryJsonStream(
             URI uri,
             Map<String, String> credentials,
