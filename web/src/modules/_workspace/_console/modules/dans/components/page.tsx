@@ -32,7 +32,10 @@ export function DansPage({
 }: DansPageProps) {
     return (
         <div className="flex min-w-0 flex-col gap-4 overflow-x-hidden">
-            <PageBreadcrumb current={title} parents={["DANS 管控", section]} />
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+                <PageBreadcrumb current={title} parents={["DANS 管控", section]} />
+                {!showOverview && actions ? <div className="ml-auto shrink-0">{actions}</div> : null}
+            </div>
             {showOverview ? (
                 <ConsolePageOverview actions={actions} icon={icon} metrics={metrics} title={title} />
             ) : null}
