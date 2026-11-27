@@ -23,6 +23,8 @@ public interface MediaGenerationGateway {
     Mono<Void> cancel(Reference reference);
 
     record Request(
+            String ownerId,
+            String workspaceId,
             String clientReference,
             UUID taskId,
             UUID attemptId,

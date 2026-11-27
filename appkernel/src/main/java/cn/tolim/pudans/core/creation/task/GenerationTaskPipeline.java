@@ -237,6 +237,8 @@ public class GenerationTaskPipeline {
             GenerationTask task, GenerationTask.Attempt attempt, GenerationTasks.Route route) {
         var profile = route.profile();
         return new MediaGenerationGateway.Request(
+                task.ownerId(),
+                task.workspaceId(),
                 attempt.id().toString(),
                 task.id(),
                 attempt.id(),
