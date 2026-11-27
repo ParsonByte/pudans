@@ -117,6 +117,35 @@ rules: []
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role
 metadata:
+  name: role-template-manage-dans-ai-billing
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 计费与配额管理"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.ai-billing"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-billing:manage"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [
+        "role-template-view-dans-ai-billing",
+        "role-template-manage-ai-config",
+        "role-template-manage-ai-quota",
+        "role-template-view-ai-catalog"
+      ]
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "usergroups"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
   name: role-template-view-dans-ai-catalog
   labels:
     pudans.tolim.cn/role-template: "true"
@@ -138,6 +167,26 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-order: "130"
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-catalog:view"]'
     rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-all-ai-catalog" ]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-dans-ai-catalog
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "DANS AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 能力目录管理"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.ai-catalog"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-catalog:manage"]'
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [
+        "role-template-view-dans-ai-catalog",
+        "role-template-manage-ai-catalogs"
+      ]
 rules: []
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
