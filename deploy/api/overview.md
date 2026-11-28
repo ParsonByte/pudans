@@ -144,7 +144,9 @@ curl -i \
 
 浏览器跨域调用时，网关的 `PUDANS_CORS_ALLOWED_ORIGINS` 必须包含前端 Origin，IAM 的
 `PUDANS_HOME_ORIGIN` 必须与前端站点一致。HTTPS 部署把 `PUDANS_COOKIE_SECURE` 设为 `true`；
-HTTP 本地调试可以设为 `false`，但生产环境不要关闭。
+HTTP 本地调试可以设为 `false`，但生产环境不要关闭。所有应用都在同一父域下（例如
+`auth.example.com`、`console.example.com`），把 `PUDANS_COOKIE_DOMAIN` 设为 `.example.com` 后，
+各子域共享同一个 `PUDANS_SID` 登录态。
 
 ## 健康检查
 

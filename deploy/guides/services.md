@@ -97,6 +97,7 @@ docker compose --env-file ../.env up -d
 | `PUDANS_HOME_ORIGIN` | IAM 允许的前端 Origin |
 | `PUDANS_CORS_ALLOWED_ORIGINS` | 网关 CORS 白名单，逗号分隔 |
 | `PUDANS_COOKIE_SECURE` | HTTPS 部署设为 `true` |
+| `PUDANS_COOKIE_DOMAIN` | 设为应用共同父域以共享登录态，例如 `.example.com` |
 | `PUDANS_MANAGEMENT_BIND` | 管理端口在宿主机上的绑定地址，默认 `127.0.0.1` |
 | `PUDANS_OTLP_TRACING_ENDPOINT` | Jaeger OTLP HTTP 地址 |
 | `PUDANS_TRACING_EXPORT_ENABLED` | 没有 Jaeger 时设为 `false` |

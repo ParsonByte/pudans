@@ -89,6 +89,7 @@ cp .env.example .env
 | `PUDANS_JWT_SECRET` | 网关与 IAM 共用的 JWT 签名密钥 |
 | `PUDANS_HOME_ORIGIN` / `PUDANS_CORS_ALLOWED_ORIGINS` | 前端站点地址 |
 | `PUDANS_COOKIE_SECURE` | HTTPS 部署设为 `true` |
+| `PUDANS_COOKIE_DOMAIN` | 设为应用共同父域以共享登录态，例如 `.example.com` |
 
 生成随机密钥：
 
