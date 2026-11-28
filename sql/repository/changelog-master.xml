@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!-- Repository table DDL lives in the kernel module changelog -->
+    <include file="classpath:repository/1.0.0-repository-changelog.xml"/>
+
+    <!-- Service-owned follow-up changes for the repository database -->
+    <include file="classpath:repository/1.1.0-repository-changelog.xml"/>
+
+</databaseChangeLog>

@@ -1,0 +1,454 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd
+          http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/pro/liquibase-pro-4.3.xsd">
+
+    <property name="pudans_table_prefix" value="pudans_"/>
+    <changeSet author="PUDANS" id="1.2.0-unified-auth">
+
+        <createTable remarks="全局登录会话表" tableName="${pudans_table_prefix}login_session">
+            <column name="sid" remarks="全局登录会话ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="user_id" remarks="用户ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_type" remarks="用户类型（USER、ADMIN）" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="org_id" remarks="组织ID" type="VARCHAR(64)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="last_seen_at" remarks="最近活跃时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" remarks="过期时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revoked" remarks="是否已失效" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revoke_reason" remarks="失效原因" type="VARCHAR(255)"/>
+            <column name="ip" remarks="登录IP" type="VARCHAR(50)"/>
+            <column name="user_agent" remarks="用户代理" type="VARCHAR(500)"/>
+        </createTable>
+
+        <createTable remarks="SSO一次性票据表" tableName="${pudans_table_prefix}sso_ticket">
+            <column name="ticket" remarks="一次性票据" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="app_id" remarks="应用ID" type="VARCHAR(64)"/>
+            <column name="app_code" remarks="应用编码" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" remarks="用户ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sid" remarks="全局登录会话ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="target_url" remarks="登录后回跳地址" type="VARCHAR(1000)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" remarks="过期时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="used_at" remarks="使用时间" type="datetime"/>
+        </createTable>
+
+        <createTable remarks="应用会话缓存注册表" tableName="${pudans_table_prefix}app_session">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="sid" remarks="全局登录会话ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="app_id" remarks="应用ID" type="VARCHAR(64)"/>
+            <column name="app_code" remarks="应用编码" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" remarks="用户ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="last_seen_at" remarks="最近活跃时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" remarks="过期时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revoked" remarks="是否已失效" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_backchannel_at" remarks="最近一次back-channel登出通知时间" type="datetime"/>
+        </createTable>
+
+        <createTable remarks="统一授权策略表" tableName="${pudans_table_prefix}authz_policy">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name_" remarks="策略名称" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code_" remarks="策略编码" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type_" remarks="策略类型（SYSTEM、CUSTOM）" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version_" remarks="策略版本" type="VARCHAR(32)"/>
+            <column name="document_" remarks="策略文档" type="JSONB">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_" remarks="状态（ENABLED、DISABLED）" type="VARCHAR(32)" defaultValue="ENABLED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="desc_" remarks="描述" type="VARCHAR(500)"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createTable remarks="策略绑定表" tableName="${pudans_table_prefix}authz_policy_attachment">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="policy_id" remarks="策略ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="principal_type" remarks="主体类型（USER、USER_GROUP、ROLE、ORGANIZATION、CLIENT）"
+                    type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="principal_id" remarks="主体ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scope_" remarks="生效范围（应用编码或资源前缀，* 表示全部）" type="VARCHAR(255)"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createTable remarks="授权角色表" tableName="${pudans_table_prefix}authz_role">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="code_" remarks="角色编码" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name_" remarks="角色名称" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="trust_policy" remarks="角色信任策略" type="JSONB"/>
+            <column name="status_" remarks="状态（ENABLED、DISABLED）" type="VARCHAR(32)" defaultValue="ENABLED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="desc_" remarks="描述" type="VARCHAR(500)"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createTable remarks="角色绑定表" tableName="${pudans_table_prefix}authz_role_binding">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="role_id" remarks="角色ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="principal_type" remarks="主体类型（USER、USER_GROUP、ROLE、ORGANIZATION、CLIENT）"
+                    type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="principal_id" remarks="主体ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scope_" remarks="生效范围（应用编码或资源前缀，* 表示全部）" type="VARCHAR(255)"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createTable remarks="应用服务动作表" tableName="${pudans_table_prefix}service_action">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="app_id" remarks="应用ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action_" remarks="动作（{appCode}:{action}）" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="resource_type" remarks="关联资源类型" type="VARCHAR(150)"/>
+            <column name="desc_" remarks="描述" type="VARCHAR(500)"/>
+            <column name="risk_level" remarks="风险级别（LOW、MEDIUM、HIGH、CRITICAL）" type="VARCHAR(32)"/>
+            <column name="status_" remarks="状态（ENABLED、DISABLED）" type="VARCHAR(32)" defaultValue="ENABLED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createTable remarks="应用资源类型表" tableName="${pudans_table_prefix}resource_type">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="app_id" remarks="应用ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code_" remarks="资源类型编码（{appCode}:{resourceType}）" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name_" remarks="资源类型名称" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pattern_" remarks="资源模式（org/{orgId}/{appCode}/{resourceType}/{resourceId}）" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_" remarks="状态（ENABLED、DISABLED）" type="VARCHAR(32)" defaultValue="ENABLED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createTable remarks="鉴权决策日志表" tableName="${pudans_table_prefix}authz_log">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="principal_type" remarks="主体类型（USER、USER_GROUP、ROLE、ORGANIZATION、CLIENT）"
+                    type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="principal_id" remarks="主体ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="app_code" remarks="应用编码" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action_" remarks="动作（{appCode}:{action}）" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="resource_" remarks="资源（{appCode}:{resourceType}/{resourceId}）" type="VARCHAR(500)"/>
+            <column name="decision" remarks="决策结果（ALLOW、DENY）" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" remarks="决策原因" type="VARCHAR(500)"/>
+            <column name="context" remarks="决策上下文" type="JSONB"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable remarks="API密钥表" tableName="${pudans_table_prefix}api_key">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="principal_id" remarks="主体ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="access_key_id" remarks="访问密钥ID" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="secret_hash" remarks="密钥摘要" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_" remarks="状态（ENABLED、DISABLED）" type="VARCHAR(32)" defaultValue="ENABLED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" remarks="过期时间" type="datetime"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="${pudans_table_prefix}login_session" indexName="idx_login_session_user">
+            <column name="user_id" remarks="用户ID"/>
+            <column name="revoked" remarks="是否已失效"/>
+            <column name="expires_at" remarks="过期时间"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}login_session" indexName="idx_login_session_expires">
+            <column name="expires_at" remarks="过期时间"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}sso_ticket" indexName="idx_sso_ticket_app">
+            <column name="app_code" remarks="应用编码"/>
+            <column name="user_id" remarks="用户ID"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}sso_ticket" indexName="idx_sso_ticket_expires">
+            <column name="expires_at" remarks="过期时间"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}app_session" indexName="uk_app_session_sid_app" unique="true">
+            <column name="sid" remarks="全局登录会话ID"/>
+            <column name="app_code" remarks="应用编码"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}app_session" indexName="idx_app_session_user">
+            <column name="user_id" remarks="用户ID"/>
+            <column name="app_code" remarks="应用编码"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}app_session" indexName="idx_app_session_expires">
+            <column name="expires_at" remarks="过期时间"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}authz_policy" indexName="uk_authz_policy_code" unique="true">
+            <column name="code_" remarks="策略编码"/>
+            <column name="is_deleted" remarks="删除标记"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}authz_policy_attachment" indexName="uk_authz_policy_attachment"
+                     unique="true">
+            <column name="policy_id" remarks="策略ID"/>
+            <column name="principal_type" remarks="主体类型（USER、USER_GROUP、ROLE、ORGANIZATION、CLIENT）"/>
+            <column name="principal_id" remarks="主体ID"/>
+            <column name="scope_" remarks="生效范围（应用编码或资源前缀，* 表示全部）"/>
+            <column name="is_deleted" remarks="删除标记"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}authz_policy_attachment" indexName="idx_authz_policy_attachment_principal">
+            <column name="principal_type" remarks="主体类型（USER、USER_GROUP、ROLE、ORGANIZATION、CLIENT）"/>
+            <column name="principal_id" remarks="主体ID"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}authz_role" indexName="uk_authz_role_code" unique="true">
+            <column name="code_" remarks="角色编码"/>
+            <column name="is_deleted" remarks="删除标记"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}authz_role_binding" indexName="uk_authz_role_binding" unique="true">
+            <column name="role_id" remarks="角色ID"/>
+            <column name="principal_type" remarks="主体类型（USER、USER_GROUP、ROLE、ORGANIZATION、CLIENT）"/>
+            <column name="principal_id" remarks="主体ID"/>
+            <column name="scope_" remarks="生效范围（应用编码或资源前缀，* 表示全部）"/>
+            <column name="is_deleted" remarks="删除标记"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}authz_role_binding" indexName="idx_authz_role_binding_principal">
+            <column name="principal_type" remarks="主体类型（USER、USER_GROUP、ROLE、ORGANIZATION、CLIENT）"/>
+            <column name="principal_id" remarks="主体ID"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}service_action" indexName="uk_service_action_app_action"
+                     unique="true">
+            <column name="app_id" remarks="应用ID"/>
+            <column name="action_" remarks="动作（{appCode}:{action}）"/>
+            <column name="is_deleted" remarks="删除标记"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}service_action" indexName="idx_service_action_action">
+            <column name="action_" remarks="动作（{appCode}:{action}）"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}resource_type" indexName="uk_resource_type_app_code"
+                     unique="true">
+            <column name="app_id" remarks="应用ID"/>
+            <column name="code_" remarks="资源类型编码（{appCode}:{resourceType}）"/>
+            <column name="is_deleted" remarks="删除标记"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}authz_log" indexName="idx_authz_log_principal">
+            <column name="principal_type" remarks="主体类型（USER、USER_GROUP、ROLE、ORGANIZATION、CLIENT）"/>
+            <column name="principal_id" remarks="主体ID"/>
+            <column name="created_at" remarks="创建时间"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}authz_log" indexName="idx_authz_log_app">
+            <column name="app_code" remarks="应用编码"/>
+            <column name="created_at" remarks="创建时间"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}api_key" indexName="uk_api_key_access_key_id" unique="true">
+            <column name="access_key_id" remarks="访问密钥ID"/>
+            <column name="is_deleted" remarks="删除标记"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}api_key" indexName="idx_api_key_principal">
+            <column name="principal_id" remarks="主体ID"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

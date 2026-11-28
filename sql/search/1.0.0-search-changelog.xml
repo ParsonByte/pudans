@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="search-1.0.0-index" author="PUDANS">
+        <createTable tableName="pudans_search_index" remarks="搜索索引表">
+            <column name="id_" type="varchar(64)" remarks="主键ID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="app_code" type="varchar(64)" remarks="应用编码">
+                <constraints nullable="false"/>
+            </column>
+            <column name="index_code" type="varchar(100)" remarks="索引编码">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name_" type="varchar(200)" remarks="索引名称"/>
+            <column name="description_" type="varchar(500)" remarks="索引描述"/>
+            <column name="enabled_" type="boolean" defaultValueBoolean="true" remarks="是否启用">
+                <constraints nullable="false"/>
+            </column>
+            <column name="create_time" type="timestamp" remarks="创建时间">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_time" type="timestamp" remarks="修改时间">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="pudans_search_index" columnNames="app_code, index_code"
+                             constraintName="uk_search_index_code"/>
+        <createIndex tableName="pudans_search_index" indexName="idx_search_index_app_code">
+            <column name="app_code" remarks="应用编码"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="search-1.0.1-document" author="PUDANS">
+        <createTable tableName="pudans_search_document" remarks="搜索文档表">
+            <column name="id_" type="varchar(64)" remarks="主键ID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="app_code" type="varchar(64)" remarks="应用编码">
+                <constraints nullable="false"/>
+            </column>
+            <column name="index_code" type="varchar(100)" remarks="索引编码">
+                <constraints nullable="false"/>
+            </column>
+            <column name="document_id" type="varchar(200)" remarks="文档ID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title_" type="varchar(500)" remarks="标题"/>
+            <column name="summary_" type="varchar(1000)" remarks="摘要"/>
+            <column name="content_" type="text" remarks="正文"/>
+            <column name="tags_" type="jsonb" remarks="标签"/>
+            <column name="metadata_" type="jsonb" remarks="元数据"/>
+            <column name="owner_id" type="varchar(64)" remarks="所有者用户ID"/>
+            <column name="org_id" type="varchar(64)" remarks="所属组织ID"/>
+            <column name="create_time" type="timestamp" remarks="创建时间">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_time" type="timestamp" remarks="修改时间">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="pudans_search_document"
+                             columnNames="app_code, index_code, document_id"
+                             constraintName="uk_search_document_id"/>
+        <createIndex tableName="pudans_search_document" indexName="idx_search_document_scope">
+            <column name="app_code" remarks="应用编码"/>
+            <column name="index_code" remarks="索引编码"/>
+            <column name="update_time" remarks="修改时间"/>
+        </createIndex>
+        <createIndex tableName="pudans_search_document" indexName="idx_search_document_owner">
+            <column name="app_code" remarks="应用编码"/>
+            <column name="owner_id" remarks="所有者用户ID"/>
+        </createIndex>
+        <createIndex tableName="pudans_search_document" indexName="idx_search_document_org">
+            <column name="app_code" remarks="应用编码"/>
+            <column name="org_id" remarks="所属组织ID"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="search-1.0.2-full-text-index" author="PUDANS" dbms="postgresql">
+        <sql>
+            create index idx_search_document_fts on pudans_search_document
+                using gin (to_tsvector('simple',
+                    coalesce(title_, '') || ' ' || coalesce(summary_, '') || ' '
+                    || coalesce(content_, '') || ' ' || coalesce(cast(tags_ as text), '')))
+        </sql>
+        <rollback>
+            drop index idx_search_document_fts
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

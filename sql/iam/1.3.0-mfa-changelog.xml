@@ -1,0 +1,143 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd
+          http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/pro/liquibase-pro-4.3.xsd">
+
+    <property name="pudans_table_prefix" value="pudans_"/>
+    <changeSet author="PUDANS" id="1.3.0-mfa">
+
+        <createTable remarks="TOTP 凭证表" tableName="${pudans_table_prefix}totp_credential">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="user_id" remarks="用户ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name_" remarks="用户自定义设备名称" type="VARCHAR(128)"/>
+            <column name="secret_algorithm" remarks="密钥加密算法" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="secret_key_id" remarks="加密密钥ID" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="secret_key_version" remarks="加密密钥版本" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="secret_nonce" remarks="加密随机数" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="secret_ciphertext" remarks="加密密钥密文" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="secret_tag" remarks="加密认证标签" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="algorithm_" remarks="TOTP 哈希算法" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="digits_" remarks="验证码位数" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="period_seconds" remarks="时间步长（秒）" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_" remarks="凭证状态" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="confirmed_at" remarks="确认时间" type="datetime"/>
+            <column name="last_used_step" remarks="最近使用的TOTP时间步" type="BIGINT"/>
+            <column name="last_used_at" remarks="最近使用时间" type="datetime"/>
+            <column name="failed_attempts" remarks="连续失败次数" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="locked_until" remarks="锁定截止时间" type="datetime"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="${pudans_table_prefix}totp_credential"
+                     indexName="idx_pudans_totp_credential_user">
+            <column name="user_id" remarks="用户ID"/>
+            <column name="status_" remarks="凭证状态"/>
+        </createIndex>
+
+        <createTable remarks="WebAuthn 凭证表" tableName="${pudans_table_prefix}webauthn_credential">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="user_id" remarks="用户ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="credential_id" remarks="凭证ID" type="VARCHAR(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public_key_cose" remarks="COSE 公钥" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cose_algorithm" remarks="COSE 签名算法" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sign_count" remarks="签名计数器" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="transports" remarks="认证器传输方式" type="VARCHAR(255)"/>
+            <column name="aaguid" remarks="认证器AAGUID" type="VARCHAR(128)"/>
+            <column name="attestation_format" remarks="认证器证明格式" type="VARCHAR(32)"/>
+            <column name="backup_eligible" remarks="是否支持备份" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="backup_state" remarks="是否已备份" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_" remarks="凭证状态" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="registered_at" remarks="注册时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_used_at" remarks="最近使用时间" type="datetime"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="${pudans_table_prefix}webauthn_credential"
+                     indexName="uk_pudans_webauthn_credential_id" unique="true">
+            <column name="credential_id" remarks="凭证ID"/>
+        </createIndex>
+        <createIndex tableName="${pudans_table_prefix}webauthn_credential"
+                     indexName="idx_pudans_webauthn_credential_user">
+            <column name="user_id" remarks="用户ID"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

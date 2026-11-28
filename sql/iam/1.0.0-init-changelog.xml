@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+    <changeSet author="PUDANS" id="1.0.0-iam-organization">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="pudans_iam_organization"/>
+            </not>
+        </preConditions>
+        <createTable remarks="IAM 组织主数据" tableName="pudans_iam_organization">
+            <column name="id" remarks="组织标识" type="UUID">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name" remarks="组织显示名称" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" remarks="组织生命周期状态" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="PUDANS" id="1.0.0-iam-application">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="pudans_iam_application"/>
+            </not>
+        </preConditions>
+        <createTable remarks="IAM 应用注册表" tableName="pudans_iam_application">
+            <column name="id" remarks="应用标识" type="UUID">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="client_id" remarks="OAuth 客户端标识" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="name" remarks="应用显示名称" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" remarks="应用生命周期状态" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="PUDANS" id="1.0.0-iam-user">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="pudans_iam_user"/>
+            </not>
+        </preConditions>
+        <createTable remarks="IAM 用户账户" tableName="pudans_iam_user">
+            <column name="id" remarks="用户标识" type="UUID">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="organization_id" remarks="所属组织标识" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" remarks="唯一登录名" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="display_name" remarks="显示名称" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" remarks="用户生命周期状态" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password_hash" remarks="密码哈希" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <!-- Supports the newest-first listing of a tenant's files -->
+    <changeSet id="repository-1.1.0-tenant-created-index" author="PUDANS">
+        <createIndex tableName="pudans_repository_file" indexName="idx_repository_file_tenant_created">
+            <column name="tenant_id" remarks="租户ID"/>
+            <column name="create_time" remarks="创建时间"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="pudans_repository_file" indexName="idx_repository_file_tenant_created"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

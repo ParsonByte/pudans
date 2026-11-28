@@ -1,0 +1,246 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd
+          http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/pro/liquibase-pro-4.3.xsd">
+
+    <property name="pudans_table_prefix" value="pudans_"/>
+
+    <changeSet author="PUDANS" id="1.0.0-notification">
+
+        <createTable remarks="通知模板表"
+                     tableName="${pudans_table_prefix}notification_template">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="template_code" remarks="模板编码" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template_name" remarks="模板名称" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="channel_" remarks="通知渠道（EMAIL、SMS、FEISHU、DINGTALK）" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subject_" remarks="主题模板" type="TEXT"/>
+            <column name="content_" remarks="内容模板" type="TEXT"/>
+            <column name="provider_template_code" remarks="服务商模板编码"
+                    type="VARCHAR(100)"/>
+            <column name="language_" remarks="模板语言" type="VARCHAR(20)"/>
+            <column name="is_enabled" remarks="是否启用" type="BOOLEAN"
+                    defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="create_by" remarks="创建者" type="VARCHAR(100)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间"
+                    type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(100)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time"
+                    remarks="修改时间" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="VARCHAR(500)"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN"
+                    defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="${pudans_table_prefix}notification_template"
+                             columnNames="template_code"
+                             constraintName="uk_notification_template_code"/>
+
+        <createTable remarks="通知渠道配置表"
+                     tableName="${pudans_table_prefix}notification_provider">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="provider_code" remarks="渠道配置编码" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_name" remarks="渠道配置名称" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="channel_" remarks="通知渠道（EMAIL、SMS、FEISHU、DINGTALK）" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_type"
+                    remarks="服务商类型（SMTP、ALIYUN_SMS、TENCENT_SMS、QINIU_SMS、FEISHU、DINGTALK）"
+                    type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="priority_" remarks="选择优先级（值越小优先级越高）" type="INT"
+                    defaultValueNumeric="100">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_enabled" remarks="是否启用" type="BOOLEAN"
+                    defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="configuration_" remarks="spissatus4j 加密后的服务商配置"
+                    type="TEXT"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(100)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间"
+                    type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(100)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time"
+                    remarks="修改时间" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="VARCHAR(500)"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN"
+                    defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="${pudans_table_prefix}notification_provider"
+                             columnNames="provider_code"
+                             constraintName="uk_notification_provider_code"/>
+
+        <createTable remarks="通知发送记录表"
+                     tableName="${pudans_table_prefix}notification_send_record">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="request_id" remarks="调用方提供的幂等键" type="VARCHAR(100)"/>
+            <column name="template_code" remarks="本次发送使用的模板编码"
+                    type="VARCHAR(100)"/>
+            <column name="provider_template_code" remarks="服务商模板编码"
+                    type="VARCHAR(100)"/>
+            <column name="channel_" remarks="通知渠道（EMAIL、SMS、FEISHU、DINGTALK）" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_code" remarks="本次发送使用的渠道配置编码"
+                    type="VARCHAR(100)"/>
+            <column name="provider_type" remarks="本次发送使用的服务商类型" type="VARCHAR(32)"/>
+            <column name="recipient_" remarks="收件人地址或账号" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subject_" remarks="渲染后的主题" type="TEXT"/>
+            <column name="content_" remarks="渲染后的内容" type="TEXT"/>
+            <column name="parameters_" remarks="模板参数（JSON）" type="TEXT"/>
+            <column name="template_parameters_" remarks="有序模板参数（JSON）"
+                    type="TEXT"/>
+            <column name="status_" remarks="发送状态（PENDING、SUCCESS、FAILED、DEAD_LETTER）"
+                    type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempts_" remarks="已投递次数" type="INT"
+                    defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_attempts" remarks="最大投递次数" type="INT"
+                    defaultValueNumeric="3">
+                <constraints nullable="false"/>
+            </column>
+            <column name="next_retry_at" remarks="下次重试时间" type="TIMESTAMP"/>
+            <column name="last_error" remarks="最近一次投递错误" type="TEXT"/>
+            <column name="provider_message_id" remarks="服务商消息标识"
+                    type="VARCHAR(200)"/>
+            <column name="response_body" remarks="服务商响应内容" type="TEXT"/>
+            <column name="sent_at" remarks="发送成功时间" type="TIMESTAMP"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(100)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间"
+                    type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(100)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time"
+                    remarks="修改时间" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="VARCHAR(500)"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN"
+                    defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="${pudans_table_prefix}notification_send_record"
+                             columnNames="request_id"
+                             constraintName="uk_notification_send_request_id"/>
+        <createIndex indexName="idx_notification_send_status_retry"
+                     tableName="${pudans_table_prefix}notification_send_record">
+            <column name="status_" remarks="发送状态（PENDING、SUCCESS、FAILED、DEAD_LETTER）"/>
+            <column name="next_retry_at" remarks="下次重试时间"/>
+        </createIndex>
+        <createIndex indexName="idx_notification_send_recipient"
+                     tableName="${pudans_table_prefix}notification_send_record">
+            <column name="recipient_" remarks="收件人地址或账号"/>
+        </createIndex>
+        <createIndex indexName="idx_notification_send_channel"
+                     tableName="${pudans_table_prefix}notification_send_record">
+            <column name="channel_" remarks="通知渠道（EMAIL、SMS、FEISHU、DINGTALK）"/>
+        </createIndex>
+
+        <createTable remarks="通知死信表"
+                     tableName="${pudans_table_prefix}notification_dead_letter">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="record_id" remarks="原发送记录ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_id" remarks="原幂等键" type="VARCHAR(100)"/>
+            <column name="template_code" remarks="模板编码" type="VARCHAR(100)"/>
+            <column name="channel_" remarks="通知渠道（EMAIL、SMS、FEISHU、DINGTALK）" type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_code" remarks="渠道配置编码" type="VARCHAR(100)"/>
+            <column name="provider_type" remarks="服务商类型" type="VARCHAR(32)"/>
+            <column name="recipient_" remarks="收件人地址或账号" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subject_" remarks="渲染后的主题" type="TEXT"/>
+            <column name="content_" remarks="渲染后的内容" type="TEXT"/>
+            <column name="parameters_" remarks="模板参数（JSON）" type="TEXT"/>
+            <column name="template_parameters_" remarks="有序模板参数（JSON）"
+                    type="TEXT"/>
+            <column name="attempts_" remarks="已投递次数" type="INT"
+                    defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_error" remarks="最近一次投递错误" type="TEXT"/>
+            <column name="failed_at" remarks="失败时间" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_replayed" remarks="是否已重放" type="BOOLEAN"
+                    defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="replayed_at" remarks="重放时间" type="TIMESTAMP"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(100)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间"
+                    type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(100)"/>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time"
+                    remarks="修改时间" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="VARCHAR(500)"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN"
+                    defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_notification_dead_letter_record"
+                     tableName="${pudans_table_prefix}notification_dead_letter">
+            <column name="record_id" remarks="原发送记录ID"/>
+        </createIndex>
+        <createIndex indexName="idx_notification_dead_letter_replayed"
+                     tableName="${pudans_table_prefix}notification_dead_letter">
+            <column name="is_replayed" remarks="是否已重放"/>
+        </createIndex>
+
+    </changeSet>
+</databaseChangeLog>

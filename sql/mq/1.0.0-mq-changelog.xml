@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        logicalFilePath="db/changelog/pudans-kernel-mq.xml"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="kernel-mq-1.0.0" author="PUDANS">
+
+        <createTable tableName="pudans_mq_message" remarks="消息主表">
+            <column name="id_" type="varchar(64)" remarks="主键ID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="biz_key" type="varchar(128)" remarks="业务键">
+                <constraints unique="true" uniqueConstraintName="uk_pudans_mq_message_biz_key"/>
+            </column>
+            <column name="topic_" type="varchar(128)" remarks="消息主题">
+                <constraints nullable="false"/>
+            </column>
+            <column name="event_type" type="varchar(128)" remarks="事件类型"/>
+            <column name="producer_" type="varchar(100)" remarks="生产者"/>
+            <column name="payload_" type="jsonb" remarks="消息载荷">
+                <constraints nullable="false"/>
+            </column>
+            <column name="headers_" type="jsonb" remarks="消息头"/>
+            <column name="status_" type="varchar(32)" remarks="消息状态（PENDING、DISPATCHING、DELIVERED、RETRYING、CONSUMED、DEAD_LETTER、CANCELLED）">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempts_" type="int" defaultValue="0" remarks="已尝试次数">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_attempts_" type="int" defaultValue="5" remarks="最大尝试次数">
+                <constraints nullable="false"/>
+            </column>
+            <column name="next_attempt_at" type="timestamp" remarks="下次投递时间"/>
+            <column name="last_attempt_at" type="timestamp" remarks="最近投递时间"/>
+            <column name="delivered_at" type="timestamp" remarks="投递完成时间"/>
+            <column name="consumed_at" type="timestamp" remarks="消费完成时间"/>
+            <column name="dead_letter_at" type="timestamp" remarks="进入死信时间"/>
+            <column name="last_error" type="varchar(4000)" remarks="最近一次错误信息"/>
+            <column name="version_" type="bigint" remarks="版本号"/>
+            <column name="create_by" type="varchar(100)" remarks="创建者"/>
+            <column name="create_time" type="timestamp" remarks="创建时间"/>
+            <column name="update_by" type="varchar(100)" remarks="修改者"/>
+            <column name="update_time" type="timestamp" remarks="修改时间"/>
+            <column name="remark_" type="varchar(500)" remarks="备注"/>
+        </createTable>
+        <createIndex tableName="pudans_mq_message" indexName="idx_pudans_mq_message_status_next">
+            <column name="status_" remarks="消息状态（PENDING、DISPATCHING、DELIVERED、RETRYING、CONSUMED、DEAD_LETTER、CANCELLED）"/>
+            <column name="next_attempt_at" remarks="下次投递时间"/>
+        </createIndex>
+        <createIndex tableName="pudans_mq_message" indexName="idx_pudans_mq_message_topic">
+            <column name="topic_" remarks="消息主题"/>
+        </createIndex>
+        <createIndex tableName="pudans_mq_message" indexName="idx_pudans_mq_message_create_time">
+            <column name="create_time" remarks="创建时间"/>
+        </createIndex>
+
+        <createTable tableName="pudans_mq_delivery" remarks="消息投递记录表">
+            <column name="id_" type="varchar(64)" remarks="主键ID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="message_id" type="varchar(64)" remarks="消息ID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="consumer_group" type="varchar(200)" remarks="消费组">
+                <constraints nullable="false"/>
+            </column>
+            <column name="topic_" type="varchar(128)" remarks="消息主题"/>
+            <column name="status_" type="varchar(32)" remarks="投递状态（PENDING、DELIVERING、CONSUMED、RETRYING、DEAD_LETTER、CANCELLED）">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempts_" type="int" defaultValue="0" remarks="已尝试次数">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_attempts_" type="int" defaultValue="5" remarks="最大尝试次数">
+                <constraints nullable="false"/>
+            </column>
+            <column name="next_attempt_at" type="timestamp" remarks="下次投递时间"/>
+            <column name="last_attempt_at" type="timestamp" remarks="最近投递时间"/>
+            <column name="consumed_at" type="timestamp" remarks="消费完成时间"/>
+            <column name="last_error" type="varchar(4000)" remarks="最近一次错误信息"/>
+            <column name="version_" type="bigint" remarks="版本号"/>
+            <column name="create_by" type="varchar(100)" remarks="创建者"/>
+            <column name="create_time" type="timestamp" remarks="创建时间"/>
+            <column name="update_by" type="varchar(100)" remarks="修改者"/>
+            <column name="update_time" type="timestamp" remarks="修改时间"/>
+            <column name="remark_" type="varchar(500)" remarks="备注"/>
+        </createTable>
+        <addUniqueConstraint tableName="pudans_mq_delivery"
+                             columnNames="message_id, consumer_group"
+                             constraintName="uk_pudans_mq_delivery_message_group"/>
+        <createIndex tableName="pudans_mq_delivery" indexName="idx_pudans_mq_delivery_message">
+            <column name="message_id" remarks="消息ID"/>
+        </createIndex>
+        <createIndex tableName="pudans_mq_delivery" indexName="idx_pudans_mq_delivery_status_next">
+            <column name="status_" remarks="投递状态（PENDING、DELIVERING、CONSUMED、RETRYING、DEAD_LETTER、CANCELLED）"/>
+            <column name="next_attempt_at" remarks="下次投递时间"/>
+        </createIndex>
+
+        <createTable tableName="pudans_mq_dead_letter" remarks="消息死信表">
+            <column name="id_" type="varchar(64)" remarks="主键ID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="message_id" type="varchar(64)" remarks="消息ID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="delivery_id" type="varchar(64)" remarks="投递记录ID"/>
+            <column name="topic_" type="varchar(128)" remarks="消息主题">
+                <constraints nullable="false"/>
+            </column>
+            <column name="event_type" type="varchar(128)" remarks="事件类型"/>
+            <column name="producer_" type="varchar(100)" remarks="生产者"/>
+            <column name="consumer_group" type="varchar(200)" remarks="消费组"/>
+            <column name="payload_" type="jsonb" remarks="消息载荷"/>
+            <column name="headers_" type="jsonb" remarks="消息头"/>
+            <column name="attempts_" type="int" defaultValue="0" remarks="已尝试次数">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_error" type="varchar(4000)" remarks="最近一次错误信息"/>
+            <column name="status_" type="varchar(32)" remarks="死信状态（PENDING、REPLAYED、DISCARDED）">
+                <constraints nullable="false"/>
+            </column>
+            <column name="dead_lettered_at" type="timestamp" remarks="进入死信时间">
+                <constraints nullable="false"/>
+            </column>
+            <column name="replayed_at" type="timestamp" remarks="重放时间"/>
+            <column name="discarded_at" type="timestamp" remarks="丢弃时间"/>
+            <column name="compensation_status" type="varchar(32)" remarks="补偿状态（NONE、COMPENSATED、FAILED）">
+                <constraints nullable="false"/>
+            </column>
+            <column name="compensated_at" type="timestamp" remarks="补偿完成时间"/>
+            <column name="compensation_error" type="varchar(4000)" remarks="补偿错误信息"/>
+            <column name="version_" type="bigint" remarks="版本号"/>
+            <column name="create_by" type="varchar(100)" remarks="创建者"/>
+            <column name="create_time" type="timestamp" remarks="创建时间"/>
+            <column name="update_by" type="varchar(100)" remarks="修改者"/>
+            <column name="update_time" type="timestamp" remarks="修改时间"/>
+            <column name="remark_" type="varchar(500)" remarks="备注"/>
+        </createTable>
+        <createIndex tableName="pudans_mq_dead_letter" indexName="idx_pudans_mq_dead_letter_message">
+            <column name="message_id" remarks="消息ID"/>
+        </createIndex>
+        <createIndex tableName="pudans_mq_dead_letter" indexName="idx_pudans_mq_dead_letter_status">
+            <column name="status_" remarks="死信状态（PENDING、REPLAYED、DISCARDED）"/>
+        </createIndex>
+        <createIndex tableName="pudans_mq_dead_letter" indexName="idx_pudans_mq_dead_letter_topic">
+            <column name="topic_" remarks="消息主题"/>
+        </createIndex>
+
+    </changeSet>
+</databaseChangeLog>

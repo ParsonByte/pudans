@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        logicalFilePath="db/changelog/pudans-kernel-repository.xml"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="repository-1.0.0" author="PUDANS">
+        <createTable tableName="pudans_repository_file" remarks="文件元数据表">
+            <column name="id_" type="varchar(64)" remarks="主键ID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="varchar(128)" remarks="租户ID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="app_code" type="varchar(128)" remarks="应用编码"/>
+            <column name="category_" type="varchar(128)" remarks="文件分类"/>
+            <column name="provider" type="varchar(32)" remarks="存储提供方">
+                <constraints nullable="false"/>
+            </column>
+            <column name="bucket_" type="varchar(255)" remarks="存储桶名称"/>
+            <column name="object_key" type="varchar(1024)" remarks="对象存储 Key">
+                <constraints nullable="false"/>
+            </column>
+            <column name="original_name" type="varchar(255)" remarks="原始文件名">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content_type" type="varchar(255)" remarks="内容类型"/>
+            <column name="extension_" type="varchar(64)" remarks="文件扩展名"/>
+            <column name="size_bytes" type="bigint" remarks="文件大小（字节）">
+                <constraints nullable="false"/>
+            </column>
+            <column name="checksum_sha256" type="varchar(64)" remarks="SHA-256 校验和"/>
+            <column name="status_" type="varchar(32)" remarks="文件状态">
+                <constraints nullable="false"/>
+            </column>
+            <column name="metadata_" type="jsonb" remarks="元数据"/>
+            <column name="create_by" type="varchar(128)" remarks="创建者"/>
+            <column name="create_time" type="timestamp" remarks="创建时间">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_time" type="timestamp" remarks="修改时间">
+                <constraints nullable="false"/>
+            </column>
+            <column name="delete_time" type="timestamp" remarks="删除时间"/>
+        </createTable>
+        <createIndex tableName="pudans_repository_file" indexName="idx_repository_file_tenant">
+            <column name="tenant_id" remarks="租户ID"/>
+        </createIndex>
+        <createIndex tableName="pudans_repository_file" indexName="idx_repository_file_tenant_app">
+            <column name="tenant_id" remarks="租户ID"/>
+            <column name="app_code" remarks="应用编码"/>
+        </createIndex>
+        <createIndex tableName="pudans_repository_file" indexName="idx_repository_file_object_key">
+            <column name="tenant_id" remarks="租户ID"/>
+            <column name="object_key" remarks="对象存储 Key"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,141 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+
+<databaseChangeLog
+        logicalFilePath="job/pudans-job-executor-changelog.xml"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd
+          http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/pro/liquibase-pro-4.3.xsd">
+
+    <property name="pudans_table_prefix" value="pudans_"/>
+    <changeSet author="PUDANS" id="1.0.0-job-executor">
+
+        <createTable remarks="作业定义表" tableName="${pudans_table_prefix}job_definition">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="code_" remarks="作业编码" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name_" remarks="作业名称" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="handler_" remarks="处理器名称" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="schedule_type" remarks="调度类型（CRON、FIXED_RATE、FIXED_DELAY、MANUAL）"
+                    type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cron_expression" remarks="Cron 表达式" type="VARCHAR(200)"/>
+            <column name="period_millis" remarks="固定频率/固定延迟周期（毫秒）" type="BIGINT"/>
+            <column name="initial_delay_millis" remarks="首次执行延迟（毫秒）" type="BIGINT"/>
+            <column name="params_" remarks="处理器参数" type="TEXT"/>
+            <column name="timeout_seconds" remarks="单次执行超时（秒）" type="INT"/>
+            <column name="max_retries" remarks="失败重试次数" type="INT"/>
+            <column name="retry_interval_seconds" remarks="重试间隔（秒）" type="INT"/>
+            <column name="block_strategy" remarks="阻塞策略（PARALLEL、SERIAL、DISCARD）"
+                    type="VARCHAR(32)" defaultValue="SERIAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_" remarks="状态（ENABLED、DISABLED）" type="VARCHAR(32)"
+                    defaultValue="DISABLED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description_" remarks="描述" type="VARCHAR(500)"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间"
+                    type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间"
+                    type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+            <column name="is_deleted" remarks="删除标记" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_job_definition_code" tableName="${pudans_table_prefix}job_definition">
+            <column name="code_" remarks="作业编码"/>
+        </createIndex>
+        <createIndex indexName="idx_job_definition_status" tableName="${pudans_table_prefix}job_definition">
+            <column name="status_" remarks="状态（ENABLED、DISABLED）"/>
+        </createIndex>
+
+        <createTable remarks="作业执行记录表" tableName="${pudans_table_prefix}job_execution">
+            <column name="id_" remarks="主键ID" type="VARCHAR(64)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="job_id" remarks="作业定义ID" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_code" remarks="作业编码快照" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_name" remarks="作业名称快照" type="VARCHAR(200)"/>
+            <column name="handler_" remarks="处理器名称快照" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="trigger_type" remarks="触发方式（SCHEDULED、MANUAL、RETRY）"
+                    type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_" remarks="执行状态（QUEUED、RUNNING、SUCCESS、FAILED、TIMEOUT、SKIPPED、CANCELED）"
+                    type="VARCHAR(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempt_" remarks="当前尝试序号" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_attempts" remarks="最大尝试次数" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scheduled_time" remarks="受理时间" type="datetime"/>
+            <column name="start_time" remarks="开始时间" type="datetime"/>
+            <column name="end_time" remarks="结束时间" type="datetime"/>
+            <column name="duration_ms" remarks="执行耗时（毫秒）" type="BIGINT"/>
+            <column name="instance_name" remarks="执行器实例" type="VARCHAR(200)"/>
+            <column name="params_" remarks="处理器参数快照" type="TEXT"/>
+            <column name="result_" remarks="成功结果" type="TEXT"/>
+            <column name="error_message" remarks="失败或跳过原因" type="TEXT"/>
+            <column name="retry_of_execution_id" remarks="所属失败执行ID" type="VARCHAR(64)"/>
+            <column name="triggered_by" remarks="触发者" type="VARCHAR(100)"/>
+            <column name="create_by" remarks="创建者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="create_time" remarks="创建时间"
+                    type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="update_by" remarks="修改者" type="VARCHAR(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="CURRENT_TIMESTAMP" name="update_time" remarks="修改时间"
+                    type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remark_" remarks="备注" type="TEXT"/>
+        </createTable>
+
+        <createIndex indexName="idx_job_execution_job_id"
+                tableName="${pudans_table_prefix}job_execution">
+            <column name="job_id" remarks="作业定义ID"/>
+        </createIndex>
+        <createIndex indexName="idx_job_execution_status"
+                tableName="${pudans_table_prefix}job_execution">
+            <column name="status_" remarks="执行状态（QUEUED、RUNNING、SUCCESS、FAILED、TIMEOUT、SKIPPED、CANCELED）"/>
+        </createIndex>
+        <createIndex indexName="idx_job_execution_create_time"
+                tableName="${pudans_table_prefix}job_execution">
+            <column name="create_time" remarks="创建时间"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
