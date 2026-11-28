@@ -50,6 +50,11 @@ class PublicPathPolicyTests {
         assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.OTP_LOGIN_PATH)).isTrue();
         assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.PASSKEY_OPTIONS_PATH)).isTrue();
         assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.PASSKEY_VERIFY_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.IDP_QR_START_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.IDP_QR_POLL_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.GET, PublicPathPolicy.IDP_QR_CALLBACK_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.GET, PublicPathPolicy.IDP_QR_SCAN_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.IDP_QR_CALLBACK_PATH)).isFalse();
         assertThat(PublicPathPolicy.isPublic(HttpMethod.GET, PublicPathPolicy.OTP_LOGIN_PATH)).isFalse();
         assertThat(PublicPathPolicy.isPublic(HttpMethod.GET, PublicPathPolicy.CSRF_PATH)).isTrue();
         assertThat(PublicPathPolicy.isPublic(HttpMethod.GET, PublicPathPolicy.CAPTCHA_PATH)).isTrue();

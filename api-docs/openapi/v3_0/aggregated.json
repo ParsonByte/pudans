@@ -2311,6 +2311,51 @@
                 },
                 "type": "object"
             },
+            "IdpQrPollRequest": {
+                "properties": {
+                    "state": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "IdpQrPollResponse": {
+                "properties": {
+                    "login": {
+                        "$ref": "#/components/schemas/LoginResponse"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "IdpQrStartRequest": {
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "IdpQrStartResponse": {
+                "properties": {
+                    "expiresAt": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "state": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "JobDefinitionRequest": {
                 "properties": {
                     "blockStrategy": {
@@ -6385,6 +6430,154 @@
                 "summary": "\u67e5\u8be2\u5ba1\u8ba1\u8bb0\u5f55\u8be6\u60c5",
                 "tags": [
                     "IAM \u5ba1\u8ba1\u8bb0\u5f55"
+                ]
+            }
+        },
+        "/apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/callback": {
+            "get": {
+                "operationId": "completeIdpQrLogin",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "code",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "authCode",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "state",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/html": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "\u626b\u7801\u767b\u5f55\u56de\u8c03",
+                "tags": [
+                    "IAM \u767b\u5f55\u8ba4\u8bc1"
+                ]
+            }
+        },
+        "/apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/poll": {
+            "post": {
+                "operationId": "pollIdpQrLogin",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IdpQrPollRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IdpQrPollResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "\u8f6e\u8be2\u626b\u7801\u767b\u5f55\u72b6\u6001",
+                "tags": [
+                    "IAM \u767b\u5f55\u8ba4\u8bc1"
+                ]
+            }
+        },
+        "/apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/scan": {
+            "get": {
+                "operationId": "scanIdpQrLogin",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "state",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "provider",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "\u8bc6\u522b\u626b\u7801\u5e94\u7528",
+                "tags": [
+                    "IAM \u767b\u5f55\u8ba4\u8bc1"
+                ]
+            }
+        },
+        "/apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/start": {
+            "post": {
+                "operationId": "startIdpQrLogin",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IdpQrStartRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IdpQrStartResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "\u5f00\u59cb\u626b\u7801\u767b\u5f55",
+                "tags": [
+                    "IAM \u767b\u5f55\u8ba4\u8bc1"
                 ]
             }
         },

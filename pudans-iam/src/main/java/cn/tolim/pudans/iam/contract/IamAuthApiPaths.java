@@ -20,6 +20,11 @@ public final class IamAuthApiPaths {
     public static final String PASSKEY_OPTIONS = IamContractPaths.AUTH_PASSKEY_OPTIONS;
     public static final String PASSKEY_VERIFY = IamContractPaths.AUTH_PASSKEY_VERIFY;
 
+    public static final String IDP_QR_START = IamContractPaths.AUTH_IDP_QR_START;
+    public static final String IDP_QR_POLL = IamContractPaths.AUTH_IDP_QR_POLL;
+    public static final String IDP_QR_CALLBACK = IamContractPaths.AUTH_IDP_QR_CALLBACK;
+    public static final String IDP_QR_SCAN = IamContractPaths.AUTH_IDP_QR_SCAN;
+
     public static final String FORGOT_PASSWORD = IamContractPaths.AUTH_FORGOT_PASSWORD;
     public static final String RESET_PASSWORD = IamContractPaths.AUTH_RESET_PASSWORD;
 
@@ -88,6 +93,10 @@ public final class IamAuthApiPaths {
     public static final String[] OTP_LOGIN_PATHS = {OTP_LOGIN};
     public static final String[] PASSKEY_OPTIONS_PATHS = {PASSKEY_OPTIONS};
     public static final String[] PASSKEY_VERIFY_PATHS = {PASSKEY_VERIFY};
+    public static final String[] IDP_QR_START_PATHS = {IDP_QR_START};
+    public static final String[] IDP_QR_POLL_PATHS = {IDP_QR_POLL};
+    public static final String[] IDP_QR_CALLBACK_PATHS = {IDP_QR_CALLBACK};
+    public static final String[] IDP_QR_SCAN_PATHS = {IDP_QR_SCAN};
     public static final String[] FORGOT_PASSWORD_PATHS = {FORGOT_PASSWORD};
     public static final String[] RESET_PASSWORD_PATHS = {RESET_PASSWORD};
     public static final String[] LOGOUT_PATHS = {LOGOUT};

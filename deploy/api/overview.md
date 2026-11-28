@@ -40,6 +40,10 @@ POST /apis/pudans.tolim.cn/v1alpha1/iam/auth/login/otp/send
 POST /apis/pudans.tolim.cn/v1alpha1/iam/auth/login/otp
 POST /apis/pudans.tolim.cn/v1alpha1/iam/auth/passkey/options
 POST /apis/pudans.tolim.cn/v1alpha1/iam/auth/passkey/verify
+POST /apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/start
+POST /apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/poll
+GET /apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/scan
+GET /apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/callback
 POST /apis/pudans.tolim.cn/v1alpha1/iam/auth/logout
 POST /apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/challenge
 POST /apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/verify
@@ -53,8 +57,9 @@ POST /apis/pudans.tolim.cn/v1alpha1/iam/ticket/exchange
 ```
 
 邮箱和手机验证码登录依赖 `pudans-notification` 中已启用的邮件或短信供应商；通行密钥登录依赖
-WebAuthn 的 RP 配置。公开的 GET 接口包括登录配置、CSRF、验证码和门户登录配置。具体请求体、
-字段和响应以 [OpenAPI](openapi.md) 为准。
+WebAuthn 的 RP 配置。钉钉/飞书扫码登录需要在 IAM 身份提供商中启用对应应用，并配置回调地址
+`/apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/callback`。公开的 GET 接口包括登录配置、扫码
+回调、CSRF、验证码和门户登录配置。具体请求体、字段和响应以 [OpenAPI](openapi.md) 为准。
 
 `X-Pudans-Internal-Token` 只用于服务间调用，由网关或内部客户端注入；外部调用方不应持有或发送
 该请求头。

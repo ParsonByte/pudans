@@ -148,11 +148,13 @@ All apps live under the same parent domain, for example `auth.example.com` and
 `PUDANS_COOKIE_DOMAIN=.example.com` for both IAM and the gateway so every app subdomain shares the
 same session. The default empty value keeps a host-only cookie for local development.
 
-The auth app supports password, email and SMS verification code, and passkey login at
-`/auth/login`, `/auth/login/otp`, and `/auth/passkey/*`. Password reset uses
-`/auth/password/forgot` and `/auth/password/reset`. Email and SMS delivery requires an enabled
-provider in `pudans-notification`; passkey login requires an active WebAuthn credential and RP
-configuration.
+The auth app supports password, email and SMS verification code, passkey, and DingTalk/Feishu QR
+login. A universal QR page at `/auth/idp/qr/scan` detects the DingTalk or Feishu scanner and
+continues through `/auth/idp/qr/callback`; `/auth/idp/qr/start` and `/auth/idp/qr/poll` create and
+consume the login state. Password reset uses `/auth/password/forgot` and `/auth/password/reset`.
+Email and SMS delivery requires an enabled provider in `pudans-notification`; passkey login requires
+an active WebAuthn credential and RP configuration. DingTalk and Feishu require an enabled identity
+provider whose application callback points at the IAM QR callback URL.
 
 ## SQL
 

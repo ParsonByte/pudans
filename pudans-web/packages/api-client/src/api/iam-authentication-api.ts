@@ -26,6 +26,14 @@ import type { ForgotPasswordRequest } from '../models';
 // @ts-ignore
 import type { ForgotPasswordResponse } from '../models';
 // @ts-ignore
+import type { IdpQrPollRequest } from '../models';
+// @ts-ignore
+import type { IdpQrPollResponse } from '../models';
+// @ts-ignore
+import type { IdpQrStartRequest } from '../models';
+// @ts-ignore
+import type { IdpQrStartResponse } from '../models';
+// @ts-ignore
 import type { LoginConfigResponse } from '../models';
 // @ts-ignore
 import type { LoginRequest } from '../models';
@@ -56,6 +64,53 @@ import type { WebAuthnAuthenticationOptions } from '../models';
  */
 export const IamAuthenticationApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
+        /**
+         *
+         * @summary 扫码登录回调
+         * @param {string} state
+         * @param {string} [code]
+         * @param {string} [authCode]
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        completeIdpQrLogin: async (state: string, code?: string, authCode?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'state' is not null or undefined
+            assertParamExists('completeIdpQrLogin', 'state', state)
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/callback`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (code !== undefined) {
+                localVarQueryParameter['code'] = code;
+            }
+
+            if (authCode !== undefined) {
+                localVarQueryParameter['authCode'] = authCode;
+            }
+
+            if (state !== undefined) {
+                localVarQueryParameter['state'] = state;
+            }
+
+            localVarHeaderParameter['Accept'] = 'text/html';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
         /**
          *
          * @summary 发送密码重置验证码
@@ -299,6 +354,41 @@ export const IamAuthenticationApiAxiosParamCreator = function (configuration?: C
         },
         /**
          *
+         * @summary 轮询扫码登录状态
+         * @param {IdpQrPollRequest} idpQrPollRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        pollIdpQrLogin: async (idpQrPollRequest: IdpQrPollRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'idpQrPollRequest' is not null or undefined
+            assertParamExists('pollIdpQrLogin', 'idpQrPollRequest', idpQrPollRequest)
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/poll`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(idpQrPollRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         *
          * @summary 重置密码
          * @param {PasswordResetRequest} passwordResetRequest
          * @param {*} [options] Override http request option.
@@ -326,6 +416,48 @@ export const IamAuthenticationApiAxiosParamCreator = function (configuration?: C
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
             localVarRequestOptions.data = serializeDataIfNeeded(passwordResetRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         *
+         * @summary 识别扫码应用
+         * @param {string} state
+         * @param {string} [provider]
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        scanIdpQrLogin: async (state: string, provider?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'state' is not null or undefined
+            assertParamExists('scanIdpQrLogin', 'state', state)
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/scan`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            if (state !== undefined) {
+                localVarQueryParameter['state'] = state;
+            }
+
+            if (provider !== undefined) {
+                localVarQueryParameter['provider'] = provider;
+            }
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -367,6 +499,41 @@ export const IamAuthenticationApiAxiosParamCreator = function (configuration?: C
                 options: localVarRequestOptions,
             };
         },
+        /**
+         *
+         * @summary 开始扫码登录
+         * @param {IdpQrStartRequest} idpQrStartRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        startIdpQrLogin: async (idpQrStartRequest: IdpQrStartRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'idpQrStartRequest' is not null or undefined
+            assertParamExists('startIdpQrLogin', 'idpQrStartRequest', idpQrStartRequest)
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/idp/qr/start`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(idpQrStartRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -376,6 +543,21 @@ export const IamAuthenticationApiAxiosParamCreator = function (configuration?: C
 export const IamAuthenticationApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = IamAuthenticationApiAxiosParamCreator(configuration)
     return {
+        /**
+         *
+         * @summary 扫码登录回调
+         * @param {string} state
+         * @param {string} [code]
+         * @param {string} [authCode]
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async completeIdpQrLogin(state: string, code?: string, authCode?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.completeIdpQrLogin(state, code, authCode, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.completeIdpQrLogin']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
         /**
          *
          * @summary 发送密码重置验证码
@@ -469,6 +651,19 @@ export const IamAuthenticationApiFp = function(configuration?: Configuration) {
         },
         /**
          *
+         * @summary 轮询扫码登录状态
+         * @param {IdpQrPollRequest} idpQrPollRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async pollIdpQrLogin(idpQrPollRequest: IdpQrPollRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<IdpQrPollResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.pollIdpQrLogin(idpQrPollRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.pollIdpQrLogin']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         *
          * @summary 重置密码
          * @param {PasswordResetRequest} passwordResetRequest
          * @param {*} [options] Override http request option.
@@ -478,6 +673,20 @@ export const IamAuthenticationApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.resetPassword(passwordResetRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.resetPassword']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         *
+         * @summary 识别扫码应用
+         * @param {string} state
+         * @param {string} [provider]
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async scanIdpQrLogin(state: string, provider?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.scanIdpQrLogin(state, provider, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.scanIdpQrLogin']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -493,6 +702,19 @@ export const IamAuthenticationApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.sendLoginOtp']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         *
+         * @summary 开始扫码登录
+         * @param {IdpQrStartRequest} idpQrStartRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async startIdpQrLogin(idpQrStartRequest: IdpQrStartRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<IdpQrStartResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.startIdpQrLogin(idpQrStartRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.startIdpQrLogin']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -502,6 +724,16 @@ export const IamAuthenticationApiFp = function(configuration?: Configuration) {
 export const IamAuthenticationApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
     const localVarFp = IamAuthenticationApiFp(configuration)
     return {
+        /**
+         *
+         * @summary 扫码登录回调
+         * @param {IamAuthenticationApiCompleteIdpQrLoginRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        completeIdpQrLogin(requestParameters: IamAuthenticationApiCompleteIdpQrLoginRequest, options?: RawAxiosRequestConfig): AxiosPromise<string> {
+            return localVarFp.completeIdpQrLogin(requestParameters.state, requestParameters.code, requestParameters.authCode, options).then((request) => request(axios, basePath));
+        },
         /**
          *
          * @summary 发送密码重置验证码
@@ -574,6 +806,16 @@ export const IamAuthenticationApiFactory = function (configuration?: Configurati
         },
         /**
          *
+         * @summary 轮询扫码登录状态
+         * @param {IamAuthenticationApiPollIdpQrLoginRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        pollIdpQrLogin(requestParameters: IamAuthenticationApiPollIdpQrLoginRequest, options?: RawAxiosRequestConfig): AxiosPromise<IdpQrPollResponse> {
+            return localVarFp.pollIdpQrLogin(requestParameters.idpQrPollRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         *
          * @summary 重置密码
          * @param {IamAuthenticationApiResetPasswordRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -581,6 +823,16 @@ export const IamAuthenticationApiFactory = function (configuration?: Configurati
          */
         resetPassword(requestParameters: IamAuthenticationApiResetPasswordRequest, options?: RawAxiosRequestConfig): AxiosPromise<PasswordResetResponse> {
             return localVarFp.resetPassword(requestParameters.passwordResetRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         *
+         * @summary 识别扫码应用
+         * @param {IamAuthenticationApiScanIdpQrLoginRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        scanIdpQrLogin(requestParameters: IamAuthenticationApiScanIdpQrLoginRequest, options?: RawAxiosRequestConfig): AxiosPromise<string> {
+            return localVarFp.scanIdpQrLogin(requestParameters.state, requestParameters.provider, options).then((request) => request(axios, basePath));
         },
         /**
          *
@@ -592,8 +844,29 @@ export const IamAuthenticationApiFactory = function (configuration?: Configurati
         sendLoginOtp(requestParameters: IamAuthenticationApiSendLoginOtpRequest, options?: RawAxiosRequestConfig): AxiosPromise<OtpSendResponse> {
             return localVarFp.sendLoginOtp(requestParameters.otpSendRequest, options).then((request) => request(axios, basePath));
         },
+        /**
+         *
+         * @summary 开始扫码登录
+         * @param {IamAuthenticationApiStartIdpQrLoginRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        startIdpQrLogin(requestParameters: IamAuthenticationApiStartIdpQrLoginRequest, options?: RawAxiosRequestConfig): AxiosPromise<IdpQrStartResponse> {
+            return localVarFp.startIdpQrLogin(requestParameters.idpQrStartRequest, options).then((request) => request(axios, basePath));
+        },
     };
 };
+
+/**
+ * Request parameters for completeIdpQrLogin operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiCompleteIdpQrLoginRequest {
+    readonly state: string
+
+    readonly code?: string
+
+    readonly authCode?: string
+}
 
 /**
  * Request parameters for forgotPassword operation in IamAuthenticationApi.
@@ -645,10 +918,26 @@ export interface IamAuthenticationApiPasskeyLoginOptionsRequest {
 }
 
 /**
+ * Request parameters for pollIdpQrLogin operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiPollIdpQrLoginRequest {
+    readonly idpQrPollRequest: IdpQrPollRequest
+}
+
+/**
  * Request parameters for resetPassword operation in IamAuthenticationApi.
  */
 export interface IamAuthenticationApiResetPasswordRequest {
     readonly passwordResetRequest: PasswordResetRequest
+}
+
+/**
+ * Request parameters for scanIdpQrLogin operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiScanIdpQrLoginRequest {
+    readonly state: string
+
+    readonly provider?: string
 }
 
 /**
@@ -659,9 +948,27 @@ export interface IamAuthenticationApiSendLoginOtpRequest {
 }
 
 /**
+ * Request parameters for startIdpQrLogin operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiStartIdpQrLoginRequest {
+    readonly idpQrStartRequest: IdpQrStartRequest
+}
+
+/**
  * IamAuthenticationApi - object-oriented interface
  */
 export class IamAuthenticationApi extends BaseAPI {
+    /**
+     *
+     * @summary 扫码登录回调
+     * @param {IamAuthenticationApiCompleteIdpQrLoginRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public completeIdpQrLogin(requestParameters: IamAuthenticationApiCompleteIdpQrLoginRequest, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).completeIdpQrLogin(requestParameters.state, requestParameters.code, requestParameters.authCode, options).then((request) => request(this.axios, this.basePath));
+    }
+
     /**
      *
      * @summary 发送密码重置验证码
@@ -741,6 +1048,17 @@ export class IamAuthenticationApi extends BaseAPI {
 
     /**
      *
+     * @summary 轮询扫码登录状态
+     * @param {IamAuthenticationApiPollIdpQrLoginRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public pollIdpQrLogin(requestParameters: IamAuthenticationApiPollIdpQrLoginRequest, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).pollIdpQrLogin(requestParameters.idpQrPollRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
      * @summary 重置密码
      * @param {IamAuthenticationApiResetPasswordRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -752,6 +1070,17 @@ export class IamAuthenticationApi extends BaseAPI {
 
     /**
      *
+     * @summary 识别扫码应用
+     * @param {IamAuthenticationApiScanIdpQrLoginRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public scanIdpQrLogin(requestParameters: IamAuthenticationApiScanIdpQrLoginRequest, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).scanIdpQrLogin(requestParameters.state, requestParameters.provider, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
      * @summary 发送登录验证码
      * @param {IamAuthenticationApiSendLoginOtpRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -759,5 +1088,16 @@ export class IamAuthenticationApi extends BaseAPI {
      */
     public sendLoginOtp(requestParameters: IamAuthenticationApiSendLoginOtpRequest, options?: RawAxiosRequestConfig) {
         return IamAuthenticationApiFp(this.configuration).sendLoginOtp(requestParameters.otpSendRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
+     * @summary 开始扫码登录
+     * @param {IamAuthenticationApiStartIdpQrLoginRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public startIdpQrLogin(requestParameters: IamAuthenticationApiStartIdpQrLoginRequest, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).startIdpQrLogin(requestParameters.idpQrStartRequest, options).then((request) => request(this.axios, this.basePath));
     }
 }

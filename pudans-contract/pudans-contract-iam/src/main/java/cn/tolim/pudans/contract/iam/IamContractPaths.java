@@ -26,6 +26,18 @@ public final class IamContractPaths {
     public static final String AUTH_PASSKEY_VERIFY_SUFFIX = "/auth/passkey/verify";
     public static final String AUTH_PASSKEY_VERIFY = BASE + AUTH_PASSKEY_VERIFY_SUFFIX;
 
+    public static final String AUTH_IDP_QR_START_SUFFIX = "/auth/idp/qr/start";
+    public static final String AUTH_IDP_QR_START = BASE + AUTH_IDP_QR_START_SUFFIX;
+
+    public static final String AUTH_IDP_QR_POLL_SUFFIX = "/auth/idp/qr/poll";
+    public static final String AUTH_IDP_QR_POLL = BASE + AUTH_IDP_QR_POLL_SUFFIX;
+
+    public static final String AUTH_IDP_QR_CALLBACK_SUFFIX = "/auth/idp/qr/callback";
+    public static final String AUTH_IDP_QR_CALLBACK = BASE + AUTH_IDP_QR_CALLBACK_SUFFIX;
+
+    public static final String AUTH_IDP_QR_SCAN_SUFFIX = "/auth/idp/qr/scan";
+    public static final String AUTH_IDP_QR_SCAN = BASE + AUTH_IDP_QR_SCAN_SUFFIX;
+
     public static final String AUTH_MFA_CHALLENGE_SUFFIX = "/auth/mfa/challenge";
     public static final String AUTH_MFA_CHALLENGE = BASE + AUTH_MFA_CHALLENGE_SUFFIX;
 

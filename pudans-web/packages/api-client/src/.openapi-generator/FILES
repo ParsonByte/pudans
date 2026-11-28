@@ -138,6 +138,10 @@ models/iam-mfa-web-authn-options-request.ts
 models/iam-mfa-web-authn-verify-request.ts
 models/iam-ticket-issue-request.ts
 models/identity-provider-summary.ts
+models/idp-qr-poll-request.ts
+models/idp-qr-poll-response.ts
+models/idp-qr-start-request.ts
+models/idp-qr-start-response.ts
 models/index.ts
 models/job-definition-request.ts
 models/job-definition-response.ts

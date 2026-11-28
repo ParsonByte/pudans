@@ -24,6 +24,10 @@ public final class PublicPathPolicy {
     public static final String OTP_LOGIN_PATH = IAM_PATH_PREFIX + "auth/login/otp";
     public static final String PASSKEY_OPTIONS_PATH = IAM_PATH_PREFIX + "auth/passkey/options";
     public static final String PASSKEY_VERIFY_PATH = IAM_PATH_PREFIX + "auth/passkey/verify";
+    public static final String IDP_QR_START_PATH = IAM_PATH_PREFIX + "auth/idp/qr/start";
+    public static final String IDP_QR_POLL_PATH = IAM_PATH_PREFIX + "auth/idp/qr/poll";
+    public static final String IDP_QR_CALLBACK_PATH = IAM_PATH_PREFIX + "auth/idp/qr/callback";
+    public static final String IDP_QR_SCAN_PATH = IAM_PATH_PREFIX + "auth/idp/qr/scan";
     public static final String FORGOT_PASSWORD_PATH = IAM_PATH_PREFIX + "auth/password/forgot";
     public static final String RESET_PASSWORD_PATH = IAM_PATH_PREFIX + "auth/password/reset";
 
@@ -82,6 +86,8 @@ public final class PublicPathPolicy {
         paths.add(OTP_LOGIN_PATH);
         paths.add(PASSKEY_OPTIONS_PATH);
         paths.add(PASSKEY_VERIFY_PATH);
+        paths.add(IDP_QR_START_PATH);
+        paths.add(IDP_QR_POLL_PATH);
         paths.add(FORGOT_PASSWORD_PATH);
         paths.add(RESET_PASSWORD_PATH);
         paths.add(SESSION_VALIDATE_PATH);
@@ -99,6 +105,8 @@ public final class PublicPathPolicy {
         paths.add(CAPTCHA_PATH);
         paths.add(LEGACY_CAPTCHA_PATH);
         paths.add(LOGIN_CONFIG_PATH);
+        paths.add(IDP_QR_CALLBACK_PATH);
+        paths.add(IDP_QR_SCAN_PATH);
         paths.add(PORTAL_LOGIN_CONFIG_PATH);
         paths.add(PORTAL_LOGOUT_URL_PATH);
         return Set.copyOf(paths);
