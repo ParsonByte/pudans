@@ -97,6 +97,7 @@ The gateway exposes every service under the shared API prefix `/apis/pudans.toli
 | Path | Purpose |
 | --- | --- |
 | `pudans-gateway`, `pudans-iam`, `pudans-repository`, `pudans-notification`, `pudans-mq`, `pudans-job`, `pudans-search` | Runnable Spring Boot applications |
+| `pudans-web` | Standalone Node.js frontend workspace; packages live under `pudans-web/packages` |
 | `pudans-contract` | Service-to-service contracts: paths, DTOs, Feign clients and constants only |
 | `pudans-communal` | Shared libraries: core, web, security, mybatis, redis, mq (in-memory and RocketMQ), log and feign |
 | `pudans-kernel-modules` | Domain kernels: IAM, audit, repository, notification, mq, job and search |

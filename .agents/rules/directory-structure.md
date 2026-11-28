@@ -5,6 +5,7 @@
 | Path | Responsibility |
 | --- | --- |
 | `pudans-gateway`, `pudans-iam`, `pudans-repository`, `pudans-notification`, `pudans-mq`, `pudans-job`, `pudans-search` | Runnable Spring Boot applications |
+| `pudans-web` | Standalone Node.js frontend workspace; packages live under `pudans-web/packages` |
 | `pudans-contract` | Service contracts: API paths, DTOs, Feign clients and constants only |
 | `pudans-communal` | Shared technical libraries |
 | `pudans-kernel-modules` | Domain kernels and their endpoints |

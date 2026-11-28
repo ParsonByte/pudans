@@ -11,6 +11,8 @@ include 'pudans-mq'
 include 'pudans-job'
 include 'pudans-search'
 
+include 'pudans-web'
+
 include 'pudans-contract'
 include 'pudans-contract:pudans-contract-iam'
 include 'pudans-contract:pudans-contract-repository'

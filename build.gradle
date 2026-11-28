@@ -79,6 +79,10 @@ def versionCatalog = extensions
         .named('libs')
 
 subprojects {
+    if (project.name == 'pudans-web') {
+        return
+    }
+
     apply plugin: 'java-library'
 
     java {

@@ -93,6 +93,7 @@ pudans 是一个企业级身份与访问管理平台，由一组可独立部署�
 | 路径 | 用途 |
 | --- | --- |
 | `pudans-gateway`、`pudans-iam`、`pudans-repository`、`pudans-notification`、`pudans-mq`、`pudans-job`、`pudans-search` | 可运行的 Spring Boot 应用 |
+| `pudans-web` | 独立部署的 Node.js 前端工作区；应用包位于 `pudans-web/packages` |
 | `pudans-contract` | 服务间契约：路径、DTO、Feign 客户端与常量，仅接口 |
 | `pudans-communal` | 公共库：core、web、security、mybatis、redis、mq（内存与 RocketMQ）、log、feign |
 | `pudans-kernel-modules` | 领域内核：IAM、审计、仓储、通知、MQ、任务与搜索 |

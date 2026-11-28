@@ -131,6 +131,14 @@ Validate with:
 The operation tags and summaries are Chinese. Regenerate after changing controllers or OpenAPI
 annotations; never hand-edit the JSON.
 
+## Frontend
+
+`pudans-web` is an npm workspace. `pudans-web/packages/api-client` is generated from
+`api-docs/openapi/v3_0/aggregated.json` with OpenAPI Generator (`typescript-axios`); regenerate it
+with `npm run api-client:gen` from `pudans-web`. Chinese OpenAPI tags map to English API class
+names through `pudans-web/packages/api-client/openapi-tags.json`, so add new tags there before
+regenerating.
+
 ## SQL
 
 Every changelog is under `sql/<service>/`; each service has `changelog-master.xml`. Kernel DDL

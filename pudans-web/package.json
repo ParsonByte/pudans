@@ -1,0 +1,10 @@
+{
+  "name": "pudans-web",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "api-client:gen": "npm run gen --workspace @pudans-dev/api-client"
+  }
+}
