@@ -2,10 +2,15 @@
   "name": "pudans-web",
   "private": true,
   "workspaces": [
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "api-client:gen": "npm run gen --workspace @pudans-dev/api-client"
+    "api-client:gen": "npm run gen --workspace @pudans-dev/api-client",
+    "build:auth": "npm run build --workspace @pudans-dev/auth",
+    "build:portal": "npm run build --workspace @pudans-dev/portal",
+    "dev:auth": "npm run dev --workspace @pudans-dev/auth",
+    "dev:portal": "npm run dev --workspace @pudans-dev/portal"
   },
   "devDependencies": {
     "vite": "^8.4.0"

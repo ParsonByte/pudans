@@ -139,6 +139,15 @@ with `npm run api-client:gen` from `pudans-web`. Chinese OpenAPI tags map to Eng
 names through `pudans-web/packages/api-client/openapi-tags.json`, so add new tags there before
 regenerating.
 
+Apps live under `pudans-web/apps/*`; each app is independently deployable and mapped to its own
+domain by the deployment layer. `@pudans-dev/share-component` exports `useLoginState`, which reads
+`/iam/me` through the API client and refreshes on window focus or visibility change.
+
+All apps live under the same parent domain, for example `auth.example.com` and
+`console.example.com`. IAM writes the global login session as the HttpOnly `PUDANS_SID` cookie; set
+`PUDANS_COOKIE_DOMAIN=.example.com` for both IAM and the gateway so every app subdomain shares the
+same session. The default empty value keeps a host-only cookie for local development.
+
 ## SQL
 
 Every changelog is under `sql/<service>/`; each service has `changelog-master.xml`. Kernel DDL

@@ -1,0 +1,28 @@
+{
+  "name": "@pudans-dev/auth",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "typecheck": "next typegen && tsc --noEmit"
+  },
+  "dependencies": {
+    "@ant-design/nextjs-registry": "^1.3.0",
+    "@pudans-dev/api-client": "*",
+    "@pudans-dev/share-component": "*",
+    "antd": "6.7.2",
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "less": "^4.9.1",
+    "less-loader": "^13.1.1",
+    "typescript": "~6.0.3"
+  }
+}
