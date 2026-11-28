@@ -36,6 +36,7 @@ export type AppHeaderProps = {
   consoleHref?: string;
   docsHref?: string;
   loginHref?: string;
+  loginStateEnabled?: boolean;
   logoSrc?: string;
   menus?: AppHeaderMenu[];
   onAccessKeyClick?: () => void;

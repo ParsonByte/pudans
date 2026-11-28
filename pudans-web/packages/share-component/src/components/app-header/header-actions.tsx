@@ -1,4 +1,4 @@
-import { Button, Dropdown } from "antd";
+import { Button, Dropdown, Skeleton } from "antd";
 
 import type { AppHeaderUser } from "./header-types";
 import { UserMenu } from "./header-user-menu";
@@ -8,6 +8,7 @@ type HeaderActionsProps = {
   consoleHref?: string;
   docsHref?: string;
   getPopupContainer?: () => HTMLElement;
+  loading?: boolean;
   loginHref?: string;
   onAccessKeyClick?: () => void;
   onAccountCenterClick?: () => void;
@@ -23,6 +24,7 @@ export function HeaderActions({
   consoleHref,
   docsHref,
   getPopupContainer,
+  loading = false,
   loginHref,
   onAccessKeyClick,
   onAccountCenterClick,
@@ -51,7 +53,11 @@ export function HeaderActions({
       >
         控制台
       </Button>
-      {user ? (
+      {loading && !user ? (
+        <span className="pudans-app-header__user-loading">
+          <Skeleton.Avatar active shape="circle" size={28} />
+        </span>
+      ) : user ? (
         <Dropdown
           getPopupContainer={getPopupContainer}
           placement="bottomRight"

@@ -1,0 +1,53 @@
+.pudans-app-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  background: var(--pudans-layout-bg);
+}
+
+.pudans-app-layout__header {
+  position: relative;
+  z-index: 1000;
+  flex: 0 0 auto;
+}
+
+.pudans-app-layout__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--pudans-layout-scrollbar) transparent !important;
+  scrollbar-width: thin !important;
+}
+
+.pudans-app-layout__content,
+.pudans-app-layout__content * {
+  scrollbar-color: var(--pudans-layout-scrollbar) transparent !important;
+  scrollbar-width: thin !important;
+}
+
+.pudans-app-layout__content::-webkit-scrollbar,
+.pudans-app-layout__content *::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+.pudans-app-layout__content::-webkit-scrollbar-track,
+.pudans-app-layout__content *::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.pudans-app-layout__content::-webkit-scrollbar-thumb,
+.pudans-app-layout__content *::-webkit-scrollbar-thumb {
+  background: var(--pudans-layout-scrollbar) !important;
+  border-radius: var(--pudans-layout-scrollbar-radius) !important;
+}
+
+.pudans-app-layout__content::-webkit-scrollbar-thumb:hover,
+.pudans-app-layout__content *::-webkit-scrollbar-thumb:hover {
+  background: var(--pudans-layout-scrollbar-hover) !important;
+}

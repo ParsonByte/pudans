@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type FocusEvent } from "react";
 
+import type { UserInfo } from "@pudans-dev/api-client";
 import { theme } from "antd";
+
+import { useLoginState } from "../../hooks/use-login-state";
 
 import { Brand } from "./header-brand";
 import { HamburgerMenu } from "./header-hamburger-menu";
@@ -12,9 +15,17 @@ import { MegaMenu } from "./header-mega-menu";
 import { DEFAULT_APP_HEADER_MENUS } from "./header-menus";
 import { NavItem } from "./header-nav-item";
 import { SearchBox } from "./header-search-box";
-import type { AppHeaderProps } from "./header-types";
+import type { AppHeaderProps, AppHeaderUser } from "./header-types";
 
 import "./app-header.modules.less";
+
+function toHeaderUser(user: UserInfo): AppHeaderUser {
+  return {
+    avatarSrc: user.avatar,
+    id: user.userId,
+    name: user.fullName || user.nickName || user.username || user.userId || "",
+  };
+}
 
 export function AppHeader({
   actions,
@@ -23,6 +34,7 @@ export function AppHeader({
   consoleHref = "/console",
   docsHref = "/docs",
   loginHref = "/login",
+  loginStateEnabled = true,
   logoSrc = "/ui-assets/pudans.svg",
   menus = DEFAULT_APP_HEADER_MENUS,
   onAccessKeyClick,
@@ -42,11 +54,16 @@ export function AppHeader({
 }: AppHeaderProps) {
   const rootRef = useRef<HTMLElement>(null);
   const { token } = theme.useToken();
+  const loginState = useLoginState({ enabled: loginStateEnabled && !user });
   const [activeMenuKey, setActiveMenuKey] = useState<string | null>(null);
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
   const [searchExpanded, setSearchExpanded] = useState(false);
 
   const activeMenu = menus.find((menu) => menu.key === activeMenuKey);
+  const resolvedUser = user ?? (loginState.user ? toHeaderUser(loginState.user) : undefined);
+  const userLoading = loginStateEnabled && !user && loginState.isLoading;
+  const resolvedLogout =
+    onLogout ?? (loginStateEnabled && !user ? loginState.logout : undefined);
   const rootStyle = {
     ...style,
     "--pudans-header-bg": token.colorBgContainer,
@@ -153,15 +170,16 @@ export function AppHeader({
               consoleHref={consoleHref}
               docsHref={docsHref}
               getPopupContainer={() => rootRef.current ?? document.body}
+              loading={userLoading}
               loginHref={loginHref}
               onAccessKeyClick={onAccessKeyClick}
               onAccountCenterClick={onAccountCenterClick}
               onConsoleClick={onConsoleClick}
               onDocsClick={onDocsClick}
               onLoginClick={onLoginClick}
-              onLogout={onLogout}
+              onLogout={resolvedLogout}
               onSecurityClick={onSecurityClick}
-              user={user}
+              user={resolvedUser}
             />
           )}
         </div>
