@@ -1,0 +1,7 @@
+description = 'Shared messaging layer: provider-agnostic publisher/consumer with retry and dead letters'
+
+dependencies {
+    api libs.spring.boot.starter.actuator
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

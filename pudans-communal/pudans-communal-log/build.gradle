@@ -1,0 +1,7 @@
+description = 'Shared logging core: structured logging, MDC trace context and masking'
+
+dependencies {
+    api libs.spring.boot.starter
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

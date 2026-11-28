@@ -1,0 +1,2 @@
+org.springframework.boot.EnvironmentPostProcessor=\
+cn.tolim.pudans.communal.log.PudansLoggingEnvironmentPostProcessor

@@ -1,0 +1,9 @@
+description = 'Shared logging servlet layer: request tracing and request logging filters'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-log')
+    api libs.spring.boot.starter.webmvc
+    api libs.micrometer.tracing
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

@@ -1,0 +1,9 @@
+description = 'Shared web layer: MVC conventions and global exception handling'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-core')
+    api libs.spring.boot.starter.webmvc
+    api libs.spring.boot.starter.validation
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

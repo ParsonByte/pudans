@@ -1,0 +1,9 @@
+description = 'Shared Feign layer: service-to-service invocation wrapper'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-core')
+    api libs.spring.cloud.starter.openfeign
+    api libs.spring.boot.starter.jackson
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

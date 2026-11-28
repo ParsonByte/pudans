@@ -1,0 +1,7 @@
+description = 'Shared persistence layer (PostgreSQL only)'
+
+dependencies {
+    api libs.spring.boot.starter.jdbc
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

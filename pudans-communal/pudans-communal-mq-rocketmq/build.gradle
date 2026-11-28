@@ -1,0 +1,9 @@
+description = 'RocketMQ provider for the shared messaging layer'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-mq')
+    implementation libs.rocketmq.client
+    implementation libs.rocketmq.acl
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

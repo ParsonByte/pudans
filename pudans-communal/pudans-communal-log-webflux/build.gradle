@@ -1,0 +1,10 @@
+description = 'Shared logging WebFlux layer: reactive request tracing and completion logging'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-log')
+    api libs.spring.boot.starter.webflux
+    api libs.context.propagation
+    api libs.micrometer.tracing
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
