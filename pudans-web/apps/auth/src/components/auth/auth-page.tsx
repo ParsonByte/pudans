@@ -5,7 +5,7 @@ import { useState, type CSSProperties } from "react";
 import { notification, theme } from "antd";
 
 import { AccountLoginForm } from "./account-login-form";
-import { AuthBrandPanel, type AuthTab } from "./auth-brand-panel";
+import { AuthBrandPanel } from "./auth-brand-panel";
 import { MfaVerify } from "./mfa-verify";
 import { OtpLoginForm } from "./otp-login-form";
 import { PasskeyLoginForm } from "./passkey-login-form";
@@ -13,6 +13,8 @@ import { PasskeyLoginForm } from "./passkey-login-form";
 import "./auth-page.modules.less";
 
 const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL ?? "http://localhost:3000";
+
+type AuthTab = "account" | "email" | "phone" | "passkey";
 
 const TABS: { key: AuthTab; label: string }[] = [
   { key: "account", label: "账密登录" },
@@ -71,7 +73,7 @@ export function AuthPage() {
       </header>
 
       <section className="auth-frame">
-        <AuthBrandPanel activeTab={activeTab} onSelect={selectTab} />
+        <AuthBrandPanel notify={notify} onMfaRequired={setMfaChallengeId} />
         <div className="auth-panel">
           {mfaChallengeId ? (
             <MfaVerify
