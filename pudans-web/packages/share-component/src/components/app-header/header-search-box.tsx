@@ -64,14 +64,13 @@ export function SearchBox({
       : Math.max(360, Math.min(1000, window.innerWidth - 470));
 
     setExpanded(true);
-    setPanelVisible(false);
+    setPanelVisible(true);
     onExpandedChange?.(true);
     gsap.to(root, {
       width: targetWidth,
       duration: 0.48,
       ease: "expo.out",
       onComplete: () => {
-        setPanelVisible(true);
         if (!locked) {
           inputRef.current?.focus();
         }
@@ -173,15 +172,7 @@ export function SearchBox({
           />
           {panelVisible && (locked || history.length > 0 || discoveries.length > 0) ? (
             <div className="pudans-app-header__search-panel">
-              {locked ? (
-                <LoginGate
-                  compact
-                  description="登录后可搜索产品、文档与服务。"
-                  items={[]}
-                  loginHref={loginHref}
-                  title="登录后使用搜索"
-                />
-              ) : null}
+              {locked ? <LoginGate loginHref={loginHref} /> : null}
               {!locked && history.length > 0 ? (
                 <section className="pudans-app-header__search-section">
                   <h3 className="pudans-app-header__search-section-title">历史搜索</h3>

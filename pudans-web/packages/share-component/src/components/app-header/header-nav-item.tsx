@@ -19,6 +19,7 @@ export function NavItem({ active, menu, onClick, onMouseEnter }: NavItemProps) {
     return (
       <a
         className="pudans-app-header__nav-trigger"
+        data-menu-key={menu.key}
         href={menu.href}
         onMouseEnter={onMouseEnter}
       >
@@ -32,6 +33,7 @@ export function NavItem({ active, menu, onClick, onMouseEnter }: NavItemProps) {
       aria-expanded={active}
       aria-haspopup="true"
       className={className}
+      data-menu-key={menu.key}
       onClick={onClick}
       onFocus={onMouseEnter}
       onMouseEnter={onMouseEnter}

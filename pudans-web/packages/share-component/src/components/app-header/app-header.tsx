@@ -16,6 +16,7 @@ import { DEFAULT_APP_HEADER_MENUS } from "./header-menus";
 import { NavItem } from "./header-nav-item";
 import { SearchBox } from "./header-search-box";
 import type { AppHeaderProps, AppHeaderUser } from "./header-types";
+import { WorkspaceButton } from "./header-workspace-button";
 
 import "./app-header.modules.less";
 
@@ -77,6 +78,8 @@ export function AppHeader({
     "--pudans-header-divider": token.colorSplit,
     "--pudans-header-text": token.colorText,
     "--pudans-header-muted": token.colorTextSecondary,
+    "--pudans-header-fill": token.colorFillTertiary,
+    "--pudans-header-fill-hover": token.colorFillSecondary,
     "--pudans-header-border": token.colorBorderSecondary,
     "--pudans-header-on-brand": token.colorTextLightSolid,
     "--pudans-header-shadow": token.boxShadowSecondary,
@@ -97,14 +100,44 @@ export function AppHeader({
       }
     };
 
+    const closeMenus = () => {
+      setActiveMenuKey(null);
+      setHamburgerOpen(false);
+    };
+
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+    document.documentElement.addEventListener("mouseleave", closeMenus);
+    window.addEventListener("blur", closeMenus);
 
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
+      document.documentElement.removeEventListener("mouseleave", closeMenus);
+      window.removeEventListener("blur", closeMenus);
     };
   }, []);
+
+  useEffect(() => {
+    if (!activeMenuKey) {
+      return;
+    }
+    const handlePointerMove = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest(".pudans-app-header__nav")
+          || target.closest(".pudans-app-header__mega")) {
+        return;
+      }
+      setActiveMenuKey(null);
+    };
+    document.addEventListener("pointermove", handlePointerMove);
+    return () => {
+      document.removeEventListener("pointermove", handlePointerMove);
+    };
+  }, [activeMenuKey]);
 
   const handleBlur = (event: FocusEvent<HTMLElement>) => {
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -146,15 +179,14 @@ export function AppHeader({
           />
           <span aria-hidden="true" className="pudans-app-header__divider" />
           <Brand brandName={brandName} logoSrc={logoSrc} />
+          <WorkspaceButton href={consoleHref} />
           <nav aria-label="主导航" className="pudans-app-header__nav">
             {menus.map((menu) => (
               <NavItem
                 active={activeMenuKey === menu.key}
                 key={menu.key}
                 menu={menu}
-                onClick={() =>
-                  setActiveMenuKey((current) => (current === menu.key ? null : menu.key))
-                }
+                onClick={() => setActiveMenuKey(menu.key)}
                 onMouseEnter={() => setActiveMenuKey(menu.key)}
               />
             ))}
@@ -193,9 +225,10 @@ export function AppHeader({
       </div>
       {activeMenu ? (
         <MegaMenu
-          locked={locked && activeMenu.key !== "about"}
+          activeKey={activeMenu.key}
+          locked={locked}
           loginHref={loginHref}
-          menu={activeMenu}
+          menus={menus}
         />
       ) : null}
       {hamburgerOpen ? (
