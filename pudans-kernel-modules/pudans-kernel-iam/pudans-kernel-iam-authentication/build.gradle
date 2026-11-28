@@ -1,0 +1,11 @@
+description = 'IAM authentication method aggregate'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-sms')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-mail')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-feishu')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-dingtalk')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-totp')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-webauthn')
+}

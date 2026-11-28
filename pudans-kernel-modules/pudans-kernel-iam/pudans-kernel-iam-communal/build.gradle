@@ -1,0 +1,39 @@
+description = 'IAM shared infrastructure'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-support')
+
+    api project(':pudans-communal:pudans-communal-core')
+
+    api libs.spring.boot.starter.webmvc
+    api libs.spring.boot.starter.data.jpa
+    api libs.spring.boot.starter.security
+    api libs.spring.boot.starter.validation
+
+    api libs.fastjson2
+    api libs.commons.lang3
+    api libs.commons.collections4
+    api libs.commons.text
+    api libs.commons.io
+    api libs.commons.codec
+    api libs.commons.compress
+    api libs.guava
+    api libs.jackson.databind
+    api libs.jetbrains.annotations
+    api libs.httpclient
+    api libs.redisson.spring.boot.starter
+
+    api libs.swagger.core
+    api libs.springdoc.openapi.starter.webmvc.ui
+    api libs.cron.utils
+    api libs.geoip2
+    api libs.ip2region
+    api libs.failsafe
+    api libs.oauth2.oidc.sdk
+    api libs.freemarker
+
+    api libs.bcprov.jdk18on
+    api libs.bcpkix.jdk18on
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

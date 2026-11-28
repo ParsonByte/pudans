@@ -1,0 +1,22 @@
+description = 'File repository service (local filesystem, OSS, COS, MinIO, S3)'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-core')
+
+    api libs.spring.boot.starter.webmvc
+    api libs.spring.boot.starter.validation
+    api libs.spring.boot.starter.data.jpa
+    api libs.swagger.core
+
+    implementation libs.spissatus4j.spring.boot.starter
+    implementation libs.aliyun.oss
+    implementation libs.tencent.cos
+    implementation libs.minio
+    implementation libs.qiniu.java.sdk
+    implementation libs.aws.sdk.s3
+
+    implementation libs.commons.lang3
+    implementation libs.commons.io
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

@@ -1,0 +1,17 @@
+description = 'PostgreSQL-based full-text search service'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-core')
+
+    api libs.spring.boot.starter.data.jpa
+    api libs.spring.boot.starter.webmvc
+    api libs.spring.boot.starter.validation
+    api libs.spring.boot.starter.jackson
+    api libs.swagger.core
+    api libs.fastjson2
+
+    testImplementation libs.testcontainers.postgresql
+    testImplementation libs.testcontainers.junit.jupiter
+    testRuntimeOnly libs.postgresql
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

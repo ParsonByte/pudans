@@ -1,0 +1,11 @@
+description = 'IAM synchronizer'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-feishu')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-dingtalk')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-ldap')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-scim')
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

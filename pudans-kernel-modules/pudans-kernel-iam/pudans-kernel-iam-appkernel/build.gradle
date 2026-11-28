@@ -1,0 +1,7 @@
+description = 'IAM application protocol aggregate'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-appkernel:pudans-kernel-iam-appkernel-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-appkernel:pudans-kernel-iam-appkernel-jwt')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-appkernel:pudans-kernel-iam-appkernel-oidc')
+}

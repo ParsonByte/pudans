@@ -1,0 +1,8 @@
+description = 'Audit service (operation audit, login logs, audit queries)'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-support')
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

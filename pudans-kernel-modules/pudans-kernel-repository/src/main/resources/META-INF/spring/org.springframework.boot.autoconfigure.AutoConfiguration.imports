@@ -1,0 +1,2 @@
+cn.tolim.pudans.repository.config.RepositoryAutoConfiguration
+cn.tolim.pudans.repository.config.RepositoryJpaAutoConfiguration

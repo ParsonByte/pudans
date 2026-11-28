@@ -1,0 +1,5 @@
+description = 'Email authentication'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-core')
+}

@@ -1,0 +1,21 @@
+description = 'Notification service (email, SMS, Feishu, DingTalk)'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-support')
+
+    api libs.spring.boot.starter.mail
+    api libs.spring.boot.starter.freemarker
+
+    api libs.aliyun.dysmsapi
+    api libs.aliyun.tea
+    api libs.aliyun.tea.openapi
+    api libs.aliyun.tea.util
+    api libs.tencentcloud.sms
+    api libs.qiniu.java.sdk
+
+    api libs.fastjson2
+    api libs.commons.lang3
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

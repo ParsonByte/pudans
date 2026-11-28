@@ -1,0 +1,6 @@
+description = 'IAM protocol core'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-appkernel:pudans-kernel-iam-appkernel-core')
+}

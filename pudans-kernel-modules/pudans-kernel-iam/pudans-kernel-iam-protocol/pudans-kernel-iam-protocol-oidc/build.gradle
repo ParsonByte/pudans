@@ -1,0 +1,10 @@
+description = 'OIDC provider (major rework)'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-protocol:pudans-kernel-iam-protocol-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-appkernel:pudans-kernel-iam-appkernel-oidc')
+    api project(':pudans-kernel-modules:pudans-kernel-audit')
+    api libs.spring.security.oauth2.authorization.server
+    api libs.jackson.databind
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

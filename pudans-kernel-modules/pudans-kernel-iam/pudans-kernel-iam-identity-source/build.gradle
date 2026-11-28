@@ -1,0 +1,9 @@
+description = 'IAM identity source aggregate'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-feishu')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-dingtalk')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-ldap')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-scim')
+}

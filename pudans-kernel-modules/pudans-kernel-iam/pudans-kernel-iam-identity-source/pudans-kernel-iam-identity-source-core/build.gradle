@@ -1,0 +1,6 @@
+description = 'IAM identity source core'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-core')
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

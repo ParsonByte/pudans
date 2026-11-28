@@ -1,0 +1,9 @@
+description = 'IAM application protocol core'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-communal')
+    api libs.bcprov.jdk18on
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

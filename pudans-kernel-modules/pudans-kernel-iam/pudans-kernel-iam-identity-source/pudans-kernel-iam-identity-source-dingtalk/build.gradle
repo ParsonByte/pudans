@@ -1,0 +1,10 @@
+description = 'DingTalk identity source'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-core')
+    api libs.aliyun.dingtalk
+    api libs.aliyun.dingtalk.sdk
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

@@ -1,0 +1,9 @@
+description = 'IAM protocol aggregate'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-protocol:pudans-kernel-iam-protocol-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-protocol:pudans-kernel-iam-protocol-jwt')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-protocol:pudans-kernel-iam-protocol-oidc')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-protocol:pudans-kernel-iam-protocol-cas')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-protocol:pudans-kernel-iam-protocol-saml')
+}

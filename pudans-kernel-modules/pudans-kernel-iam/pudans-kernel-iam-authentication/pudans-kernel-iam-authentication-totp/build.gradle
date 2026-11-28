@@ -1,0 +1,8 @@
+description = 'TOTP authentication (new)'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-core')
+    api libs.bundles.spissatus4j
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

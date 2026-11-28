@@ -1,0 +1,12 @@
+description = 'CAS protocol (new)'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-protocol:pudans-kernel-iam-protocol-core')
+    api project(':pudans-kernel-modules:pudans-kernel-audit')
+    api libs.mapstruct
+
+    annotationProcessor libs.mapstruct.processor
+    annotationProcessor libs.lombok.mapstruct.binding
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

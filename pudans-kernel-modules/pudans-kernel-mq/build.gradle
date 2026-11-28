@@ -1,0 +1,15 @@
+description = 'Message and event center: delivery, retry, dead letters, compensation'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-core')
+    api project(':pudans-communal:pudans-communal-mq')
+
+    api libs.spring.boot.starter.webmvc
+    api libs.spring.boot.starter.data.jpa
+    api libs.spring.boot.starter.validation
+    api libs.swagger.core
+    api libs.jackson.databind
+    api libs.jackson.datatype.jsr310
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

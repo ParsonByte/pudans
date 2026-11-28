@@ -1,0 +1,7 @@
+description = 'Feishu authentication'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication:pudans-kernel-iam-authentication-core')
+    api libs.oauth2.oidc.sdk
+    api libs.httpclient
+}

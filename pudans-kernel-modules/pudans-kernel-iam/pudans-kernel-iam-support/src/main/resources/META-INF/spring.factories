@@ -1,0 +1,2 @@
+org.springframework.context.ApplicationContextInitializer=\
+cn.tolim.pudans.iam.infra.context.PudansApplicationContextInitializer

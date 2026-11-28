@@ -1,0 +1,25 @@
+description = 'IAM core module'
+
+sourceSets.main.resources.exclude 'META-INF/spring.factories'
+
+dependencies {
+    api project(':pudans-communal:pudans-communal-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-communal')
+    api project(':pudans-contract:pudans-contract-iam')
+    api project(':pudans-contract:pudans-contract-repository')
+    api project(':pudans-contract:pudans-contract-notification')
+
+    api libs.spring.cloud.context
+    api libs.spring.boot.starter.data.redis
+    api libs.spring.boot.starter.session.data.redis
+    api libs.spring.boot.starter.cache
+    api libs.redisson.spring.boot.starter
+    api libs.spring.boot.starter.liquibase
+    api libs.freemarker
+    api libs.springdoc.openapi.starter.webmvc.ui
+    api libs.salvation2
+    api libs.bcprov.jdk18on
+    api libs.jetbrains.annotations
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

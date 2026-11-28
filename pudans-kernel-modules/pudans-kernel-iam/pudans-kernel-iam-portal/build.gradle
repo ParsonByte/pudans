@@ -1,0 +1,11 @@
+description = 'IAM portal'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-appkernel')
+    api project(':pudans-communal:pudans-communal-web')
+
+    api libs.spring.boot.starter.validation
+    api libs.springdoc.openapi.starter.webmvc.ui
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

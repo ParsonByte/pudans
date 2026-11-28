@@ -1,0 +1,11 @@
+description = 'Feishu identity source'
+
+dependencies {
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-core')
+    api project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-core')
+    api libs.libphonenumber
+
+    implementation libs.bundles.spissatus4j
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
