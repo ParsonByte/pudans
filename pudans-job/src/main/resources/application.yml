@@ -1,0 +1,46 @@
+server:
+  port: 8094
+
+spring:
+  application:
+    name: pudans-job
+  config:
+    import: optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP&refreshEnabled=true,optional:nacos:pudans-observability.yaml?group=DEFAULT_GROUP&refreshEnabled=false
+  cloud:
+    nacos:
+      config:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_CONFIG_ENABLED:true}
+      discovery:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_DISCOVERY_ENABLED:true}
+        metadata:
+          gateway.path: /apis/pudans.tolim.cn/v1alpha1/job/**
+  datasource:
+    url: ${PUDANS_DB_URL:jdbc:postgresql://127.0.0.1:5432/pudans_job}
+    username: ${PUDANS_DB_USER:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:job/changelog-master.xml
+
+management:
+  server:
+    port: ${PUDANS_MANAGEMENT_PORT:9094}
+    address: ${PUDANS_MANAGEMENT_ADDRESS:127.0.0.1}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false

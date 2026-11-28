@@ -1,0 +1,7 @@
+pudans:
+  internal:
+    token: repository-test-internal-token
+
+spissatus:
+  keys:
+    provider: memory

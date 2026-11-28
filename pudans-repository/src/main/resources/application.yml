@@ -1,0 +1,75 @@
+server:
+  port: 8091
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: pudans-repository
+  config:
+    import: optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP&refreshEnabled=true,optional:nacos:pudans-observability.yaml?group=DEFAULT_GROUP&refreshEnabled=false
+  cloud:
+    nacos:
+      config:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_CONFIG_ENABLED:true}
+      discovery:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_DISCOVERY_ENABLED:true}
+        metadata:
+          gateway.path: /apis/pudans.tolim.cn/v1alpha1/repository/**
+  datasource:
+    url: ${PUDANS_DB_URL:jdbc:postgresql://127.0.0.1:5432/pudans_repository}
+    username: ${PUDANS_DB_USER:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: pudans-repository
+      maximum-pool-size: ${PUDANS_DB_POOL_MAX:10}
+      minimum-idle: ${PUDANS_DB_POOL_MIN_IDLE:2}
+      connection-timeout: ${PUDANS_DB_CONNECTION_TIMEOUT_MS:30000}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  liquibase:
+    enabled: true
+    change-log: classpath:repository/changelog-master.xml
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: ${PUDANS_REPOSITORY_MAX_FILE_SIZE:100MB}
+      max-request-size: ${PUDANS_REPOSITORY_MAX_REQUEST_SIZE:110MB}
+      file-size-threshold: 1MB
+
+management:
+  server:
+    port: ${PUDANS_MANAGEMENT_PORT:9091}
+    address: ${PUDANS_MANAGEMENT_ADDRESS:127.0.0.1}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+spissatus:
+  keys:
+    provider: ${SPISSATUS_KEY_PROVIDER:memory}
+    file-directory: ${SPISSATUS_KEY_FILE_DIRECTORY:}
+    master-password: ${SPISSATUS_KEY_MASTER_PASSWORD:}
+    keystore-path: ${SPISSATUS_KEYSTORE_PATH:}
+    keystore-password: ${SPISSATUS_KEYSTORE_PASSWORD:}

@@ -1,0 +1,63 @@
+server:
+  port: 8092
+
+spring:
+  application:
+    name: pudans-notification
+  config:
+    import: optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP&refreshEnabled=true,optional:nacos:pudans-observability.yaml?group=DEFAULT_GROUP&refreshEnabled=false
+  cloud:
+    nacos:
+      config:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_CONFIG_ENABLED:true}
+      discovery:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_DISCOVERY_ENABLED:true}
+        metadata:
+          gateway.path: /apis/pudans.tolim.cn/v1alpha1/notification/**
+  datasource:
+    url: ${PUDANS_DB_URL:jdbc:postgresql://127.0.0.1:5432/pudans_notification}
+    username: ${PUDANS_DB_USER:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:notification/changelog-master.xml
+  mail:
+    host: ${PUDANS_MAIL_HOST:localhost}
+    port: ${PUDANS_MAIL_PORT:25}
+    username: ${PUDANS_MAIL_USERNAME:}
+    password: ${PUDANS_MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    test-connection: false
+    properties:
+      mail.smtp.auth: ${PUDANS_MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${PUDANS_MAIL_STARTTLS_ENABLED:false}
+      mail.smtp.ssl.enable: ${PUDANS_MAIL_SSL_ENABLED:false}
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+
+management:
+  server:
+    port: ${PUDANS_MANAGEMENT_PORT:9092}
+    address: ${PUDANS_MANAGEMENT_ADDRESS:127.0.0.1}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  health:
+    mail:
+      enabled: false

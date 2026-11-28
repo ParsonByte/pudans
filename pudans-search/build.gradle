@@ -1,0 +1,59 @@
+plugins {
+    alias(libs.plugins.spring.boot)
+}
+
+description = 'Search application'
+
+configurations {
+    docRuntimeOnly
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir rootProject.file('sql')
+        }
+    }
+    test {
+        resources {
+            srcDir rootProject.file('platform/nacos/config')
+        }
+    }
+}
+
+dependencies {
+    docRuntimeOnly project(':api-docs')
+    docRuntimeOnly libs.springdoc.openapi.starter.webmvc.api
+
+    implementation project(':pudans-communal:pudans-communal-web')
+    implementation project(':pudans-communal:pudans-communal-security')
+
+    implementation project(':pudans-kernel-modules:pudans-kernel-search')
+    implementation project(':pudans-contract:pudans-contract-search')
+
+    implementation libs.spring.boot.starter.webmvc
+    implementation libs.spring.boot.starter.security
+    implementation libs.spring.boot.starter.data.jpa
+    implementation libs.spring.boot.starter.actuator
+    implementation libs.spring.boot.starter.opentelemetry
+    implementation libs.micrometer.registry.prometheus
+    implementation project(':pudans-communal:pudans-communal-log-servlet')
+    implementation libs.spring.boot.starter.liquibase
+
+    implementation libs.spring.cloud.starter.loadbalancer
+    implementation libs.spring.cloud.starter.alibaba.nacos.discovery
+    implementation libs.spring.cloud.starter.alibaba.nacos.config
+
+    runtimeOnly libs.postgresql
+
+    testImplementation libs.spring.boot.starter.test
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+apply from: rootProject.file('gradle/openapi-app.gradle')
+
+openApi {
+    apiGroup = 'apis_search.v1alpha1'
+    port = 18096
+    mainClassName = 'cn.tolim.pudans.search.SearchApplication'
+}
