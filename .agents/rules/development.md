@@ -51,6 +51,8 @@ Before committing or drafting a pull request, read `.agents/rules/commit.md` and
 - Use PostgreSQL only. Add DB changes under `sql/<service>`; never in module resources.
 - Do not add mock, fake, demo or seeded business data. Tests may mock collaborators but must not
   invent product data.
+- User-facing global feedback uses antd `notification.useNotification()` with a rendered
+  `contextHolder`. Do not use `Alert` or static `message` for notices; keep form validation inline.
 - Java comments are English single-line `//`; do not add comments to non-Java files.
 - Do not regenerate `bootJar` while a local backend is running. Run local backends from a copied
   jar so a rebuild cannot corrupt the running artifact.

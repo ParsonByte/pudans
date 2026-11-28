@@ -5,7 +5,7 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 import "./global.less";
 
 export const metadata: Metadata = {
-  title: "Pudans 登录",
+  title: "登录 · PUDANS",
   description: "企业身份与权限管理平台",
 };
 
