@@ -33,3 +33,7 @@ out/
 /.nb-gradle/
 
 .vscode/
+
+.claude/
+.playwright-mcp/
+.DS_Store
