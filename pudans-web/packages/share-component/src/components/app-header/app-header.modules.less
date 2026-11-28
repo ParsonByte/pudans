@@ -576,6 +576,39 @@
   box-shadow: var(--pudans-header-shadow);
 }
 
+.pudans-app-header__console-panel {
+  width: 320px;
+  padding: 10px;
+  background: var(--pudans-header-bg);
+  border: 1px solid var(--pudans-header-border);
+  border-radius: 8px;
+  box-shadow: var(--pudans-header-shadow);
+  animation: pudans-app-header-reveal 140ms ease-out;
+}
+
+.pudans-app-header__console-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  color: var(--pudans-header-text);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.pudans-app-header__console-item:hover,
+.pudans-app-header__console-item:focus-visible {
+  color: var(--pudans-header-brand);
+  background: var(--pudans-header-brand-soft);
+  outline: none;
+}
+
 .pudans-login-gate {
   display: grid;
   width: 100%;

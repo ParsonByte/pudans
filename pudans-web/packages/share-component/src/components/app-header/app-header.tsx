@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type FocusEvent } from "react";
 
-import type { UserInfo } from "@pudans-dev/api-client";
+import { apiClient, type UserInfo } from "@pudans-dev/api-client";
 import { theme } from "antd";
 
 import { useLoginState } from "../../hooks/use-login-state";
@@ -15,7 +15,7 @@ import { MegaMenu } from "./header-mega-menu";
 import { DEFAULT_APP_HEADER_MENUS } from "./header-menus";
 import { NavItem } from "./header-nav-item";
 import { SearchBox } from "./header-search-box";
-import type { AppHeaderProps, AppHeaderUser } from "./header-types";
+import type { AppHeaderConsole, AppHeaderProps, AppHeaderUser } from "./header-types";
 import { WorkspaceButton } from "./header-workspace-button";
 
 import "./app-header.modules.less";
@@ -30,9 +30,11 @@ function toHeaderUser(user: UserInfo): AppHeaderUser {
 
 export function AppHeader({
   actions,
+  brandHref = "/",
   brandName = "PUDANS",
   className,
   consoleHref = "/console",
+  consoles,
   docsHref = "/docs",
   loginGateEnabled = true,
   loginHref = "/login",
@@ -63,6 +65,41 @@ export function AppHeader({
 
   const activeMenu = menus.find((menu) => menu.key === activeMenuKey);
   const resolvedUser = user ?? (loginState.user ? toHeaderUser(loginState.user) : undefined);
+  const [portalConsoles, setPortalConsoles] = useState<AppHeaderConsole[]>([]);
+  const resolvedUserId = resolvedUser?.id;
+
+  useEffect(() => {
+    if (consoles !== undefined || !resolvedUserId) {
+      setPortalConsoles([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    apiClient.iam.portal
+      .apps()
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+        const apps = (response.data.result?.apps ?? [])
+          .map((app) => ({
+            href: app.launchUrl ?? "",
+            label: app.name ?? app.appCode ?? "",
+          }))
+          .filter((app) => app.href && app.label);
+        setPortalConsoles(apps);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPortalConsoles([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [consoles, resolvedUserId]);
   const userLoading = loginStateEnabled && !user && loginState.isLoading;
   const anonymous = !resolvedUser && (loginStateEnabled
     ? loginState.status === "anonymous" || loginState.status === "error"
@@ -178,7 +215,7 @@ export function AppHeader({
             }}
           />
           <span aria-hidden="true" className="pudans-app-header__divider" />
-          <Brand brandName={brandName} logoSrc={logoSrc} />
+          <Brand brandName={brandName} href={brandHref} logoSrc={logoSrc} />
           <WorkspaceButton href={consoleHref} />
           <nav aria-label="主导航" className="pudans-app-header__nav">
             {menus.map((menu) => (
@@ -206,14 +243,13 @@ export function AppHeader({
           ) : null}
           {actions ?? (
             <HeaderActions
-              consoleHref={consoleHref}
+              consoles={consoles ?? portalConsoles}
               docsHref={docsHref}
               getPopupContainer={() => rootRef.current ?? document.body}
               loading={userLoading}
               loginHref={loginHref}
               onAccessKeyClick={onAccessKeyClick}
               onAccountCenterClick={onAccountCenterClick}
-              onConsoleClick={onConsoleClick}
               onDocsClick={onDocsClick}
               onLoginClick={onLoginClick}
               onLogout={resolvedLogout}

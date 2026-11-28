@@ -7,6 +7,11 @@ export type AppHeaderUser = {
   id?: string;
 };
 
+export type AppHeaderConsole = {
+  href: string;
+  label: string;
+};
+
 export type AppHeaderMenuItem = {
   key: string;
   label: ReactNode;
@@ -31,9 +36,11 @@ export type AppHeaderMenu = {
 
 export type AppHeaderProps = {
   actions?: ReactNode;
+  brandHref?: string;
   brandName?: string;
   className?: string;
   consoleHref?: string;
+  consoles?: AppHeaderConsole[];
   docsHref?: string;
   loginGateEnabled?: boolean;
   loginHref?: string;
