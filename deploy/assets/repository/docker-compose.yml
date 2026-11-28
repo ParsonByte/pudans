@@ -1,0 +1,62 @@
+name: pudans-repository
+
+x-pudans-service: &pudans-service
+  restart: unless-stopped
+  env_file:
+    - ../.env
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+  networks:
+    - pudans
+
+services:
+  repository:
+    <<: *pudans-service
+    image: ${PUDANS_REGISTRY:-pudans}/repository:${PUDANS_TAG:-local}
+    build:
+      context: ../../..
+      dockerfile: deploy/assets/Dockerfile
+      args:
+        SERVICE: repository
+    container_name: pudans-repository
+    environment:
+      PUDANS_ENVIRONMENT: ${PUDANS_ENVIRONMENT:-production}
+      PUDANS_NACOS_ADDR: ${PUDANS_NACOS_ADDR:-nacos:8848}
+      PUDANS_MANAGEMENT_ADDRESS: 0.0.0.0
+      PUDANS_MANAGEMENT_PORT: "9091"
+      PUDANS_INTERNAL_TOKEN: ${PUDANS_INTERNAL_TOKEN:?set PUDANS_INTERNAL_TOKEN}
+      PUDANS_DB_URL: jdbc:postgresql://${PUDANS_DB_HOST:-postgresql}:${PUDANS_DB_PORT:-5432}/pudans_repository
+      PUDANS_DB_USER: ${PUDANS_DB_USER:?set PUDANS_DB_USER}
+      PUDANS_DB_PASSWORD: ${PUDANS_DB_PASSWORD:?set PUDANS_DB_PASSWORD}
+      PUDANS_REPOSITORY_DEFAULT_PROVIDER: ${PUDANS_REPOSITORY_DEFAULT_PROVIDER:-local}
+      PUDANS_REPOSITORY_LOCAL_DIR: ${PUDANS_REPOSITORY_LOCAL_DIR:-/var/lib/pudans/repository}
+      SPISSATUS_KEY_PROVIDER: ${SPISSATUS_KEY_PROVIDER:-memory}
+      SPISSATUS_KEY_FILE_DIRECTORY: ${SPISSATUS_KEY_FILE_DIRECTORY:-/var/lib/pudans/keys}
+      SPISSATUS_KEY_MASTER_PASSWORD: ${SPISSATUS_KEY_MASTER_PASSWORD:-}
+      SPISSATUS_KEYSTORE_PATH: ${SPISSATUS_KEYSTORE_PATH:-}
+      SPISSATUS_KEYSTORE_PASSWORD: ${SPISSATUS_KEYSTORE_PASSWORD:-}
+      PUDANS_LOG_FILE: /var/log/pudans/pudans-repository.json
+      PUDANS_LOG_STRUCTURED: ${PUDANS_LOG_STRUCTURED:-true}
+      PUDANS_OTLP_TRACING_ENDPOINT: ${PUDANS_OTLP_TRACING_ENDPOINT:-http://jaeger:4318/v1/traces}
+      PUDANS_TRACING_EXPORT_ENABLED: ${PUDANS_TRACING_EXPORT_ENABLED:-true}
+      PUDANS_TRACING_SAMPLING: ${PUDANS_TRACING_SAMPLING:-0.1}
+      JAVA_OPTS: "${PUDANS_JAVA_OPTS:--XX:MaxRAMPercentage=75.0 -XX:+UseG1GC}"
+    ports:
+      - "${PUDANS_MANAGEMENT_BIND:-127.0.0.1}:9091:9091"
+    volumes:
+      - repository-data:/var/lib/pudans/repository
+      - repository-keys:/var/lib/pudans/keys
+      - repository-logs:/var/log/pudans
+
+networks:
+  pudans:
+    external: true
+    name: ${PUDANS_DOCKER_NETWORK:-1panel-network}
+
+volumes:
+  repository-data:
+  repository-keys:
+  repository-logs:

@@ -1,0 +1,56 @@
+name: pudans-iam
+
+x-pudans-service: &pudans-service
+  restart: unless-stopped
+  env_file:
+    - ../.env
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+  networks:
+    - pudans
+
+services:
+  iam:
+    <<: *pudans-service
+    image: ${PUDANS_REGISTRY:-pudans}/iam:${PUDANS_TAG:-local}
+    build:
+      context: ../../..
+      dockerfile: deploy/assets/Dockerfile
+      args:
+        SERVICE: iam
+    container_name: pudans-iam
+    environment:
+      PUDANS_ENVIRONMENT: ${PUDANS_ENVIRONMENT:-production}
+      PUDANS_NACOS_ADDR: ${PUDANS_NACOS_ADDR:-nacos:8848}
+      PUDANS_MANAGEMENT_ADDRESS: 0.0.0.0
+      PUDANS_MANAGEMENT_PORT: "9081"
+      PUDANS_INTERNAL_TOKEN: ${PUDANS_INTERNAL_TOKEN:?set PUDANS_INTERNAL_TOKEN}
+      PUDANS_JWT_SECRET: ${PUDANS_JWT_SECRET:?set PUDANS_JWT_SECRET}
+      PUDANS_DB_URL: jdbc:postgresql://${PUDANS_DB_HOST:-postgresql}:${PUDANS_DB_PORT:-5432}/pudans_iam
+      PUDANS_DB_USER: ${PUDANS_DB_USER:?set PUDANS_DB_USER}
+      PUDANS_DB_PASSWORD: ${PUDANS_DB_PASSWORD:?set PUDANS_DB_PASSWORD}
+      PUDANS_REDIS_HOST: ${PUDANS_REDIS_HOST:-redis}
+      PUDANS_REDIS_PORT: ${PUDANS_REDIS_PORT:-6379}
+      PUDANS_HOME_ORIGIN: ${PUDANS_HOME_ORIGIN:?set PUDANS_HOME_ORIGIN}
+      PUDANS_COOKIE_SECURE: ${PUDANS_COOKIE_SECURE:-true}
+      PUDANS_LOG_FILE: /var/log/pudans/pudans-iam.json
+      PUDANS_LOG_STRUCTURED: ${PUDANS_LOG_STRUCTURED:-true}
+      PUDANS_OTLP_TRACING_ENDPOINT: ${PUDANS_OTLP_TRACING_ENDPOINT:-http://jaeger:4318/v1/traces}
+      PUDANS_TRACING_EXPORT_ENABLED: ${PUDANS_TRACING_EXPORT_ENABLED:-true}
+      PUDANS_TRACING_SAMPLING: ${PUDANS_TRACING_SAMPLING:-0.1}
+      JAVA_OPTS: "${PUDANS_JAVA_OPTS:--XX:MaxRAMPercentage=75.0 -XX:+UseG1GC}"
+    ports:
+      - "${PUDANS_MANAGEMENT_BIND:-127.0.0.1}:9081:9081"
+    volumes:
+      - iam-logs:/var/log/pudans
+
+networks:
+  pudans:
+    external: true
+    name: ${PUDANS_DOCKER_NETWORK:-1panel-network}
+
+volumes:
+  iam-logs:

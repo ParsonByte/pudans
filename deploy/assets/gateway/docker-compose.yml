@@ -1,0 +1,59 @@
+name: pudans-gateway
+
+x-pudans-service: &pudans-service
+  restart: unless-stopped
+  env_file:
+    - ../.env
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+  networks:
+    - pudans
+
+services:
+  gateway:
+    <<: *pudans-service
+    image: ${PUDANS_REGISTRY:-pudans}/gateway:${PUDANS_TAG:-local}
+    build:
+      context: ../../..
+      dockerfile: deploy/assets/Dockerfile
+      args:
+        SERVICE: gateway
+    container_name: pudans-gateway
+    environment:
+      PUDANS_ENVIRONMENT: ${PUDANS_ENVIRONMENT:-production}
+      PUDANS_NACOS_ADDR: ${PUDANS_NACOS_ADDR:-nacos:8848}
+      PUDANS_MANAGEMENT_ADDRESS: 0.0.0.0
+      PUDANS_MANAGEMENT_PORT: "9080"
+      PUDANS_INTERNAL_TOKEN: ${PUDANS_INTERNAL_TOKEN:?set PUDANS_INTERNAL_TOKEN}
+      PUDANS_JWT_SECRET: ${PUDANS_JWT_SECRET:?set PUDANS_JWT_SECRET}
+      PUDANS_LOG_FILE: /var/log/pudans/pudans-gateway.json
+      PUDANS_LOG_STRUCTURED: ${PUDANS_LOG_STRUCTURED:-true}
+      PUDANS_OTLP_TRACING_ENDPOINT: ${PUDANS_OTLP_TRACING_ENDPOINT:-http://jaeger:4318/v1/traces}
+      PUDANS_TRACING_EXPORT_ENABLED: ${PUDANS_TRACING_EXPORT_ENABLED:-true}
+      PUDANS_TRACING_SAMPLING: ${PUDANS_TRACING_SAMPLING:-0.1}
+      PUDANS_TRUSTED_PROXIES: ${PUDANS_TRUSTED_PROXIES:-.*}
+      PUDANS_CORS_ALLOWED_ORIGINS: ${PUDANS_CORS_ALLOWED_ORIGINS:?set PUDANS_CORS_ALLOWED_ORIGINS}
+      PUDANS_HOME_URI: ${PUDANS_HOME_URI:?set PUDANS_HOME_URI}
+      PUDANS_LOGIN_URI: ${PUDANS_LOGIN_URI:?set PUDANS_LOGIN_URI}
+      PUDANS_LOGIN_PAGE_URL: ${PUDANS_LOGIN_PAGE_URL:-/login}
+      PUDANS_COOKIE_SECURE: ${PUDANS_COOKIE_SECURE:-true}
+      PUDANS_SESSION_COOKIE_NAME: ${PUDANS_SESSION_COOKIE_NAME:-PUDANS_SID}
+      PUDANS_GATEWAY_SESSION_ENABLED: ${PUDANS_GATEWAY_SESSION_ENABLED:-true}
+      PUDANS_SENTINEL_DASHBOARD: ${PUDANS_SENTINEL_DASHBOARD:-sentinel:8858}
+      JAVA_OPTS: "${PUDANS_JAVA_OPTS:--XX:MaxRAMPercentage=75.0 -XX:+UseG1GC}"
+    ports:
+      - "${PUDANS_GATEWAY_BIND:-0.0.0.0}:${PUDANS_GATEWAY_PORT:-8080}:8080"
+      - "${PUDANS_MANAGEMENT_BIND:-127.0.0.1}:9080:9080"
+    volumes:
+      - gateway-logs:/var/log/pudans
+
+networks:
+  pudans:
+    external: true
+    name: ${PUDANS_DOCKER_NETWORK:-1panel-network}
+
+volumes:
+  gateway-logs:
