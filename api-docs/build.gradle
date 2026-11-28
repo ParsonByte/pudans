@@ -1,0 +1,383 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+description = 'OpenAPI 3.0 document generation support'
+
+dependencies {
+    compileOnly libs.springdoc.openapi.starter.webmvc.api
+    compileOnly libs.swagger.core
+    compileOnly libs.spring.boot.starter.webmvc
+    compileOnly libs.spring.boot.starter.security
+    compileOnly libs.redisson.spring.boot.starter
+    compileOnly libs.liquibase.core
+    compileOnly project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source:pudans-kernel-iam-identity-source-core')
+}
+
+def openApiDir = layout.projectDirectory.dir('openapi/v3_0')
+def aggregatedVersion = project.version.toString()
+
+def openApiServices = [
+        [projectPath: ':pudans-iam', fileName: 'apis_iam.v1alpha1.json'],
+        [projectPath: ':pudans-repository', fileName: 'apis_repository.v1alpha1.json'],
+        [projectPath: ':pudans-notification', fileName: 'apis_notification.v1alpha1.json'],
+        [projectPath: ':pudans-mq', fileName: 'apis_mq.v1alpha1.json'],
+        [projectPath: ':pudans-job', fileName: 'apis_job.v1alpha1.json'],
+        [projectPath: ':pudans-search', fileName: 'apis_search.v1alpha1.json']
+]
+
+def methodNames = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'] as Set
+
+def canonicalJson
+canonicalJson = { value ->
+    if (value instanceof Map) {
+        def sorted = new TreeMap()
+        value.each { key, nested -> sorted[key.toString()] = canonicalJson(nested) }
+        return JsonOutput.toJson(sorted)
+    }
+    if (value instanceof List) {
+        return JsonOutput.toJson(value.collect { canonicalJson(it) })
+    }
+    return JsonOutput.toJson(value)
+}
+
+def rewriteSchemaRefs
+rewriteSchemaRefs = { node, renames ->
+    if (node instanceof Map) {
+        node.each { key, value ->
+            if (key == '$ref' && value instanceof String
+                    && value.startsWith('#/components/schemas/')) {
+                def schemaName = value.substring('#/components/schemas/'.length())
+                if (renames.containsKey(schemaName)) {
+                    node[key] = '#/components/schemas/' + renames[schemaName]
+                }
+            } else {
+                rewriteSchemaRefs(value, renames)
+            }
+        }
+    } else if (node instanceof List) {
+        node.each { rewriteSchemaRefs(it, renames) }
+    }
+}
+
+def sortDeep
+sortDeep = { value ->
+    if (value instanceof Map) {
+        def sorted = new TreeMap()
+        value.each { key, nested -> sorted[key.toString()] = sortDeep(nested) }
+        return sorted
+    }
+    if (value instanceof List) {
+        return value.collect { sortDeep(it) }
+    }
+    return value
+}
+
+def loadOpenApiDocuments = { ->
+    def slurper = new JsonSlurper()
+    def documents = new LinkedHashMap<String, Object>()
+    openApiServices.each { service ->
+        def file = openApiDir.file(service.fileName).asFile
+        if (!file.isFile()) {
+            throw new GradleException("Missing OpenAPI document ${file}; run the generate task first")
+        }
+        def document
+        try {
+            document = slurper.parse(file)
+        } catch (Exception exception) {
+            throw new GradleException("${file} is not valid JSON: ${exception.message}", exception)
+        }
+        if (!(document instanceof Map)
+                || !(document.openapi instanceof String)
+                || !document.openapi.startsWith('3.0')) {
+            throw new GradleException("${file} is not an OpenAPI 3.0 document")
+        }
+        documents[service.projectPath] = document
+    }
+    return documents
+}
+
+tasks.register('mergeOpenApiDocs') {
+    group = 'documentation'
+    description = 'Merge generated per-service OpenAPI 3.0 documents into aggregated.json.'
+    dependsOn openApiServices.collect { "${it.projectPath}:generateOpenApiDocs" }
+    inputs.files(openApiServices.collect { openApiDir.file(it.fileName) })
+    outputs.file(openApiDir.file('aggregated.json'))
+    notCompatibleWithConfigurationCache(
+            'Reads files produced by forked application runs in the same build invocation')
+    doLast {
+        def documents = loadOpenApiDocuments()
+        def schemaOwners = new TreeMap<String, String>()
+        def mergedComponents = new TreeMap<String, Object>()
+        def componentSections = [
+                'schemas', 'securitySchemes', 'parameters', 'responses',
+                'requestBodies', 'headers', 'examples', 'links', 'callbacks'
+        ]
+        def mergedPaths = new TreeMap<String, Object>()
+        def mergedTags = new TreeMap<String, Object>()
+
+        documents.each { projectPath, document ->
+            def serviceSuffix = projectPath.substring(':pudans-'.length())
+            def renames = new LinkedHashMap<String, String>()
+            def schemas = document.components?.schemas
+            if (schemas instanceof Map) {
+                schemas.each { schemaName, schema ->
+                    def canonical = canonicalJson(schema)
+                    def owner = schemaOwners.get(schemaName.toString())
+                    if (owner == null) {
+                        schemaOwners[schemaName.toString()] = canonical
+                    } else if (owner != canonical) {
+                        def renamed = "${schemaName}_${serviceSuffix}".toString()
+                        if (schemaOwners.containsKey(renamed)) {
+                            throw new GradleException(
+                                    "Schema ${schemaName} collides in ${projectPath} and cannot be renamed to ${renamed}")
+                        }
+                        renames[schemaName.toString()] = renamed
+                        schemaOwners[renamed] = canonical
+                    }
+                }
+            }
+            if (!renames.isEmpty()) {
+                def renamedSchemas = new TreeMap<String, Object>()
+                schemas.each { schemaName, schema ->
+                    renamedSchemas[renames.get(schemaName.toString()) ?: schemaName.toString()] = schema
+                }
+                document.components.schemas = renamedSchemas
+                rewriteSchemaRefs(document, renames)
+            }
+
+            def paths = document.paths
+            if (!(paths instanceof Map) || paths.isEmpty()) {
+                throw new GradleException("${projectPath} generated an OpenAPI document without paths")
+            }
+            paths.each { path, pathItem ->
+                def existingPath = mergedPaths.get(path.toString())
+                if (existingPath == null) {
+                    mergedPaths[path.toString()] = pathItem
+                    return
+                }
+                pathItem.each { method, operation ->
+                    if (!methodNames.contains(method.toString())) {
+                        return
+                    }
+                    def existingOperation = existingPath.get(method.toString())
+                    if (existingOperation == null) {
+                        existingPath[method.toString()] = operation
+                    } else if (canonicalJson(existingOperation) != canonicalJson(operation)) {
+                        throw new GradleException(
+                                "Conflicting ${method} ${path} operation in ${projectPath}")
+                    }
+                }
+            }
+
+            def tags = document.tags
+            if (tags instanceof List) {
+                tags.each { tag ->
+                    if (tag instanceof Map && tag.name != null) {
+                        mergedTags.putIfAbsent(tag.name.toString(), tag)
+                    }
+                }
+            }
+
+            def components = document.components
+            if (components instanceof Map) {
+                componentSections.each { section ->
+                    def source = components[section]
+                    if (!(source instanceof Map)) {
+                        return
+                    }
+                    def target = mergedComponents.computeIfAbsent(section) { new TreeMap<String, Object>() }
+                    source.each { name, value ->
+                        def existing = target.get(name.toString())
+                        if (existing == null) {
+                            target[name.toString()] = value
+                        } else if (canonicalJson(existing) != canonicalJson(value)) {
+                            throw new GradleException(
+                                    "Conflicting components.${section}.${name} in ${projectPath}")
+                        }
+                    }
+                }
+            }
+        }
+
+        def aggregated = new LinkedHashMap<String, Object>()
+        aggregated.openapi = '3.0.1'
+        aggregated.info = [
+                title      : 'Pudans API',
+                description: 'Aggregated OpenAPI 3.0 contract for the Pudans services.',
+                version    : aggregatedVersion
+        ]
+        aggregated.servers = [[
+                url        : 'http://localhost:8080',
+                description: 'Pudans API gateway'
+        ]]
+        if (!mergedTags.isEmpty()) {
+            aggregated.tags = mergedTags.values().toList()
+        }
+        aggregated.paths = mergedPaths
+        if (!mergedComponents.isEmpty()) {
+            aggregated.components = mergedComponents
+        }
+
+        def outputFile = openApiDir.file('aggregated.json').asFile
+        outputFile.parentFile.mkdirs()
+        def rendered = JsonOutput.prettyPrint(JsonOutput.toJson(sortDeep(aggregated)))
+        outputFile.text = rendered.endsWith('\n') ? rendered : rendered + '\n'
+        logger.lifecycle("Merged ${documents.size()} OpenAPI documents into ${outputFile} " +
+                "(${mergedPaths.size()} paths, ${schemaOwners.size()} schemas)")
+    }
+}
+
+def resolveJsonPointer = { document, reference ->
+    if (!(reference instanceof String) || !reference.startsWith('#/')) {
+        return false
+    }
+    def current = document
+    for (String rawPart : reference.substring(2).split('/')) {
+        def part = rawPart.replace('~1', '/').replace('~0', '~')
+        if (current instanceof Map) {
+            current = current[part]
+        } else if (current instanceof List && part.isInteger()) {
+            def index = part.toInteger()
+            current = index >= 0 && index < current.size() ? current[index] : null
+        } else {
+            current = null
+        }
+        if (current == null) {
+            return false
+        }
+    }
+    return true
+}
+
+def collectReferences
+collectReferences = { node, references ->
+    if (node instanceof Map) {
+        node.each { key, value ->
+            if (key == '$ref' && value instanceof String) {
+                references << value
+            } else {
+                collectReferences(value, references)
+            }
+        }
+    } else if (node instanceof List) {
+        node.each { collectReferences(it, references) }
+    }
+}
+
+def validateDocument = { fileName, document, errors ->
+    if (!(document.openapi instanceof String) || !document.openapi.startsWith('3.0')) {
+        errors << "${fileName}: openapi is not 3.0 (${document.openapi})"
+    }
+    if (!(document.info instanceof Map) || !(document.info.version instanceof String)) {
+        errors << "${fileName}: missing info.version"
+    }
+    def paths = document.paths
+    if (!(paths instanceof Map) || paths.isEmpty()) {
+        errors << "${fileName}: paths is empty"
+        return 0
+    }
+    def operationCount = 0
+    paths.each { path, pathItem ->
+        if (!(path instanceof String) || !path.startsWith('/')) {
+            errors << "${fileName}: invalid path ${path}"
+        }
+        if (!(pathItem instanceof Map)) {
+            errors << "${fileName}: path ${path} is not an object"
+            return
+        }
+        pathItem.each { method, operation ->
+            if (!methodNames.contains(method.toString())) {
+                return
+            }
+            operationCount++
+            if (!(operation instanceof Map) || !(operation.responses instanceof Map)
+                    || operation.responses.isEmpty()) {
+                errors << "${fileName}: ${method.toString().toUpperCase()} ${path} has no responses"
+            }
+        }
+    }
+    def references = [] as Set
+    collectReferences(document, references)
+    references.each { reference ->
+        if (!resolveJsonPointer(document, reference)) {
+            errors << "${fileName}: unresolved reference ${reference}"
+        }
+    }
+    return operationCount
+}
+
+tasks.register('validateOpenApiDocs') {
+    group = 'documentation'
+    description = 'Validate generated OpenAPI 3.0 documents and the aggregated contract.'
+    dependsOn 'mergeOpenApiDocs'
+    inputs.files(openApiServices.collect { openApiDir.file(it.fileName) })
+    inputs.file(openApiDir.file('aggregated.json'))
+    notCompatibleWithConfigurationCache(
+            'Validates files produced by forked application runs in the same build invocation')
+    doLast {
+        def slurper = new JsonSlurper()
+        def errors = []
+        def serviceDocuments = new LinkedHashMap<String, Object>()
+        def operationTotal = 0
+        openApiServices.each { service ->
+            def file = openApiDir.file(service.fileName).asFile
+            if (!file.isFile()) {
+                errors << "${service.fileName}: missing"
+                return
+            }
+            def document
+            try {
+                document = slurper.parse(file)
+            } catch (Exception exception) {
+                errors << "${service.fileName}: invalid JSON (${exception.message})"
+                return
+            }
+            serviceDocuments[service.fileName] = document
+            operationTotal += validateDocument(service.fileName, document, errors)
+        }
+
+        def aggregatedFile = openApiDir.file('aggregated.json').asFile
+        if (!aggregatedFile.isFile()) {
+            errors << 'aggregated.json: missing'
+        } else {
+            def aggregated
+            try {
+                aggregated = slurper.parse(aggregatedFile)
+            } catch (Exception exception) {
+                errors << "aggregated.json: invalid JSON (${exception.message})"
+                aggregated = null
+            }
+            if (aggregated != null) {
+                validateDocument('aggregated.json', aggregated, errors)
+                serviceDocuments.each { fileName, document ->
+                    document.paths.each { path, pathItem ->
+                        def aggregatedPath = aggregated.paths?.get(path)
+                        if (!(aggregatedPath instanceof Map)) {
+                            errors << "aggregated.json: missing path ${path} from ${fileName}"
+                            return
+                        }
+                        pathItem.each { method, operation ->
+                            if (methodNames.contains(method.toString())
+                                    && !(aggregatedPath.get(method.toString()) instanceof Map)) {
+                                errors << "aggregated.json: missing ${method.toString().toUpperCase()} ${path} from ${fileName}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new GradleException("OpenAPI validation failed:\n - " + errors.join('\n - '))
+        }
+        def aggregated = slurper.parse(aggregatedFile)
+        logger.lifecycle("Validated ${serviceDocuments.size() + 1} OpenAPI 3.0 documents: " +
+                "${operationTotal} service operations, ${aggregated.paths.size()} aggregated paths")
+    }
+}
+
+tasks.register('generateOpenApiDocs') {
+    group = 'documentation'
+    description = 'Generate per-service OpenAPI 3.0 documents, merge them, and validate the result.'
+    dependsOn 'mergeOpenApiDocs', 'validateOpenApiDocs'
+}

@@ -1,0 +1,5 @@
+cn.tolim.pudans.apidocs.OpenApiDocAutoConfiguration
+cn.tolim.pudans.apidocs.OpenApiDocSecurityAutoConfiguration
+cn.tolim.pudans.apidocs.RedissonDocAutoConfiguration
+cn.tolim.pudans.apidocs.LiquibaseDocAutoConfiguration
+cn.tolim.pudans.apidocs.IdentitySourceDocAutoConfiguration

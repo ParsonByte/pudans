@@ -1,0 +1,1272 @@
+{
+  "components": {
+    "schemas": {
+      "ApiResponseExecutorStatusResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExecutorStatusResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseJobDefinitionResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/JobDefinitionResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseJobExecutionResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/JobExecutionResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseJobExecutionStatsResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/JobExecutionStatsResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseListJobHandlerDescriptor": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/JobHandlerDescriptor"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseListScheduledJobInfo": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduledJobInfo"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponsePageResponseJobDefinitionResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResponseJobDefinitionResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponsePageResponseJobExecutionResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResponseJobExecutionResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseVoid": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ExecutorStatusResponse": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "enabledJobCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "generatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "handlerNames": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "instanceName": {
+            "type": "string"
+          },
+          "jobDefinitionCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "queuedExecutionCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "runningExecutionCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "scheduledJobCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "workerActiveThreads": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "workerPoolSize": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "workerQueueSize": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "zone": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "JobDefinitionRequest": {
+        "properties": {
+          "blockStrategy": {
+            "enum": [
+              "PARALLEL",
+              "SERIAL",
+              "DISCARD"
+            ],
+            "type": "string"
+          },
+          "code": {
+            "maxLength": 100,
+            "minLength": 0,
+            "pattern": "[A-Za-z0-9_.-]+",
+            "type": "string"
+          },
+          "cronExpression": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "handlerName": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "initialDelayMillis": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxRetries": {
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "params": {
+            "type": "string"
+          },
+          "periodMillis": {
+            "exclusiveMinimum": true,
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "retryIntervalSeconds": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "scheduleType": {
+            "enum": [
+              "CRON",
+              "FIXED_RATE",
+              "FIXED_DELAY",
+              "MANUAL"
+            ],
+            "type": "string"
+          },
+          "timeoutSeconds": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "handlerName",
+          "name",
+          "scheduleType"
+        ],
+        "type": "object"
+      },
+      "JobDefinitionResponse": {
+        "properties": {
+          "blockStrategy": {
+            "enum": [
+              "PARALLEL",
+              "SERIAL",
+              "DISCARD"
+            ],
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "createBy": {
+            "type": "string"
+          },
+          "createTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cronExpression": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "handlerName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "initialDelayMillis": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "maxRetries": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nextFireTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "params": {
+            "type": "string"
+          },
+          "periodMillis": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "retryIntervalSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "scheduleType": {
+            "enum": [
+              "CRON",
+              "FIXED_RATE",
+              "FIXED_DELAY",
+              "MANUAL"
+            ],
+            "type": "string"
+          },
+          "scheduled": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ENABLED",
+              "DISABLED"
+            ],
+            "type": "string"
+          },
+          "timeoutSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "updateBy": {
+            "type": "string"
+          },
+          "updateTime": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "JobExecutionResponse": {
+        "properties": {
+          "attempt": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "cancelRequested": {
+            "type": "boolean"
+          },
+          "createTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "durationMs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "errorMessage": {
+            "type": "string"
+          },
+          "handlerName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "instanceName": {
+            "type": "string"
+          },
+          "jobCode": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "jobName": {
+            "type": "string"
+          },
+          "maxAttempts": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "params": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "retryOfExecutionId": {
+            "type": "string"
+          },
+          "scheduledTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "SUCCESS",
+              "FAILED",
+              "TIMEOUT",
+              "SKIPPED",
+              "CANCELED"
+            ],
+            "type": "string"
+          },
+          "triggerType": {
+            "enum": [
+              "SCHEDULED",
+              "MANUAL",
+              "RETRY"
+            ],
+            "type": "string"
+          },
+          "triggeredBy": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "JobExecutionStatsResponse": {
+        "properties": {
+          "canceledCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "failedCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "lastExecution": {
+            "$ref": "#/components/schemas/LastExecution"
+          },
+          "queuedCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "runningCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "skippedCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "successCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "timeoutCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalCount": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "JobHandlerDescriptor": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "handlerClass": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "JobTriggerRequest": {
+        "properties": {
+          "params": {
+            "type": "string"
+          },
+          "triggeredBy": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "LastExecution": {
+        "properties": {
+          "durationMs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "SUCCESS",
+              "FAILED",
+              "TIMEOUT",
+              "SKIPPED",
+              "CANCELED"
+            ],
+            "type": "string"
+          },
+          "triggerType": {
+            "enum": [
+              "SCHEDULED",
+              "MANUAL",
+              "RETRY"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseJobDefinitionResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/JobDefinitionResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PageResponseJobExecutionResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/JobExecutionResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ScheduledJobInfo": {
+        "properties": {
+          "jobCode": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "nextFireTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "scheduleType": {
+            "enum": [
+              "CRON",
+              "FIXED_RATE",
+              "FIXED_DELAY",
+              "MANUAL"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "pudans-job",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.1",
+  "paths": {
+    "/apis/pudans.tolim.cn/v1alpha1/job/executions": {
+      "get": {
+        "operationId": "list_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "jobId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "jobCode",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "QUEUED",
+                "RUNNING",
+                "SUCCESS",
+                "FAILED",
+                "TIMEOUT",
+                "SKIPPED",
+                "CANCELED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "triggerType",
+            "required": false,
+            "schema": {
+              "enum": [
+                "SCHEDULED",
+                "MANUAL",
+                "RETRY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponseJobExecutionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u4efb\u52a1\u6267\u884c\u5217\u8868",
+        "tags": [
+          "\u4efb\u52a1\u6267\u884c"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/executions/stats/{jobId}": {
+      "get": {
+        "operationId": "stats",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseJobExecutionStatsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u4efb\u52a1\u6267\u884c\u7edf\u8ba1",
+        "tags": [
+          "\u4efb\u52a1\u6267\u884c"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/executions/{id}": {
+      "get": {
+        "operationId": "get_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseJobExecutionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u4efb\u52a1\u6267\u884c\u8be6\u60c5",
+        "tags": [
+          "\u4efb\u52a1\u6267\u884c"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/executions/{id}/cancel": {
+      "post": {
+        "operationId": "cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseJobExecutionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u53d6\u6d88\u4efb\u52a1\u6267\u884c",
+        "tags": [
+          "\u4efb\u52a1\u6267\u884c"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/executor/scheduled": {
+      "get": {
+        "operationId": "scheduled",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListScheduledJobInfo"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u8c03\u5ea6\u5668\u5f53\u524d\u4efb\u52a1",
+        "tags": [
+          "\u4efb\u52a1\u6267\u884c\u5668"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/executor/status": {
+      "get": {
+        "operationId": "status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseExecutorStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u6267\u884c\u5668\u4e0e\u8c03\u5ea6\u5668\u72b6\u6001",
+        "tags": [
+          "\u4efb\u52a1\u6267\u884c\u5668"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/jobs": {
+      "get": {
+        "operationId": "list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "ENABLED",
+                "DISABLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "format": "int32",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponseJobDefinitionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u4efb\u52a1\u5b9a\u4e49\u5217\u8868",
+        "tags": [
+          "\u4efb\u52a1\u5b9a\u4e49"
+        ]
+      },
+      "post": {
+        "operationId": "create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Pudans-Actor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobDefinitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseJobDefinitionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u521b\u5efa\u4efb\u52a1\u5b9a\u4e49",
+        "tags": [
+          "\u4efb\u52a1\u5b9a\u4e49"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/jobs/handlers": {
+      "get": {
+        "operationId": "handlers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListJobHandlerDescriptor"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u5df2\u6ce8\u518c\u4efb\u52a1\u5904\u7406\u5668",
+        "tags": [
+          "\u4efb\u52a1\u5b9a\u4e49"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/jobs/{id}": {
+      "delete": {
+        "operationId": "delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664\u4efb\u52a1\u5b9a\u4e49",
+        "tags": [
+          "\u4efb\u52a1\u5b9a\u4e49"
+        ]
+      },
+      "get": {
+        "operationId": "get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseJobDefinitionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u4efb\u52a1\u5b9a\u4e49\u8be6\u60c5",
+        "tags": [
+          "\u4efb\u52a1\u5b9a\u4e49"
+        ]
+      },
+      "put": {
+        "operationId": "update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Pudans-Actor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobDefinitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseJobDefinitionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u66f4\u65b0\u4efb\u52a1\u5b9a\u4e49",
+        "tags": [
+          "\u4efb\u52a1\u5b9a\u4e49"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/jobs/{id}/disable": {
+      "post": {
+        "operationId": "disable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Pudans-Actor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseJobDefinitionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u505c\u7528\u4efb\u52a1\u5b9a\u4e49",
+        "tags": [
+          "\u4efb\u52a1\u5b9a\u4e49"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/jobs/{id}/enable": {
+      "post": {
+        "operationId": "enable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Pudans-Actor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseJobDefinitionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u542f\u7528\u4efb\u52a1\u5b9a\u4e49",
+        "tags": [
+          "\u4efb\u52a1\u5b9a\u4e49"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/job/jobs/{id}/trigger": {
+      "post": {
+        "operationId": "trigger",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Pudans-Actor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobTriggerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseJobExecutionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u624b\u52a8\u89e6\u53d1\u4efb\u52a1\u5b9a\u4e49",
+        "tags": [
+          "\u4efb\u52a1\u5b9a\u4e49"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Generated server url",
+      "url": "http://127.0.0.1:18095"
+    }
+  ]
+}

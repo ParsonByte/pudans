@@ -1,0 +1,1016 @@
+{
+  "components": {
+    "schemas": {
+      "ApiResponseBatchIndexResult": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/BatchIndexResult"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseListSearchIndexResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SearchIndexResponse"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseSearchDocumentDeleteResult": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SearchDocumentDeleteResult"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseSearchDocumentResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SearchDocumentResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseSearchIndexDeleteResult": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SearchIndexDeleteResult"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseSearchIndexResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SearchIndexResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApiResponseSearchPageResponseSearchHitResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SearchPageResponseSearchHitResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "BatchIndexResult": {
+        "properties": {
+          "indexed": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "SearchDocumentBatchRequest": {
+        "properties": {
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/SearchDocumentRequest"
+            },
+            "maxItems": 500,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "documents"
+        ],
+        "type": "object"
+      },
+      "SearchDocumentDeleteResult": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "indexCode": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SearchDocumentRequest": {
+        "properties": {
+          "content": {
+            "maxLength": 1000000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "documentId": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "object"
+            },
+            "type": "object"
+          },
+          "orgId": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "ownerId": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "searchable": {
+            "type": "boolean"
+          },
+          "summary": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "maxLength": 64,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId"
+        ],
+        "type": "object"
+      },
+      "SearchDocumentResponse": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "createTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "indexCode": {
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "object"
+            },
+            "type": "object"
+          },
+          "orgId": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updateTime": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SearchDocumentUpdateRequest": {
+        "properties": {
+          "content": {
+            "maxLength": 1000000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "object"
+            },
+            "type": "object"
+          },
+          "orgId": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "ownerId": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": "string"
+          },
+          "searchable": {
+            "type": "boolean"
+          },
+          "summary": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "maxLength": 64,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SearchHitResponse": {
+        "properties": {
+          "createTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "orgId": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "snippet": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updateTime": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SearchIndexCreateRequest": {
+        "properties": {
+          "appCode": {
+            "maxLength": 64,
+            "minLength": 0,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "indexCode": {
+            "maxLength": 100,
+            "minLength": 0,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "appCode",
+          "indexCode"
+        ],
+        "type": "object"
+      },
+      "SearchIndexDeleteResult": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "deletedDocuments": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "indexCode": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SearchIndexResponse": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "createTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "documentCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "indexCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "updateTime": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SearchIndexUpdateRequest": {
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SearchPageResponseSearchHitResponse": {
+        "properties": {
+          "hasNext": {
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SearchHitResponse"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "pudans-search",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.1",
+  "paths": {
+    "/apis/pudans.tolim.cn/v1alpha1/search/indexes": {
+      "get": {
+        "operationId": "listIndexes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListSearchIndexResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u7d22\u5f15\u5217\u8868",
+        "tags": [
+          "\u641c\u7d22\u7d22\u5f15"
+        ]
+      },
+      "post": {
+        "operationId": "createIndex",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchIndexCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSearchIndexResponse"
+                }
+              }
+            },
+            "description": "Created"
+          }
+        },
+        "summary": "\u521b\u5efa\u7d22\u5f15",
+        "tags": [
+          "\u641c\u7d22\u7d22\u5f15"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/search/indexes/{indexCode}": {
+      "delete": {
+        "operationId": "deleteIndex",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indexCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSearchIndexDeleteResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664\u7d22\u5f15",
+        "tags": [
+          "\u641c\u7d22\u7d22\u5f15"
+        ]
+      },
+      "get": {
+        "operationId": "getIndex",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indexCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSearchIndexResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u7d22\u5f15\u8be6\u60c5",
+        "tags": [
+          "\u641c\u7d22\u7d22\u5f15"
+        ]
+      },
+      "put": {
+        "operationId": "updateIndex",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indexCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchIndexUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSearchIndexResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u66f4\u65b0\u7d22\u5f15",
+        "tags": [
+          "\u641c\u7d22\u7d22\u5f15"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/search/indexes/{indexCode}/documents": {
+      "post": {
+        "operationId": "indexDocument",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indexCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSearchDocumentResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u521b\u5efa\u6587\u6863",
+        "tags": [
+          "\u641c\u7d22\u6587\u6863"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/search/indexes/{indexCode}/documents/batch": {
+      "post": {
+        "operationId": "indexDocuments",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indexCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchDocumentBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBatchIndexResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6279\u91cf\u521b\u5efa\u6587\u6863",
+        "tags": [
+          "\u641c\u7d22\u6587\u6863"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/search/indexes/{indexCode}/documents/{documentId}": {
+      "delete": {
+        "operationId": "deleteDocument",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indexCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSearchDocumentDeleteResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664\u6587\u6863",
+        "tags": [
+          "\u641c\u7d22\u6587\u6863"
+        ]
+      },
+      "get": {
+        "operationId": "getDocument",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indexCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSearchDocumentResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u6587\u6863\u8be6\u60c5",
+        "tags": [
+          "\u641c\u7d22\u6587\u6863"
+        ]
+      },
+      "put": {
+        "operationId": "updateDocument",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indexCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "documentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchDocumentUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSearchDocumentResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u66f4\u65b0\u6587\u6863",
+        "tags": [
+          "\u641c\u7d22\u6587\u6863"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/search/query": {
+      "get": {
+        "operationId": "search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "indexCode",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ownerId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orgId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSearchPageResponseSearchHitResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u641c\u7d22\u67e5\u8be2",
+        "tags": [
+          "\u641c\u7d22\u67e5\u8be2"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Generated server url",
+      "url": "http://127.0.0.1:18096"
+    }
+  ]
+}

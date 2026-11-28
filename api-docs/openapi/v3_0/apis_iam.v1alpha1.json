@@ -1,0 +1,6054 @@
+{
+  "components": {
+    "schemas": {
+      "ApiRestResultAuditPageAuditRecordView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/AuditPageAuditRecordView"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultAuditRecordView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/AuditRecordView"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultEffectivePermissionResponse": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/EffectivePermissionResponse"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListAuditEventTypeView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventTypeView"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListAuditRecordView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/AuditRecordView"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListAuthzLogView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/AuthzLogView"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListPolicyAttachmentView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyAttachmentView"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListPolicyEvaluateResponse": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyEvaluateResponse"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListPolicySummary": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/PolicySummary"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListResourceTypeView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/ResourceTypeView"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListRoleBindingView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/RoleBindingView"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListRoleSummary": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/RoleSummary"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultListServiceActionView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceActionView"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultObject": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPolicyAttachmentView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PolicyAttachmentView"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPolicyDetail": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PolicyDetail"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPolicyEvaluateResponse": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PolicyEvaluateResponse"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPolicySimulationResponse": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PolicySimulationResponse"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPolicyValidationResult": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PolicyValidationResult"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPortalAppsResponse": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PortalAppsResponse"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPortalLoginConfigResponse": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PortalLoginConfigResponse"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPortalLogoutUrlResponse": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PortalLogoutUrlResponse"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPortalMeResponse": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PortalMeResponse"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultPublicSecretResult": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/PublicSecretResult"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultResourceTypeView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ResourceTypeView"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultRoleBindingView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/RoleBindingView"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultRoleSummary": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/RoleSummary"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultServiceActionView": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ServiceActionView"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApiRestResultVoid": {
+        "description": "API \u54cd\u5e94\u7ed3\u679c",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApplicationAccessResponse": {
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "appCode": {
+            "type": "string"
+          },
+          "orgId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ApplicationSessionSummary": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "appCode": {
+            "type": "string"
+          },
+          "appId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastBackchannelAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revoked": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ApplicationSummary": {
+        "properties": {
+          "accessPolicyMode": {
+            "type": "string"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceActionDefinition"
+            },
+            "type": "array"
+          },
+          "appCode": {
+            "type": "string"
+          },
+          "backchannelLogoutUri": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "configured": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "redirectUrl": {
+            "type": "string"
+          },
+          "resourceTypes": {
+            "items": {
+              "$ref": "#/components/schemas/ResourceTypeDefinition"
+            },
+            "type": "array"
+          },
+          "ticketTimeToLiveSeconds": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "AuditEventTypeView": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "resourceCode": {
+            "type": "string"
+          },
+          "resourceName": {
+            "type": "string"
+          },
+          "userTypes": {
+            "items": {
+              "$ref": "#/components/schemas/UserType"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "AuditPageAuditRecordView": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditRecordView"
+            },
+            "type": "array"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "AuditQuery": {
+        "description": "\u5ba1\u8ba1\u8bb0\u5f55\u67e5\u8be2",
+        "properties": {
+          "actorAuthType": {
+            "description": "\u64cd\u4f5c\u8005\u4f7f\u7528\u7684\u8ba4\u8bc1\u65b9\u5f0f",
+            "type": "string"
+          },
+          "actorId": {
+            "description": "\u64cd\u4f5c\u8005\u6807\u8bc6",
+            "type": "string"
+          },
+          "actorType": {
+            "description": "\u64cd\u4f5c\u8005\u7c7b\u578b\uff0c\u4f8b\u5982\u7528\u6237\u6216\u7ba1\u7406\u5458",
+            "type": "string"
+          },
+          "category": {
+            "description": "\u5ba1\u8ba1\u5206\u7c7b\u7f16\u7801\uff0c\u4f8b\u5982 login\u3001session\u3001ticket \u6216 authz",
+            "type": "string"
+          },
+          "endTime": {
+            "description": "\u4e8b\u4ef6\u65f6\u95f4\u8303\u56f4\u7ed3\u675f\u503c\uff0cISO-8601",
+            "format": "date-time",
+            "type": "string"
+          },
+          "eventStatus": {
+            "description": "\u4e8b\u4ef6\u72b6\u6001\u7801\uff1asuccess \u6216 fail",
+            "type": "string"
+          },
+          "eventType": {
+            "description": "\u4e8b\u4ef6\u7c7b\u578b\u7f16\u7801",
+            "type": "string"
+          },
+          "eventTypes": {
+            "description": "\u4e8b\u4ef6\u7c7b\u578b\u7f16\u7801\u5217\u8868\uff0c\u6309 OR \u7ec4\u5408",
+            "items": {
+              "description": "\u4e8b\u4ef6\u7c7b\u578b\u7f16\u7801\u5217\u8868\uff0c\u6309 OR \u7ec4\u5408",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "keyword": {
+            "description": "\u5339\u914d\u5185\u5bb9\u3001\u53c2\u6570\u548c\u7ed3\u679c\u7684\u5173\u952e\u5b57",
+            "type": "string"
+          },
+          "page": {
+            "description": "\u9875\u7801\uff0c\u4ece 1 \u5f00\u59cb\uff0c\u9ed8\u8ba4 1",
+            "format": "int32",
+            "type": "integer"
+          },
+          "requestId": {
+            "description": "HTTP \u8bf7\u6c42\u6807\u8bc6",
+            "type": "string"
+          },
+          "sessionId": {
+            "description": "\u767b\u5f55\u4f1a\u8bdd\u6807\u8bc6",
+            "type": "string"
+          },
+          "size": {
+            "description": "\u6bcf\u9875\u5927\u5c0f\uff0c\u9ed8\u8ba4 20\uff0c\u6700\u5927 200",
+            "format": "int32",
+            "type": "integer"
+          },
+          "sortBy": {
+            "description": "\u6392\u5e8f\u5b57\u6bb5\uff1aeventTime\u3001createTime\u3001actorId \u6216 eventType",
+            "type": "string"
+          },
+          "sortDirection": {
+            "description": "\u6392\u5e8f\u65b9\u5411\uff1aasc \u6216 desc\uff0c\u9ed8\u8ba4 desc",
+            "type": "string"
+          },
+          "startTime": {
+            "description": "\u4e8b\u4ef6\u65f6\u95f4\u8303\u56f4\u8d77\u59cb\u503c\uff0cISO-8601",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "AuditRecordView": {
+        "properties": {
+          "actorAuthType": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "actorType": {
+            "type": "string"
+          },
+          "createTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "eventCategory": {
+            "type": "string"
+          },
+          "eventContent": {
+            "type": "string"
+          },
+          "eventParam": {
+            "type": "string"
+          },
+          "eventResult": {
+            "type": "string"
+          },
+          "eventStatus": {
+            "type": "string"
+          },
+          "eventStatusName": {
+            "type": "string"
+          },
+          "eventTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "eventTypeName": {
+            "type": "string"
+          },
+          "geoLocation": {
+            "$ref": "#/components/schemas/GeoLocation"
+          },
+          "id": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/Target"
+            },
+            "type": "array"
+          },
+          "userAgent": {
+            "$ref": "#/components/schemas/UserAgent"
+          }
+        },
+        "type": "object"
+      },
+      "AuthzLogView": {
+        "description": "\u9274\u6743\u51b3\u7b56\u65e5\u5fd7",
+        "properties": {
+          "action": {
+            "description": "\u52a8\u4f5c",
+            "type": "string"
+          },
+          "appCode": {
+            "description": "\u5e94\u7528\u7f16\u7801",
+            "type": "string"
+          },
+          "context": {
+            "description": "\u4e0a\u4e0b\u6587 JSON",
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "\u521b\u5efa\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "decision": {
+            "description": "\u51b3\u7b56",
+            "type": "string"
+          },
+          "id": {
+            "description": "\u65e5\u5fd7ID",
+            "type": "string"
+          },
+          "principalId": {
+            "description": "\u4e3b\u4f53ID",
+            "type": "string"
+          },
+          "principalType": {
+            "description": "\u4e3b\u4f53\u7c7b\u578b",
+            "type": "string"
+          },
+          "reason": {
+            "description": "\u539f\u56e0",
+            "type": "string"
+          },
+          "resource": {
+            "description": "\u8d44\u6e90",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "BackchannelLogoutRequest": {
+        "properties": {
+          "aud": {
+            "type": "string"
+          },
+          "events": {
+            "additionalProperties": {
+              "type": "object"
+            },
+            "type": "object"
+          },
+          "iat": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "iss": {
+            "type": "string"
+          },
+          "jti": {
+            "type": "string"
+          },
+          "logoutToken": {
+            "type": "string"
+          },
+          "sid": {
+            "type": "string"
+          },
+          "sub": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "EffectivePermissionResponse": {
+        "description": "\u4e3b\u4f53\u7684\u6709\u6548\u6743\u9650",
+        "properties": {
+          "policies": {
+            "description": "\u751f\u6548\u7b56\u7565\u5217\u8868",
+            "items": {
+              "$ref": "#/components/schemas/EffectivePolicyView"
+            },
+            "type": "array"
+          },
+          "policyCodes": {
+            "description": "\u751f\u6548\u7b56\u7565\u7f16\u7801",
+            "items": {
+              "description": "\u751f\u6548\u7b56\u7565\u7f16\u7801",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "principalId": {
+            "description": "\u4e3b\u4f53ID",
+            "type": "string"
+          },
+          "principalType": {
+            "description": "\u4e3b\u4f53\u7c7b\u578b",
+            "type": "string"
+          },
+          "roles": {
+            "description": "\u751f\u6548\u89d2\u8272",
+            "items": {
+              "$ref": "#/components/schemas/RoleSummary"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "EffectivePolicyView": {
+        "description": "\u4e3b\u4f53\u7684\u751f\u6548\u7b56\u7565",
+        "properties": {
+          "policyCode": {
+            "description": "\u7b56\u7565\u7f16\u7801",
+            "type": "string"
+          },
+          "policyId": {
+            "description": "\u7b56\u7565ID",
+            "type": "string"
+          },
+          "policyName": {
+            "description": "\u7b56\u7565\u540d\u79f0",
+            "type": "string"
+          },
+          "scope": {
+            "description": "\u751f\u6548\u8303\u56f4",
+            "type": "string"
+          },
+          "sourcePrincipalId": {
+            "description": "\u6765\u6e90\u4e3b\u4f53ID",
+            "type": "string"
+          },
+          "sourcePrincipalType": {
+            "description": "\u6765\u6e90\u4e3b\u4f53\u7c7b\u578b",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "GeoLocation": {
+        "properties": {
+          "cityCode": {
+            "type": "string"
+          },
+          "cityName": {
+            "type": "string"
+          },
+          "continentCode": {
+            "type": "string"
+          },
+          "continentName": {
+            "type": "string"
+          },
+          "countryCode": {
+            "type": "string"
+          },
+          "countryName": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "point": {
+            "$ref": "#/components/schemas/GeoPoint"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/GeoLocationProvider"
+          },
+          "provinceCode": {
+            "type": "string"
+          },
+          "provinceName": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "GeoLocationProvider": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "GeoPoint": {
+        "properties": {
+          "lat": {
+            "format": "double",
+            "type": "number"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number",
+            "writeOnly": true
+          },
+          "lon": {
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number",
+            "writeOnly": true
+          }
+        },
+        "type": "object"
+      },
+      "IamMfaWebAuthnOptionsRequest": {
+        "description": "\u9488\u5bf9\u5f85\u5904\u7406 MFA \u6311\u6218\u7684 WebAuthn \u8ba4\u8bc1\u9009\u9879\u8bf7\u6c42",
+        "properties": {
+          "appCode": {
+            "description": "\u672c\u6b21\u767b\u5f55\u6240\u5c5e\u7684\u5e94\u7528\u7f16\u7801",
+            "type": "string"
+          },
+          "challengeId": {
+            "description": "\u767b\u5f55\u8fd4\u56de\u7684 MFA \u6311\u6218ID",
+            "type": "string"
+          },
+          "username": {
+            "description": "\u6311\u6218\u6240\u5c5e\u7528\u6237\u540d",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "IamMfaWebAuthnVerifyRequest": {
+        "description": "\u7ed1\u5b9a\u5230\u5f85\u5904\u7406 MFA \u6311\u6218\u7684 WebAuthn \u65ad\u8a00",
+        "properties": {
+          "appCode": {
+            "description": "\u672c\u6b21\u767b\u5f55\u6240\u5c5e\u7684\u5e94\u7528\u7f16\u7801",
+            "type": "string"
+          },
+          "authenticatorData": {
+            "description": "Base64URL \u7f16\u7801\u7684\u8ba4\u8bc1\u5668\u6570\u636e",
+            "type": "string"
+          },
+          "challengeId": {
+            "description": "\u767b\u5f55\u8fd4\u56de\u7684 MFA \u6311\u6218ID",
+            "type": "string"
+          },
+          "clientDataJson": {
+            "description": "Base64URL \u7f16\u7801\u7684\u5ba2\u6237\u7aef\u6570\u636e JSON",
+            "type": "string"
+          },
+          "credentialId": {
+            "description": "WebAuthn \u51ed\u8bc1ID",
+            "type": "string"
+          },
+          "signature": {
+            "description": "Base64URL \u7f16\u7801\u7684\u65ad\u8a00\u7b7e\u540d",
+            "type": "string"
+          },
+          "username": {
+            "description": "\u6311\u6218\u6240\u5c5e\u7528\u6237\u540d",
+            "type": "string"
+          },
+          "webAuthnChallengeId": {
+            "description": "\u9009\u9879\u7aef\u70b9\u8fd4\u56de\u7684 WebAuthn \u6311\u6218ID",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "IamTicketIssueRequest": {
+        "description": "SSO \u7968\u636e\u7b7e\u53d1\u8bf7\u6c42",
+        "properties": {
+          "appCode": {
+            "description": "\u5e94\u7528\u7f16\u7801",
+            "type": "string"
+          },
+          "nonce": {
+            "description": "\u7ed1\u5b9a\u5230\u7968\u636e\u7684\u53ef\u9009 nonce",
+            "type": "string"
+          },
+          "sid": {
+            "description": "\u5168\u5c40\u767b\u5f55\u4f1a\u8bddID",
+            "type": "string"
+          },
+          "target": {
+            "description": "targetUrl \u7684\u522b\u540d",
+            "type": "string"
+          },
+          "targetUrl": {
+            "description": "\u8fd4\u56de\u7684\u76ee\u6807\u5730\u5740",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "IdentityProviderSummary": {
+        "properties": {
+          "authorizeUrl": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "iconUrl": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "LoginConfigResponse": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "captchaEnabled": {
+            "type": "boolean"
+          },
+          "identityProviders": {
+            "items": {
+              "$ref": "#/components/schemas/IdentityProviderSummary"
+            },
+            "type": "array"
+          },
+          "mfaEnabled": {
+            "type": "boolean"
+          },
+          "passwordLoginEnabled": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "targetUrl": {
+            "type": "string"
+          },
+          "userAgent": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "LoginResponse": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "mfaChallengeId": {
+            "type": "string"
+          },
+          "mfaRequired": {
+            "type": "boolean"
+          },
+          "redirectUrl": {
+            "type": "string"
+          },
+          "sid": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserInfo"
+          }
+        },
+        "type": "object"
+      },
+      "LogoutRequest": {
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "sid": {
+            "type": "string"
+          },
+          "userAgent": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "LogoutResponse": {
+        "properties": {
+          "notifiedApplicationCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "revokedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revokedSessionCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "MatchedStatementView": {
+        "description": "\u5339\u914d\u7684\u7b56\u7565\u8bed\u53e5",
+        "properties": {
+          "effect": {
+            "description": "\u8bed\u53e5\u6548\u679c",
+            "type": "string"
+          },
+          "policyCode": {
+            "description": "\u7b56\u7565\u7f16\u7801",
+            "type": "string"
+          },
+          "sid": {
+            "description": "\u8bed\u53e5\u6807\u8bc6",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MfaChallengeRequest": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MfaChallengeResponse": {
+        "properties": {
+          "challengeId": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MfaVerifyRequest": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "challengeId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MyApplicationSummary": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "groupId": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "sort": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PolicyAttachmentRequest": {
+        "description": "\u7b56\u7565\u7ed1\u5b9a\u8bf7\u6c42",
+        "properties": {
+          "policyId": {
+            "description": "\u5df2\u7ed1\u5b9a\u7b56\u7565ID",
+            "minLength": 1,
+            "type": "string"
+          },
+          "principalId": {
+            "description": "\u4e3b\u4f53ID",
+            "minLength": 1,
+            "type": "string"
+          },
+          "principalType": {
+            "description": "\u4e3b\u4f53\u7c7b\u578b",
+            "minLength": 1,
+            "type": "string"
+          },
+          "scope": {
+            "description": "\u751f\u6548\u8303\u56f4",
+            "type": "string"
+          }
+        },
+        "required": [
+          "policyId",
+          "principalId",
+          "principalType"
+        ],
+        "type": "object"
+      },
+      "PolicyAttachmentView": {
+        "description": "\u7b56\u7565\u7ed1\u5b9a\u89c6\u56fe",
+        "properties": {
+          "id": {
+            "description": "\u7ed1\u5b9aID",
+            "type": "string"
+          },
+          "policyCode": {
+            "description": "\u5df2\u7ed1\u5b9a\u7b56\u7565\u7f16\u7801",
+            "type": "string"
+          },
+          "policyId": {
+            "description": "\u5df2\u7ed1\u5b9a\u7b56\u7565ID",
+            "type": "string"
+          },
+          "principalId": {
+            "description": "\u4e3b\u4f53ID",
+            "type": "string"
+          },
+          "principalType": {
+            "description": "\u4e3b\u4f53\u7c7b\u578b",
+            "type": "string"
+          },
+          "scope": {
+            "description": "\u751f\u6548\u8303\u56f4",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PolicyDetail": {
+        "description": "\u7b56\u7565\u8be6\u60c5",
+        "properties": {
+          "attachmentCount": {
+            "description": "\u7ed1\u5b9a\u6570\u91cf",
+            "format": "int64",
+            "type": "integer"
+          },
+          "code": {
+            "description": "\u552f\u4e00\u7b56\u7565\u7f16\u7801",
+            "type": "string"
+          },
+          "createTime": {
+            "description": "\u521b\u5efa\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "description": "\u7b56\u7565\u63cf\u8ff0",
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/PolicyDocument"
+          },
+          "id": {
+            "description": "\u7b56\u7565ID",
+            "type": "string"
+          },
+          "name": {
+            "description": "\u7b56\u7565\u540d\u79f0",
+            "type": "string"
+          },
+          "status": {
+            "description": "\u7b56\u7565\u72b6\u6001",
+            "type": "string"
+          },
+          "type": {
+            "description": "\u7b56\u7565\u7c7b\u578b",
+            "type": "string"
+          },
+          "updateTime": {
+            "description": "\u6700\u8fd1\u66f4\u65b0\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "description": "\u7b56\u7565\u6587\u6863\u7248\u672c",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PolicyDocument": {
+        "description": "CAM \u5f0f\u7b56\u7565\u6587\u6863",
+        "properties": {
+          "statement": {
+            "description": "\u7b56\u7565\u8bed\u53e5\u5217\u8868",
+            "items": {
+              "$ref": "#/components/schemas/Statement"
+            },
+            "type": "array"
+          },
+          "version": {
+            "description": "\u7b56\u7565\u6587\u6863\u7248\u672c",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PolicyEvaluateRequest": {
+        "description": "\u9274\u6743\u8bc4\u4f30\u8bf7\u6c42",
+        "properties": {
+          "action": {
+            "description": "\u52a8\u4f5c",
+            "minLength": 1,
+            "type": "string"
+          },
+          "appCode": {
+            "description": "\u5e94\u7528\u7f16\u7801",
+            "minLength": 1,
+            "type": "string"
+          },
+          "context": {
+            "additionalProperties": {
+              "description": "\u8bc4\u4f30\u4e0a\u4e0b\u6587",
+              "type": "object"
+            },
+            "description": "\u8bc4\u4f30\u4e0a\u4e0b\u6587",
+            "type": "object"
+          },
+          "orgId": {
+            "description": "\u7ec4\u7ec7ID",
+            "type": "string"
+          },
+          "principalId": {
+            "description": "\u4e3b\u4f53ID",
+            "minLength": 1,
+            "type": "string"
+          },
+          "principalType": {
+            "description": "\u4e3b\u4f53\u7c7b\u578b",
+            "minLength": 1,
+            "type": "string"
+          },
+          "resource": {
+            "description": "\u8d44\u6e90",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "appCode",
+          "principalId",
+          "principalType"
+        ],
+        "type": "object"
+      },
+      "PolicyEvaluateResponse": {
+        "description": "\u9274\u6743\u8bc4\u4f30\u7ed3\u679c",
+        "properties": {
+          "allowed": {
+            "description": "\u8bf7\u6c42\u662f\u5426\u5141\u8bb8",
+            "type": "boolean"
+          },
+          "decision": {
+            "description": "\u6700\u7ec8\u51b3\u7b56\uff1aALLOW \u6216 DENY",
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "description": "\u8bc4\u4f30\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "matchedPolicies": {
+            "description": "\u5339\u914d\u7684\u7b56\u7565\u7f16\u7801",
+            "items": {
+              "description": "\u5339\u914d\u7684\u7b56\u7565\u7f16\u7801",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reason": {
+            "description": "\u51b3\u7b56\u539f\u56e0",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PolicyRequest": {
+        "description": "\u7b56\u7565\u521b\u5efa\u6216\u66f4\u65b0\u8bf7\u6c42",
+        "properties": {
+          "code": {
+            "description": "\u552f\u4e00\u7b56\u7565\u7f16\u7801",
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "description": "\u7b56\u7565\u63cf\u8ff0",
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/PolicyDocument"
+          },
+          "name": {
+            "description": "\u7b56\u7565\u540d\u79f0",
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "description": "\u7b56\u7565\u72b6\u6001",
+            "type": "string"
+          },
+          "type": {
+            "description": "\u7b56\u7565\u7c7b\u578b",
+            "type": "string"
+          },
+          "version": {
+            "description": "\u7b56\u7565\u6587\u6863\u7248\u672c",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "document",
+          "name"
+        ],
+        "type": "object"
+      },
+      "PolicySimulationRequest": {
+        "description": "\u7b56\u7565\u6a21\u62df\u5668\u8bf7\u6c42",
+        "properties": {
+          "action": {
+            "description": "\u52a8\u4f5c",
+            "minLength": 1,
+            "type": "string"
+          },
+          "appCode": {
+            "description": "\u5e94\u7528\u7f16\u7801",
+            "minLength": 1,
+            "type": "string"
+          },
+          "context": {
+            "additionalProperties": {
+              "description": "\u8bc4\u4f30\u4e0a\u4e0b\u6587",
+              "type": "object"
+            },
+            "description": "\u8bc4\u4f30\u4e0a\u4e0b\u6587",
+            "type": "object"
+          },
+          "orgId": {
+            "description": "\u7ec4\u7ec7ID",
+            "type": "string"
+          },
+          "policies": {
+            "description": "\u5185\u8054\u7b56\u7565\u6587\u6863",
+            "items": {
+              "$ref": "#/components/schemas/PolicyDocument"
+            },
+            "type": "array"
+          },
+          "principalId": {
+            "description": "\u4e3b\u4f53ID",
+            "type": "string"
+          },
+          "principalType": {
+            "description": "\u4e3b\u4f53\u7c7b\u578b",
+            "type": "string"
+          },
+          "resource": {
+            "description": "\u8d44\u6e90",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "appCode"
+        ],
+        "type": "object"
+      },
+      "PolicySimulationResponse": {
+        "description": "\u7b56\u7565\u6a21\u62df\u5668\u7ed3\u679c",
+        "properties": {
+          "allowed": {
+            "description": "\u8bf7\u6c42\u662f\u5426\u5141\u8bb8",
+            "type": "boolean"
+          },
+          "decision": {
+            "description": "\u6700\u7ec8\u51b3\u7b56\uff1aALLOW \u6216 DENY",
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "description": "\u6a21\u62df\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "matchedPolicies": {
+            "description": "\u5339\u914d\u7684\u7b56\u7565\u7f16\u7801",
+            "items": {
+              "description": "\u5339\u914d\u7684\u7b56\u7565\u7f16\u7801",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "matchedStatements": {
+            "description": "\u5339\u914d\u7684\u8bed\u53e5",
+            "items": {
+              "$ref": "#/components/schemas/MatchedStatementView"
+            },
+            "type": "array"
+          },
+          "reason": {
+            "description": "\u51b3\u7b56\u539f\u56e0",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PolicySummary": {
+        "description": "\u7b56\u7565\u6458\u8981",
+        "properties": {
+          "code": {
+            "description": "\u552f\u4e00\u7b56\u7565\u7f16\u7801",
+            "type": "string"
+          },
+          "createTime": {
+            "description": "\u521b\u5efa\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "description": "\u7b56\u7565\u63cf\u8ff0",
+            "type": "string"
+          },
+          "id": {
+            "description": "\u7b56\u7565ID",
+            "type": "string"
+          },
+          "name": {
+            "description": "\u7b56\u7565\u540d\u79f0",
+            "type": "string"
+          },
+          "status": {
+            "description": "\u7b56\u7565\u72b6\u6001",
+            "type": "string"
+          },
+          "type": {
+            "description": "\u7b56\u7565\u7c7b\u578b",
+            "type": "string"
+          },
+          "updateTime": {
+            "description": "\u6700\u8fd1\u66f4\u65b0\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "description": "\u7b56\u7565\u6587\u6863\u7248\u672c",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PolicyValidationResult": {
+        "description": "\u7b56\u7565\u6587\u6863\u6821\u9a8c\u7ed3\u679c",
+        "properties": {
+          "actions": {
+            "description": "\u5f15\u7528\u7684\u52a8\u4f5c",
+            "items": {
+              "description": "\u5f15\u7528\u7684\u52a8\u4f5c",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "errors": {
+            "description": "\u6821\u9a8c\u9519\u8bef",
+            "items": {
+              "description": "\u6821\u9a8c\u9519\u8bef",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resources": {
+            "description": "\u5f15\u7528\u7684\u8d44\u6e90",
+            "items": {
+              "description": "\u5f15\u7528\u7684\u8d44\u6e90",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "statementCount": {
+            "description": "\u8bed\u53e5\u6570\u91cf",
+            "format": "int32",
+            "type": "integer"
+          },
+          "valid": {
+            "description": "\u6587\u6863\u662f\u5426\u6709\u6548",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PortalAppGroupView": {
+        "description": "\u95e8\u6237\u5e94\u7528\u94fe\u63a5\u6240\u5c5e\u7684\u5e94\u7528\u5206\u7ec4",
+        "properties": {
+          "code": {
+            "description": "\u5e94\u7528\u5206\u7ec4\u7f16\u7801",
+            "type": "string"
+          },
+          "id": {
+            "description": "\u5e94\u7528\u5206\u7ec4ID",
+            "type": "string"
+          },
+          "name": {
+            "description": "\u5e94\u7528\u5206\u7ec4\u540d\u79f0",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PortalAppView": {
+        "description": "\u5f53\u524d\u7528\u6237\u53ef\u8bbf\u95ee\u7684\u5e94\u7528\u94fe\u63a5",
+        "properties": {
+          "appCode": {
+            "description": "\u5e94\u7528\u7f16\u7801",
+            "type": "string"
+          },
+          "appId": {
+            "description": "\u5e94\u7528ID",
+            "type": "string"
+          },
+          "groups": {
+            "description": "\u5e94\u7528\u5206\u7ec4\u5217\u8868",
+            "items": {
+              "$ref": "#/components/schemas/PortalAppGroupView"
+            },
+            "type": "array"
+          },
+          "icon": {
+            "description": "\u5e94\u7528\u56fe\u6807",
+            "type": "string"
+          },
+          "launchUrl": {
+            "description": "\u5e94\u7528\u542f\u52a8\u5730\u5740",
+            "type": "string"
+          },
+          "name": {
+            "description": "\u5e94\u7528\u540d\u79f0",
+            "type": "string"
+          },
+          "protocol": {
+            "description": "\u5e94\u7528\u534f\u8bae",
+            "type": "string"
+          },
+          "template": {
+            "description": "\u5e94\u7528\u6a21\u677f",
+            "type": "string"
+          },
+          "type": {
+            "description": "\u5e94\u7528\u7c7b\u578b",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PortalAppsResponse": {
+        "description": "\u5df2\u6388\u6743\u7684\u95e8\u6237\u5e94\u7528\u94fe\u63a5",
+        "properties": {
+          "apps": {
+            "description": "\u5df2\u6388\u6743\u5e94\u7528",
+            "items": {
+              "$ref": "#/components/schemas/PortalAppView"
+            },
+            "type": "array"
+          },
+          "authenticated": {
+            "description": "\u8c03\u7528\u65b9\u662f\u5426\u5df2\u8ba4\u8bc1",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PortalBrandingView": {
+        "description": "\u767b\u5f55\u9875\u54c1\u724c\u914d\u7f6e",
+        "properties": {
+          "backgroundUrl": {
+            "description": "\u80cc\u666f\u56fe\u5730\u5740",
+            "type": "string"
+          },
+          "faviconUrl": {
+            "description": "\u7ad9\u70b9\u56fe\u6807\u5730\u5740",
+            "type": "string"
+          },
+          "logoUrl": {
+            "description": "Logo \u5730\u5740",
+            "type": "string"
+          },
+          "title": {
+            "description": "\u54c1\u724c\u6807\u9898",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PortalIdentityProviderView": {
+        "description": "\u767b\u5f55\u9875\u5c55\u793a\u7684\u793e\u4ea4\u6216\u4f01\u4e1a\u8eab\u4efd\u63d0\u4f9b\u5546",
+        "properties": {
+          "category": {
+            "description": "\u8eab\u4efd\u63d0\u4f9b\u5546\u5206\u7c7b",
+            "type": "string"
+          },
+          "code": {
+            "description": "\u8eab\u4efd\u63d0\u4f9b\u5546\u7f16\u7801",
+            "type": "string"
+          },
+          "name": {
+            "description": "\u8eab\u4efd\u63d0\u4f9b\u5546\u663e\u793a\u540d\u79f0",
+            "type": "string"
+          },
+          "type": {
+            "description": "\u8eab\u4efd\u63d0\u4f9b\u5546\u5e73\u53f0\u7c7b\u578b",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PortalLoginConfigResponse": {
+        "description": "\u4e13\u7528\u767b\u5f55\u9875\u914d\u7f6e",
+        "properties": {
+          "branding": {
+            "$ref": "#/components/schemas/PortalBrandingView"
+          },
+          "captchaEnabled": {
+            "description": "\u662f\u5426\u9700\u8981\u9a8c\u8bc1\u7801",
+            "type": "boolean"
+          },
+          "homeUrl": {
+            "description": "\u516c\u5f00\u9996\u9875\u5730\u5740",
+            "type": "string"
+          },
+          "identityProviders": {
+            "description": "\u8eab\u4efd\u63d0\u4f9b\u5546\u5217\u8868",
+            "items": {
+              "$ref": "#/components/schemas/PortalIdentityProviderView"
+            },
+            "type": "array"
+          },
+          "loginUrl": {
+            "description": "\u516c\u5f00\u767b\u5f55\u9875\u5730\u5740",
+            "type": "string"
+          },
+          "logoutUrl": {
+            "description": "\u516c\u5f00\u5168\u5c40\u767b\u51fa\u5730\u5740",
+            "type": "string"
+          },
+          "methods": {
+            "description": "\u767b\u5f55\u65b9\u5f0f\u5217\u8868",
+            "items": {
+              "$ref": "#/components/schemas/PortalLoginMethodView"
+            },
+            "type": "array"
+          },
+          "mfaRequired": {
+            "description": "\u662f\u5426\u9700\u8981 MFA",
+            "type": "boolean"
+          },
+          "rememberMeEnabled": {
+            "description": "\u662f\u5426\u652f\u6301\u8bb0\u4f4f\u6211",
+            "type": "boolean"
+          },
+          "sessionValidTimeSeconds": {
+            "description": "\u5168\u5c40\u767b\u5f55\u4f1a\u8bdd\u6709\u6548\u671f\uff08\u79d2\uff09",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PortalLoginMethodView": {
+        "description": "\u4e13\u7528\u767b\u5f55\u9875\u53ef\u7528\u7684\u767b\u5f55\u65b9\u5f0f",
+        "properties": {
+          "category": {
+            "description": "\u767b\u5f55\u65b9\u5f0f\u5206\u7c7b",
+            "type": "string"
+          },
+          "code": {
+            "description": "\u767b\u5f55\u65b9\u5f0f\u7f16\u7801",
+            "type": "string"
+          },
+          "enabled": {
+            "description": "\u767b\u5f55\u65b9\u5f0f\u662f\u5426\u542f\u7528",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "\u767b\u5f55\u65b9\u5f0f\u663e\u793a\u540d\u79f0",
+            "type": "string"
+          },
+          "order": {
+            "description": "\u663e\u793a\u987a\u5e8f",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "PortalLogoutUrlResponse": {
+        "description": "\u5168\u5c40\u767b\u51fa\u5730\u5740\u4fe1\u606f",
+        "properties": {
+          "homeUrl": {
+            "description": "\u516c\u5f00\u9996\u9875\u5730\u5740",
+            "type": "string"
+          },
+          "loginUrl": {
+            "description": "\u516c\u5f00\u767b\u5f55\u9875\u5730\u5740",
+            "type": "string"
+          },
+          "logoutUrl": {
+            "description": "\u516c\u5f00\u5168\u5c40\u767b\u51fa\u5730\u5740",
+            "type": "string"
+          },
+          "method": {
+            "description": "\u767b\u51fa\u65b9\u5f0f",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PortalMeResponse": {
+        "description": "\u5f53\u524d\u95e8\u6237\u7528\u6237\u4e0e\u4f1a\u8bdd\u4fe1\u606f",
+        "properties": {
+          "authenticated": {
+            "description": "\u8c03\u7528\u65b9\u662f\u5426\u5df2\u8ba4\u8bc1",
+            "type": "boolean"
+          },
+          "session": {
+            "$ref": "#/components/schemas/PortalSessionView"
+          },
+          "user": {
+            "$ref": "#/components/schemas/PortalUserView"
+          }
+        },
+        "type": "object"
+      },
+      "PortalSessionView": {
+        "description": "\u5168\u5c40\u767b\u5f55\u4f1a\u8bdd\u4fe1\u606f",
+        "properties": {
+          "active": {
+            "description": "\u5168\u5c40\u767b\u5f55\u4f1a\u8bdd\u662f\u5426\u6709\u6548",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "description": "\u4f1a\u8bdd\u521b\u5efa\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "description": "\u4f1a\u8bdd\u8fc7\u671f\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "description": "\u6700\u8fd1\u6d3b\u8dc3\u65f6\u95f4",
+            "format": "date-time",
+            "type": "string"
+          },
+          "loginIp": {
+            "description": "\u767b\u5f55IP\u5730\u5740",
+            "type": "string"
+          },
+          "userAgent": {
+            "description": "\u767b\u5f55\u7528\u6237\u4ee3\u7406",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PortalUserView": {
+        "description": "\u5f53\u524d\u95e8\u6237\u7528\u6237\u4fe1\u606f",
+        "properties": {
+          "avatar": {
+            "description": "\u5934\u50cf\u5730\u5740",
+            "type": "string"
+          },
+          "displayName": {
+            "description": "\u663e\u793a\u540d\u79f0",
+            "type": "string"
+          },
+          "email": {
+            "description": "\u90ae\u7bb1\u5730\u5740",
+            "type": "string"
+          },
+          "emailVerified": {
+            "description": "\u90ae\u7bb1\u662f\u5426\u5df2\u9a8c\u8bc1",
+            "type": "boolean"
+          },
+          "groups": {
+            "description": "\u7528\u6237\u7ec4\u7f16\u7801\u5217\u8868",
+            "items": {
+              "description": "\u7528\u6237\u7ec4\u7f16\u7801\u5217\u8868",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "organizationId": {
+            "description": "\u4e3b\u7ec4\u7ec7ID",
+            "type": "string"
+          },
+          "organizationName": {
+            "description": "\u4e3b\u7ec4\u7ec7\u540d\u79f0",
+            "type": "string"
+          },
+          "phone": {
+            "description": "\u624b\u673a\u53f7",
+            "type": "string"
+          },
+          "phoneVerified": {
+            "description": "\u624b\u673a\u53f7\u662f\u5426\u5df2\u9a8c\u8bc1",
+            "type": "boolean"
+          },
+          "userId": {
+            "description": "\u7528\u6237ID",
+            "type": "string"
+          },
+          "userType": {
+            "description": "\u7528\u6237\u7c7b\u578b",
+            "type": "string"
+          },
+          "username": {
+            "description": "\u7528\u6237\u540d",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PublicSecretResult": {
+        "properties": {
+          "secret": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ResourceTypeDefinition": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ResourceTypeRequest": {
+        "description": "\u8d44\u6e90\u7c7b\u578b\u58f0\u660e\u8bf7\u6c42",
+        "properties": {
+          "appCode": {
+            "description": "\u5e94\u7528\u7f16\u7801",
+            "minLength": 1,
+            "type": "string"
+          },
+          "code": {
+            "description": "\u8d44\u6e90\u7c7b\u578b\u7f16\u7801\uff0c\u683c\u5f0f\u4e3a {appCode}:{resourceType}",
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "description": "\u8d44\u6e90\u7c7b\u578b\u540d\u79f0",
+            "minLength": 1,
+            "type": "string"
+          },
+          "pattern": {
+            "description": "\u8d44\u6e90\u6a21\u5f0f",
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "description": "\u72b6\u6001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "appCode",
+          "code",
+          "name",
+          "pattern"
+        ],
+        "type": "object"
+      },
+      "ResourceTypeView": {
+        "description": "\u8d44\u6e90\u7c7b\u578b\u89c6\u56fe",
+        "properties": {
+          "appCode": {
+            "description": "\u5e94\u7528\u7f16\u7801",
+            "type": "string"
+          },
+          "appId": {
+            "description": "\u5e94\u7528ID",
+            "type": "string"
+          },
+          "code": {
+            "description": "\u8d44\u6e90\u7c7b\u578b\u7f16\u7801",
+            "type": "string"
+          },
+          "id": {
+            "description": "\u8d44\u6e90\u7c7b\u578bID",
+            "type": "string"
+          },
+          "name": {
+            "description": "\u8d44\u6e90\u7c7b\u578b\u540d\u79f0",
+            "type": "string"
+          },
+          "pattern": {
+            "description": "\u8d44\u6e90\u6a21\u5f0f",
+            "type": "string"
+          },
+          "status": {
+            "description": "\u72b6\u6001",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RoleBindingRequest": {
+        "description": "\u89d2\u8272\u7ed1\u5b9a\u8bf7\u6c42",
+        "properties": {
+          "principalId": {
+            "description": "\u4e3b\u4f53ID",
+            "minLength": 1,
+            "type": "string"
+          },
+          "principalType": {
+            "description": "\u4e3b\u4f53\u7c7b\u578b",
+            "minLength": 1,
+            "type": "string"
+          },
+          "roleId": {
+            "description": "\u7ed1\u5b9a\u89d2\u8272ID",
+            "minLength": 1,
+            "type": "string"
+          },
+          "scope": {
+            "description": "\u751f\u6548\u8303\u56f4",
+            "type": "string"
+          }
+        },
+        "required": [
+          "principalId",
+          "principalType",
+          "roleId"
+        ],
+        "type": "object"
+      },
+      "RoleBindingView": {
+        "description": "\u89d2\u8272\u7ed1\u5b9a\u89c6\u56fe",
+        "properties": {
+          "id": {
+            "description": "\u7ed1\u5b9aID",
+            "type": "string"
+          },
+          "principalId": {
+            "description": "\u4e3b\u4f53ID",
+            "type": "string"
+          },
+          "principalType": {
+            "description": "\u4e3b\u4f53\u7c7b\u578b",
+            "type": "string"
+          },
+          "roleCode": {
+            "description": "\u7ed1\u5b9a\u89d2\u8272\u7f16\u7801",
+            "type": "string"
+          },
+          "roleId": {
+            "description": "\u7ed1\u5b9a\u89d2\u8272ID",
+            "type": "string"
+          },
+          "scope": {
+            "description": "\u751f\u6548\u8303\u56f4",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RoleRequest": {
+        "description": "\u89d2\u8272\u521b\u5efa\u6216\u66f4\u65b0\u8bf7\u6c42",
+        "properties": {
+          "code": {
+            "description": "\u552f\u4e00\u89d2\u8272\u7f16\u7801",
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "description": "\u89d2\u8272\u63cf\u8ff0",
+            "type": "string"
+          },
+          "name": {
+            "description": "\u89d2\u8272\u540d\u79f0",
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "description": "\u89d2\u8272\u72b6\u6001",
+            "type": "string"
+          },
+          "trustPolicy": {
+            "description": "\u89d2\u8272\u4fe1\u4efb\u7b56\u7565 JSON \u6587\u6863",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "type": "object"
+      },
+      "RoleSummary": {
+        "description": "\u89d2\u8272\u6458\u8981",
+        "properties": {
+          "code": {
+            "description": "\u89d2\u8272\u7f16\u7801",
+            "type": "string"
+          },
+          "description": {
+            "description": "\u89d2\u8272\u63cf\u8ff0",
+            "type": "string"
+          },
+          "id": {
+            "description": "\u89d2\u8272ID",
+            "type": "string"
+          },
+          "name": {
+            "description": "\u89d2\u8272\u540d\u79f0",
+            "type": "string"
+          },
+          "status": {
+            "description": "\u89d2\u8272\u72b6\u6001",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ServiceActionDefinition": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "resourceType": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ServiceActionRequest": {
+        "description": "\u670d\u52a1\u52a8\u4f5c\u58f0\u660e\u8bf7\u6c42",
+        "properties": {
+          "action": {
+            "description": "\u52a8\u4f5c\uff0c\u683c\u5f0f\u4e3a {appCode}:{action}",
+            "minLength": 1,
+            "type": "string"
+          },
+          "appCode": {
+            "description": "\u5e94\u7528\u7f16\u7801",
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "description": "\u52a8\u4f5c\u63cf\u8ff0",
+            "type": "string"
+          },
+          "resourceType": {
+            "description": "\u5173\u8054\u8d44\u6e90\u7c7b\u578b",
+            "type": "string"
+          },
+          "riskLevel": {
+            "description": "\u98ce\u9669\u7b49\u7ea7",
+            "type": "string"
+          },
+          "status": {
+            "description": "\u72b6\u6001",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "appCode"
+        ],
+        "type": "object"
+      },
+      "ServiceActionView": {
+        "description": "\u670d\u52a1\u52a8\u4f5c\u89c6\u56fe",
+        "properties": {
+          "action": {
+            "description": "\u52a8\u4f5c",
+            "type": "string"
+          },
+          "appCode": {
+            "description": "\u5e94\u7528\u7f16\u7801",
+            "type": "string"
+          },
+          "appId": {
+            "description": "\u5e94\u7528ID",
+            "type": "string"
+          },
+          "description": {
+            "description": "\u52a8\u4f5c\u63cf\u8ff0",
+            "type": "string"
+          },
+          "id": {
+            "description": "\u52a8\u4f5cID",
+            "type": "string"
+          },
+          "resourceType": {
+            "description": "\u5173\u8054\u8d44\u6e90\u7c7b\u578b",
+            "type": "string"
+          },
+          "riskLevel": {
+            "description": "\u98ce\u9669\u7b49\u7ea7",
+            "type": "string"
+          },
+          "status": {
+            "description": "\u72b6\u6001",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionRevokeRequest": {
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "sid": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionRevokeResponse": {
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "revoked": {
+            "type": "boolean"
+          },
+          "revokedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sid": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionRevokeUserRequest": {
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionRevokeUserResponse": {
+        "properties": {
+          "revokedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revokedCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionSummary": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "applications": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationSessionSummary"
+            },
+            "type": "array"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "orgId": {
+            "type": "string"
+          },
+          "revokeReason": {
+            "type": "string"
+          },
+          "revoked": {
+            "type": "boolean"
+          },
+          "sid": {
+            "type": "string"
+          },
+          "userAgent": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userType": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionTouchRequest": {
+        "properties": {
+          "sid": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionTouchResponse": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionValidateRequest": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "sid": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SessionValidateResponse": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "appCode": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "orgId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "sub": {
+            "type": "string"
+          },
+          "userType": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Statement": {
+        "description": "CAM \u5f0f\u7b56\u7565\u8bed\u53e5",
+        "properties": {
+          "action": {
+            "description": "\u52a8\u4f5c\u5217\u8868",
+            "items": {
+              "description": "\u52a8\u4f5c\u5217\u8868",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "condition": {
+            "additionalProperties": {
+              "description": "\u6761\u4ef6",
+              "type": "object"
+            },
+            "description": "\u6761\u4ef6",
+            "type": "object"
+          },
+          "effect": {
+            "description": "\u6548\u679c\uff1aAllow \u6216 Deny",
+            "type": "string"
+          },
+          "resource": {
+            "description": "\u8d44\u6e90\u5217\u8868",
+            "items": {
+              "description": "\u8d44\u6e90\u5217\u8868",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sid": {
+            "description": "\u8bed\u53e5\u6807\u8bc6",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Target": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "user",
+              "user_detail",
+              "user_group",
+              "user_group_member",
+              "identity_source",
+              "organization",
+              "application",
+              "application_account",
+              "session",
+              "app_permission_resource",
+              "app_permission_policy",
+              "app_permission_role",
+              "app_group",
+              "role",
+              "authz_role",
+              "policy",
+              "policy_attachment",
+              "service_action",
+              "resource_type",
+              "login_session",
+              "app_session",
+              "sso_ticket",
+              "administrator",
+              "password_policy",
+              "mail_template",
+              "identity_provider",
+              "console",
+              "portal",
+              "user_idp"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TicketExchangeRequest": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string"
+          },
+          "ticket": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TicketExchangeResponse": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "sessionExpiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sid": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserInfo"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TicketIssueResponse": {
+        "properties": {
+          "appCode": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "nonce": {
+            "type": "string"
+          },
+          "targetUrl": {
+            "type": "string"
+          },
+          "ticket": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TotpConfirmEnrollmentRequest": {
+        "properties": {
+          "code": {
+            "maxLength": 10,
+            "minLength": 0,
+            "type": "string"
+          },
+          "credentialId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "TotpCredentialResponse": {
+        "properties": {
+          "algorithm": {
+            "type": "string"
+          },
+          "confirmedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "credentialId": {
+            "type": "string"
+          },
+          "digits": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "lastUsedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "periodSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TotpDisableResponse": {
+        "properties": {
+          "disabledCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "TotpEnrollRequest": {
+        "properties": {
+          "name": {
+            "maxLength": 128,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "TotpEnrollResponse": {
+        "properties": {
+          "algorithm": {
+            "type": "string"
+          },
+          "credentialId": {
+            "type": "string"
+          },
+          "digits": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "otpauthUri": {
+            "type": "string"
+          },
+          "periodSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "secret": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TotpVerifyRequest": {
+        "properties": {
+          "code": {
+            "maxLength": 10,
+            "minLength": 0,
+            "type": "string"
+          },
+          "credentialId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "TotpVerifyResponse": {
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "UserAgent": {
+        "properties": {
+          "browser": {
+            "type": "string"
+          },
+          "browserMajorVersion": {
+            "type": "string"
+          },
+          "browserType": {
+            "type": "string"
+          },
+          "deviceType": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "platformVersion": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UserInfo": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": {
+              "type": "object"
+            },
+            "type": "object"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "nickName": {
+            "type": "string"
+          },
+          "orgId": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "phoneVerified": {
+            "type": "boolean"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userType": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UserType": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WebAuthnAssertionRequest": {
+        "properties": {
+          "authenticatorData": {
+            "type": "string"
+          },
+          "challengeId": {
+            "type": "string"
+          },
+          "clientDataJson": {
+            "type": "string"
+          },
+          "credentialId": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WebAuthnAuthenticationOptions": {
+        "properties": {
+          "allowCredentials": {
+            "items": {
+              "$ref": "#/components/schemas/WebAuthnCredentialDescriptor"
+            },
+            "type": "array"
+          },
+          "challenge": {
+            "type": "string"
+          },
+          "challengeId": {
+            "type": "string"
+          },
+          "rpId": {
+            "type": "string"
+          },
+          "timeout": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "userVerification": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WebAuthnCredentialDescriptor": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "transports": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WebAuthnCredentialParameter": {
+        "properties": {
+          "alg": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WebAuthnCredentialResponse": {
+        "properties": {
+          "aaguid": {
+            "type": "string"
+          },
+          "attestationFormat": {
+            "type": "string"
+          },
+          "backupEligible": {
+            "type": "boolean"
+          },
+          "backupState": {
+            "type": "boolean"
+          },
+          "coseAlgorithm": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "credentialId": {
+            "type": "string"
+          },
+          "lastUsedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "registeredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "signCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "transports": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WebAuthnDisableResponse": {
+        "properties": {
+          "disabledCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "WebAuthnRegistrationOptions": {
+        "properties": {
+          "attestation": {
+            "type": "string"
+          },
+          "challenge": {
+            "type": "string"
+          },
+          "challengeId": {
+            "type": "string"
+          },
+          "excludeCredentials": {
+            "items": {
+              "$ref": "#/components/schemas/WebAuthnCredentialDescriptor"
+            },
+            "type": "array"
+          },
+          "pubKeyCredParams": {
+            "items": {
+              "$ref": "#/components/schemas/WebAuthnCredentialParameter"
+            },
+            "type": "array"
+          },
+          "rpId": {
+            "type": "string"
+          },
+          "rpName": {
+            "type": "string"
+          },
+          "timeout": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "userDisplayName": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "userVerification": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WebAuthnRegistrationRequest": {
+        "properties": {
+          "attestationObject": {
+            "type": "string"
+          },
+          "challengeId": {
+            "type": "string"
+          },
+          "clientDataJson": {
+            "type": "string"
+          },
+          "transports": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "pudans-iam",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.1",
+  "paths": {
+    "/apis/pudans.tolim.cn/v1alpha1/iam/apps/{appCode}": {
+      "get": {
+        "operationId": "application",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationSummary"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6\u5e94\u7528\u8be6\u60c5",
+        "tags": [
+          "IAM \u5e94\u7528\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/apps/{appCode}/access": {
+      "get": {
+        "operationId": "access",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orgId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "userType",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationAccessResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6\u5e94\u7528\u8bbf\u95ee\u6743\u9650",
+        "tags": [
+          "IAM \u5e94\u7528\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/audit/event-types": {
+      "get": {
+        "operationId": "eventTypes",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListAuditEventTypeView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u5ba1\u8ba1\u4e8b\u4ef6\u7c7b\u578b",
+        "tags": [
+          "IAM \u5ba1\u8ba1\u8bb0\u5f55"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/audit/records": {
+      "get": {
+        "operationId": "search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AuditQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultAuditPageAuditRecordView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5206\u9875\u67e5\u8be2\u5ba1\u8ba1\u8bb0\u5f55",
+        "tags": [
+          "IAM \u5ba1\u8ba1\u8bb0\u5f55"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/audit/records/by-request/{requestId}": {
+      "get": {
+        "operationId": "findByRequest",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListAuditRecordView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6309\u8bf7\u6c42 ID \u67e5\u8be2\u5ba1\u8ba1\u8bb0\u5f55",
+        "tags": [
+          "IAM \u5ba1\u8ba1\u8bb0\u5f55"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/audit/records/by-session/{sessionId}": {
+      "get": {
+        "operationId": "findBySession",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListAuditRecordView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6309\u4f1a\u8bdd ID \u67e5\u8be2\u5ba1\u8ba1\u8bb0\u5f55",
+        "tags": [
+          "IAM \u5ba1\u8ba1\u8bb0\u5f55"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/audit/records/{id}": {
+      "get": {
+        "operationId": "get_4",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultAuditRecordView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u5ba1\u8ba1\u8bb0\u5f55\u8be6\u60c5",
+        "tags": [
+          "IAM \u5ba1\u8ba1\u8bb0\u5f55"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/login": {
+      "post": {
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u767b\u5f55",
+        "tags": [
+          "IAM \u767b\u5f55\u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/login/config": {
+      "get": {
+        "operationId": "loginConfig_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginConfigResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6\u767b\u5f55\u914d\u7f6e",
+        "tags": [
+          "IAM \u767b\u5f55\u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u9000\u51fa\u767b\u5f55",
+        "tags": [
+          "IAM \u767b\u5f55\u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/challenge": {
+      "post": {
+        "operationId": "challenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaChallengeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaChallengeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u53d1\u8d77 MFA \u6311\u6218",
+        "tags": [
+          "IAM \u591a\u56e0\u7d20\u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/totp/credentials": {
+      "delete": {
+        "operationId": "disableAll_1",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpDisableResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664\u5168\u90e8 TOTP \u51ed\u8bc1",
+        "tags": [
+          "TOTP \u8ba4\u8bc1"
+        ]
+      },
+      "get": {
+        "operationId": "credentials_1",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TotpCredentialResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6 TOTP \u51ed\u8bc1",
+        "tags": [
+          "TOTP \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/totp/credentials/{credentialId}": {
+      "delete": {
+        "operationId": "disable_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "credentialId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpCredentialResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664 TOTP \u51ed\u8bc1",
+        "tags": [
+          "TOTP \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/totp/enroll": {
+      "post": {
+        "operationId": "enroll",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpEnrollRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpEnrollResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5f00\u59cb TOTP \u7ed1\u5b9a",
+        "tags": [
+          "TOTP \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/totp/enroll/confirm": {
+      "post": {
+        "operationId": "confirmEnrollment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpConfirmEnrollmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpCredentialResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u786e\u8ba4 TOTP \u7ed1\u5b9a",
+        "tags": [
+          "TOTP \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/totp/verify": {
+      "post": {
+        "operationId": "verify_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpVerifyResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6821\u9a8c TOTP",
+        "tags": [
+          "TOTP \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/verify": {
+      "post": {
+        "operationId": "verify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6821\u9a8c MFA",
+        "tags": [
+          "IAM \u591a\u56e0\u7d20\u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/webauthn/authentication/complete": {
+      "post": {
+        "operationId": "completeAuthentication",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebAuthnAssertionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAuthnCredentialResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5b8c\u6210 WebAuthn \u8ba4\u8bc1",
+        "tags": [
+          "WebAuthn \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/webauthn/authentication/options": {
+      "post": {
+        "operationId": "authenticationOptions",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAuthnAuthenticationOptions"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6 WebAuthn \u8ba4\u8bc1\u9009\u9879",
+        "tags": [
+          "WebAuthn \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/webauthn/credentials": {
+      "delete": {
+        "operationId": "disableAll",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAuthnDisableResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664\u5168\u90e8 WebAuthn \u51ed\u8bc1",
+        "tags": [
+          "WebAuthn \u8ba4\u8bc1"
+        ]
+      },
+      "get": {
+        "operationId": "credentials",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WebAuthnCredentialResponse"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6 WebAuthn \u51ed\u8bc1",
+        "tags": [
+          "WebAuthn \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/webauthn/credentials/{credentialId}": {
+      "delete": {
+        "operationId": "disable",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "credentialId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAuthnCredentialResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664 WebAuthn \u51ed\u8bc1",
+        "tags": [
+          "WebAuthn \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/webauthn/options": {
+      "post": {
+        "operationId": "webAuthnOptions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IamMfaWebAuthnOptionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAuthnAuthenticationOptions"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6 WebAuthn \u8ba4\u8bc1\u9009\u9879",
+        "tags": [
+          "IAM \u591a\u56e0\u7d20\u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/webauthn/registration/complete": {
+      "post": {
+        "operationId": "completeRegistration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebAuthnRegistrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAuthnCredentialResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5b8c\u6210 WebAuthn \u6ce8\u518c",
+        "tags": [
+          "WebAuthn \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/webauthn/registration/options": {
+      "post": {
+        "operationId": "registrationOptions",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebAuthnRegistrationOptions"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5f00\u59cb WebAuthn \u6ce8\u518c",
+        "tags": [
+          "WebAuthn \u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/auth/mfa/webauthn/verify": {
+      "post": {
+        "operationId": "webAuthnVerify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IamMfaWebAuthnVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6821\u9a8c WebAuthn \u8ba4\u8bc1",
+        "tags": [
+          "IAM \u591a\u56e0\u7d20\u8ba4\u8bc1"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/actions": {
+      "get": {
+        "operationId": "list_5",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListServiceActionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u52a8\u4f5c\u5217\u8868",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u52a8\u4f5c\u58f0\u660e"
+        ]
+      },
+      "post": {
+        "operationId": "register_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultServiceActionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6ce8\u518c\u52a8\u4f5c",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u52a8\u4f5c\u58f0\u660e"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/actions/{id}": {
+      "delete": {
+        "operationId": "delete_3",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultVoid"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664\u52a8\u4f5c",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u52a8\u4f5c\u58f0\u660e"
+        ]
+      },
+      "get": {
+        "operationId": "get_3",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultServiceActionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u52a8\u4f5c\u8be6\u60c5",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u52a8\u4f5c\u58f0\u660e"
+        ]
+      },
+      "put": {
+        "operationId": "update_3",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultServiceActionView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u66f4\u65b0\u52a8\u4f5c",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u52a8\u4f5c\u58f0\u660e"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/evaluate": {
+      "post": {
+        "operationId": "evaluate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyEvaluateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPolicyEvaluateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u9274\u6743\u8bc4\u4f30",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/evaluate/batch": {
+      "post": {
+        "operationId": "evaluateBatch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/PolicyEvaluateRequest"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListPolicyEvaluateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6279\u91cf\u9274\u6743\u8bc4\u4f30",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/logs": {
+      "get": {
+        "operationId": "logs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "principalType",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "principalId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "decision",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListAuthzLogView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u9274\u6743\u51b3\u7b56\u65e5\u5fd7",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/policies": {
+      "get": {
+        "operationId": "list_4",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListPolicySummary"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u7b56\u7565\u5217\u8868",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ba1\u7406"
+        ]
+      },
+      "post": {
+        "operationId": "create_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPolicyDetail"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u521b\u5efa\u7b56\u7565",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/policies/simulate": {
+      "post": {
+        "operationId": "simulate_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicySimulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPolicySimulationResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6a21\u62df\u7b56\u7565",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/policies/validate": {
+      "post": {
+        "operationId": "validate_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyDocument"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPolicyValidationResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6821\u9a8c\u7b56\u7565\u6587\u6863",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/policies/{id}": {
+      "delete": {
+        "operationId": "delete_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultVoid"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664\u7b56\u7565",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ba1\u7406"
+        ]
+      },
+      "get": {
+        "operationId": "get_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPolicyDetail"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u7b56\u7565\u8be6\u60c5",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ba1\u7406"
+        ]
+      },
+      "put": {
+        "operationId": "update_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPolicyDetail"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u66f4\u65b0\u7b56\u7565",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/policy-attachments": {
+      "get": {
+        "operationId": "list_3",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "policyId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "principalType",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "principalId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListPolicyAttachmentView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u7b56\u7565\u7ed1\u5b9a",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ed1\u5b9a"
+        ]
+      },
+      "post": {
+        "operationId": "attach",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyAttachmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPolicyAttachmentView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u7ed1\u5b9a\u7b56\u7565",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ed1\u5b9a"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/policy-attachments/{id}": {
+      "delete": {
+        "operationId": "detach",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultVoid"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u89e3\u7ed1\u7b56\u7565",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u7b56\u7565\u7ed1\u5b9a"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/principals/{principalType}/{principalId}/effective-permissions": {
+      "get": {
+        "operationId": "effectivePermissions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "principalType",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "principalId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultEffectivePermissionResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u4e3b\u4f53\u6709\u6548\u6743\u9650",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/resource-types": {
+      "get": {
+        "operationId": "list_2",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "appCode",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListResourceTypeView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u8d44\u6e90\u7c7b\u578b\u5217\u8868",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u8d44\u6e90\u7c7b\u578b\u58f0\u660e"
+        ]
+      },
+      "post": {
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResourceTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultResourceTypeView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6ce8\u518c\u8d44\u6e90\u7c7b\u578b",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u8d44\u6e90\u7c7b\u578b\u58f0\u660e"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/resource-types/{id}": {
+      "delete": {
+        "operationId": "delete_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultVoid"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664\u8d44\u6e90\u7c7b\u578b",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u8d44\u6e90\u7c7b\u578b\u58f0\u660e"
+        ]
+      },
+      "get": {
+        "operationId": "get_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultResourceTypeView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u8d44\u6e90\u7c7b\u578b\u8be6\u60c5",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u8d44\u6e90\u7c7b\u578b\u58f0\u660e"
+        ]
+      },
+      "put": {
+        "operationId": "update_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResourceTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultResourceTypeView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u66f4\u65b0\u8d44\u6e90\u7c7b\u578b",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u8d44\u6e90\u7c7b\u578b\u58f0\u660e"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/role-bindings": {
+      "get": {
+        "operationId": "list_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "roleId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "principalType",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "principalId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListRoleBindingView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u89d2\u8272\u7ed1\u5b9a",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u89d2\u8272\u7ed1\u5b9a"
+        ]
+      },
+      "post": {
+        "operationId": "bind",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleBindingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultRoleBindingView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u7ed1\u5b9a\u89d2\u8272",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u89d2\u8272\u7ed1\u5b9a"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/role-bindings/{id}": {
+      "delete": {
+        "operationId": "unbind",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultVoid"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u89e3\u7ed1\u89d2\u8272",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u89d2\u8272\u7ed1\u5b9a"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/roles": {
+      "get": {
+        "operationId": "list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListRoleSummary"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u89d2\u8272\u5217\u8868",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u89d2\u8272\u7ba1\u7406"
+        ]
+      },
+      "post": {
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultRoleSummary"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u521b\u5efa\u89d2\u8272",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u89d2\u8272\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/roles/{id}": {
+      "delete": {
+        "operationId": "delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultVoid"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5220\u9664\u89d2\u8272",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u89d2\u8272\u7ba1\u7406"
+        ]
+      },
+      "get": {
+        "operationId": "get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultRoleSummary"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u89d2\u8272\u8be6\u60c5",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u89d2\u8272\u7ba1\u7406"
+        ]
+      },
+      "put": {
+        "operationId": "update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultRoleSummary"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u66f4\u65b0\u89d2\u8272",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u89d2\u8272\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/roles/{id}/bindings": {
+      "get": {
+        "operationId": "bindings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultListRoleBindingView"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u89d2\u8272\u7ed1\u5b9a",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743-\u89d2\u8272\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/authz/simulate": {
+      "post": {
+        "operationId": "simulate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicySimulationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPolicySimulationResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u7b56\u7565\u6a21\u62df\u5668",
+        "tags": [
+          "\u7edf\u4e00\u6388\u6743"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/backchannel-logout": {
+      "post": {
+        "operationId": "backchannelLogout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackchannelLogoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5904\u7406\u540e\u7aef\u767b\u51fa",
+        "tags": [
+          "IAM \u5355\u70b9\u767b\u5f55"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/me": {
+      "get": {
+        "operationId": "me_1",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserInfo"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u5f53\u524d\u7528\u6237",
+        "tags": [
+          "IAM \u4f1a\u8bdd\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/me/apps": {
+      "get": {
+        "operationId": "myApplications",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MyApplicationSummary"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u6211\u7684\u5e94\u7528",
+        "tags": [
+          "IAM \u4f1a\u8bdd\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/portal/apps": {
+      "get": {
+        "operationId": "apps",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPortalAppsResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u5df2\u6388\u6743\u5e94\u7528\u94fe\u63a5",
+        "tags": [
+          "IAM \u95e8\u6237"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/portal/login-config": {
+      "get": {
+        "operationId": "loginConfig",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPortalLoginConfigResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6\u72ec\u7acb\u767b\u5f55\u9875\u914d\u7f6e",
+        "tags": [
+          "IAM \u95e8\u6237"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/portal/logout-url": {
+      "get": {
+        "operationId": "logoutUrl",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPortalLogoutUrlResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6\u5168\u5c40\u9000\u51fa\u5730\u5740",
+        "tags": [
+          "IAM \u95e8\u6237"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/portal/me": {
+      "get": {
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPortalMeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6\u5f53\u524d\u7528\u6237\u4e0e\u4f1a\u8bdd\u4fe1\u606f",
+        "tags": [
+          "IAM \u95e8\u6237"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/public_secret": {
+      "get": {
+        "operationId": "getPublicSecret",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "type",
+            "required": true,
+            "schema": {
+              "enum": [
+                "login",
+                "encrypt"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultPublicSecretResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6\u516c\u5171\u5bc6\u94a5",
+        "tags": [
+          "IAM \u516c\u5171\u5bc6\u94a5"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/session/revoke": {
+      "post": {
+        "operationId": "revoke",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionRevokeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionRevokeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u64a4\u9500\u4f1a\u8bdd",
+        "tags": [
+          "IAM \u4f1a\u8bdd\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/session/revoke-user": {
+      "post": {
+        "operationId": "revokeUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionRevokeUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionRevokeUserResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u64a4\u9500\u7528\u6237\u4f1a\u8bdd",
+        "tags": [
+          "IAM \u4f1a\u8bdd\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/session/touch": {
+      "post": {
+        "operationId": "touch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionTouchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTouchResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u7eed\u671f\u4f1a\u8bdd",
+        "tags": [
+          "IAM \u4f1a\u8bdd\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/session/user/{userId}": {
+      "get": {
+        "operationId": "userSessions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionSummary"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u7528\u6237\u4f1a\u8bdd",
+        "tags": [
+          "IAM \u4f1a\u8bdd\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/session/validate": {
+      "post": {
+        "operationId": "validate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionValidateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6821\u9a8c\u4f1a\u8bdd",
+        "tags": [
+          "IAM \u4f1a\u8bdd\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/session/{sid}": {
+      "get": {
+        "operationId": "session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sid",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSummary"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u67e5\u8be2\u4f1a\u8bdd\u8be6\u60c5",
+        "tags": [
+          "IAM \u4f1a\u8bdd\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/sessions/validate": {
+      "post": {
+        "operationId": "validate_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionValidateResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u6821\u9a8c\u4f1a\u8bdd",
+        "tags": [
+          "IAM \u4f1a\u8bdd\u7ba1\u7406"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/storage/content": {
+      "get": {
+        "operationId": "content",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6\u5b58\u50a8\u6587\u4ef6\u5185\u5bb9",
+        "tags": [
+          "\u5b58\u50a8\u6587\u4ef6"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/storage/get": {
+      "get": {
+        "operationId": "getUrl",
+        "parameters": [
+          {
+            "description": "\u6587\u4ef6\u8def\u5f84",
+            "in": "query",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "description": "\u6587\u4ef6\u8def\u5f84",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultObject"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u83b7\u53d6\u5b58\u50a8\u6587\u4ef6\u8def\u5f84",
+        "tags": [
+          "\u5b58\u50a8\u6587\u4ef6"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/storage/upload": {
+      "post": {
+        "operationId": "uploadFile",
+        "parameters": [
+          {
+            "description": "\u6587\u4ef6",
+            "in": "query",
+            "name": "file",
+            "required": true,
+            "schema": {
+              "format": "binary",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiRestResultObject"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u4e0a\u4f20\u6587\u4ef6",
+        "tags": [
+          "\u5b58\u50a8\u6587\u4ef6"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/synchronizer/event_receive/{code}": {
+      "delete": {
+        "operationId": "receive_3",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u63a5\u6536\u8eab\u4efd\u6e90\u4e8b\u4ef6",
+        "tags": [
+          "IAM \u8eab\u4efd\u6e90\u4e8b\u4ef6\u63a5\u6536"
+        ]
+      },
+      "get": {
+        "operationId": "receive",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u63a5\u6536\u8eab\u4efd\u6e90\u4e8b\u4ef6",
+        "tags": [
+          "IAM \u8eab\u4efd\u6e90\u4e8b\u4ef6\u63a5\u6536"
+        ]
+      },
+      "head": {
+        "operationId": "receive_5",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u63a5\u6536\u8eab\u4efd\u6e90\u4e8b\u4ef6",
+        "tags": [
+          "IAM \u8eab\u4efd\u6e90\u4e8b\u4ef6\u63a5\u6536"
+        ]
+      },
+      "options": {
+        "operationId": "receive_6",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u63a5\u6536\u8eab\u4efd\u6e90\u4e8b\u4ef6",
+        "tags": [
+          "IAM \u8eab\u4efd\u6e90\u4e8b\u4ef6\u63a5\u6536"
+        ]
+      },
+      "patch": {
+        "operationId": "receive_4",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u63a5\u6536\u8eab\u4efd\u6e90\u4e8b\u4ef6",
+        "tags": [
+          "IAM \u8eab\u4efd\u6e90\u4e8b\u4ef6\u63a5\u6536"
+        ]
+      },
+      "post": {
+        "operationId": "receive_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u63a5\u6536\u8eab\u4efd\u6e90\u4e8b\u4ef6",
+        "tags": [
+          "IAM \u8eab\u4efd\u6e90\u4e8b\u4ef6\u63a5\u6536"
+        ]
+      },
+      "put": {
+        "operationId": "receive_2",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u63a5\u6536\u8eab\u4efd\u6e90\u4e8b\u4ef6",
+        "tags": [
+          "IAM \u8eab\u4efd\u6e90\u4e8b\u4ef6\u63a5\u6536"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/ticket/exchange": {
+      "post": {
+        "operationId": "exchange",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketExchangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5151\u6362\u7968\u636e",
+        "tags": [
+          "IAM \u5355\u70b9\u767b\u5f55"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/ticket/issue": {
+      "post": {
+        "operationId": "issue",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IamTicketIssueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketIssueResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u7b7e\u53d1\u7968\u636e",
+        "tags": [
+          "IAM \u5355\u70b9\u767b\u5f55"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/tickets/exchange": {
+      "post": {
+        "operationId": "exchange_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TicketExchangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketExchangeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u5151\u6362\u7968\u636e",
+        "tags": [
+          "IAM \u5355\u70b9\u767b\u5f55"
+        ]
+      }
+    },
+    "/apis/pudans.tolim.cn/v1alpha1/iam/tickets/issue": {
+      "post": {
+        "operationId": "issue_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IamTicketIssueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketIssueResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "summary": "\u7b7e\u53d1\u7968\u636e",
+        "tags": [
+          "IAM \u5355\u70b9\u767b\u5f55"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Generated server url",
+      "url": "http://127.0.0.1:18091"
+    }
+  ]
+}
