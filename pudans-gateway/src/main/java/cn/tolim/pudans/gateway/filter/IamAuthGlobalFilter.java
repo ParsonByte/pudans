@@ -77,6 +77,7 @@ public class IamAuthGlobalFilter implements GlobalFilter, Ordered {
                         gatewayProperties.getAuth().getLoginPageUrl(),
                         gatewayProperties.getAuth().isCookieSecure(),
                         gatewayProperties.getAuth().getCookieSameSite(),
+                        gatewayProperties.getAuth().getCookieDomain(),
                         gatewayProperties.getAuth().isRedirectPageRequests()));
     }
 
@@ -182,6 +183,9 @@ public class IamAuthGlobalFilter implements GlobalFilter, Ordered {
                 .secure(authOptions.cookieSecure());
         if (authOptions.cookieSameSite() != null && !authOptions.cookieSameSite().isBlank()) {
             builder.sameSite(authOptions.cookieSameSite());
+        }
+        if (authOptions.cookieDomain() != null && !authOptions.cookieDomain().isBlank()) {
+            builder.domain(authOptions.cookieDomain().trim());
         }
         return builder.build();
     }

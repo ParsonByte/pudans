@@ -53,6 +53,7 @@ pudans:
       session-timeout-millis: 3000
       cookie-secure: ${PUDANS_COOKIE_SECURE:false}
       cookie-same-site: Lax
+      cookie-domain: ${PUDANS_COOKIE_DOMAIN:}
       redirect-page-requests: true
       trust-forwarded-headers: true
     discovery:

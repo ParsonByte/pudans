@@ -111,6 +111,9 @@ public class GatewayProperties {
         // SameSite flag for session cookie responses
         private String cookieSameSite = "Lax";
 
+        // Optional cookie domain for sharing the login session across subdomains
+        private String cookieDomain = "";
+
         // Page requests redirect to the login page, API requests return 401
         private boolean redirectPageRequests = true;
 
@@ -179,6 +182,14 @@ public class GatewayProperties {
 
         public void setCookieSameSite(String cookieSameSite) {
             this.cookieSameSite = cookieSameSite;
+        }
+
+        public String getCookieDomain() {
+            return cookieDomain;
+        }
+
+        public void setCookieDomain(String cookieDomain) {
+            this.cookieDomain = cookieDomain;
         }
 
         public boolean isRedirectPageRequests() {

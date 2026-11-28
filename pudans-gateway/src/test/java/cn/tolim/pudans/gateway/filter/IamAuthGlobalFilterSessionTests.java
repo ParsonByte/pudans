@@ -253,11 +253,28 @@ class IamAuthGlobalFilterSessionTests {
                 objectMapper,
                 (sid, appCode) -> Mono.just(SessionValidationResult.inactive("revoked")),
                 new ExternalUrlResolver(true),
-                new GatewayAuthOptions(SESSION_COOKIE, "/login", false, "Lax", false));
+                new GatewayAuthOptions(SESSION_COOKIE, "/login", false, "Lax", "", false));
         MockServerWebExchange exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get(APP_ORDERS_PATH).build());
 
         assertUnauthorized(exchange, apiOnlyFilter);
+    }
+
+    @Test
+    void inactiveSessionCookieClearsConfiguredDomain() {
+        IamAuthGlobalFilter domainFilter = new IamAuthGlobalFilter(
+                new JwtTokenService(SECRET, ISSUER, AUDIENCE, 3600),
+                objectMapper,
+                (sid, appCode) -> Mono.just(SessionValidationResult.inactive("revoked")),
+                new ExternalUrlResolver(true),
+                new GatewayAuthOptions(SESSION_COOKIE, "/login", false, "Lax", ".example.com", false));
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get(IAM_USERS_PATH).cookie(sessionCookie("sid-1")).build());
+
+        assertUnauthorized(exchange, domainFilter);
+        assertThat(expiredCookieHeaders(exchange))
+                .anyMatch(header -> header.contains("Max-Age=0")
+                        && header.contains("Domain=.example.com"));
     }
 
     @Test

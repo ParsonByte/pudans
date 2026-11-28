@@ -114,6 +114,9 @@ public class IamAuthProperties {
         // Cookie path
         private String path = "/";
 
+        // Optional cookie domain for sharing the login session across subdomains
+        private String domain = "";
+
         public String getName() {
             return name;
         }
@@ -144,6 +147,14 @@ public class IamAuthProperties {
 
         public void setPath(String path) {
             this.path = path;
+        }
+
+        public String getDomain() {
+            return domain;
+        }
+
+        public void setDomain(String domain) {
+            this.domain = domain;
         }
     }
 

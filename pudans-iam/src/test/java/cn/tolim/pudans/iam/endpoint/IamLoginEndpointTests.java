@@ -66,6 +66,27 @@ class IamLoginEndpointTests {
     }
 
     @Test
+    void loginCookieHonorsConfiguredDomain() throws Exception {
+        IamAuthProperties properties = new IamAuthProperties();
+        properties.getCookie().setDomain(".example.com");
+        IamSessionCookieService domainCookieService = new IamSessionCookieService(properties);
+        IamLoginEndpoint domainEndpoint = new IamLoginEndpoint(authenticationService, domainCookieService);
+        MockMvc domainMockMvc = MockMvcBuilders.standaloneSetup(domainEndpoint)
+                .setControllerAdvice(new IamApiExceptionHandler())
+                .build();
+        LoginResponse response = new LoginResponse();
+        response.setSid("sid-1");
+        response.setExpiresAt(LocalDateTime.now().plusHours(8));
+        when(authenticationService.login(any(), any(), any())).thenReturn(response);
+
+        domainMockMvc.perform(post(IamAuthApiPaths.LOGIN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"admin\",\"password\":\"secret\"}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Set-Cookie", containsString("Domain=.example.com")));
+    }
+
+    @Test
     void loginWithMfaReturnsChallengeWithoutSessionCookie() throws Exception {
         LoginResponse response = new LoginResponse();
         response.setMfaRequired(Boolean.TRUE);

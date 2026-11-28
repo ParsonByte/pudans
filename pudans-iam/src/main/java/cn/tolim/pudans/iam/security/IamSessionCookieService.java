@@ -63,12 +63,16 @@ public class IamSessionCookieService {
     }
 
     private ResponseCookie sessionCookie(String value, Duration maxAge) {
-        return ResponseCookie.from(properties.getCookie().getName(), value)
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(properties.getCookie().getName(), value)
                 .httpOnly(true)
                 .secure(Boolean.TRUE.equals(properties.getCookie().getSecure()))
                 .sameSite(properties.getCookie().getSameSite())
                 .path(properties.getCookie().getPath())
-                .maxAge(maxAge)
-                .build();
+                .maxAge(maxAge);
+        String domain = properties.getCookie().getDomain();
+        if (domain != null && !domain.isBlank()) {
+            builder.domain(domain.trim());
+        }
+        return builder.build();
     }
 }

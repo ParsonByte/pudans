@@ -42,6 +42,7 @@ pudans:
         secure: ${PUDANS_COOKIE_SECURE:false}
         same-site: Lax
         path: /
+        domain: ${PUDANS_COOKIE_DOMAIN:}
       cors:
         allowed-origins:
           - ${PUDANS_HOME_ORIGIN:http://localhost:3000}
