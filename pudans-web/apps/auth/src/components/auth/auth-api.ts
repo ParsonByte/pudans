@@ -1,6 +1,6 @@
 import type { LoginResponse } from "@pudans-dev/api-client";
 
-const CONSOLE_URL = process.env.NEXT_PUBLIC_CONSOLE_URL ?? "http://localhost:3003";
+const IAM_CONSOLE_URL = process.env.NEXT_PUBLIC_IAM_CONSOLE_URL;
 
 const ERROR_MESSAGES: Record<string, string> = {
   authentication_failed: "账号或密码错误",
@@ -42,5 +42,7 @@ export function finishLogin(response?: LoginResponse) {
     window.location.assign(requested);
     return;
   }
-  window.location.assign(CONSOLE_URL);
+  if (IAM_CONSOLE_URL) {
+    window.location.assign(IAM_CONSOLE_URL);
+  }
 }

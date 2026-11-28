@@ -1,8 +1,8 @@
 import { AppHeader } from "@pudans-dev/share-component";
 
 type PortalAppHeaderProps = {
-  authHref: string;
-  consoleHref: string;
+  authHref?: string;
+  consoleHref?: string;
 };
 
 export function PortalAppHeader({ authHref, consoleHref }: PortalAppHeaderProps) {

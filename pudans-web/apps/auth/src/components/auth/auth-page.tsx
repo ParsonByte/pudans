@@ -13,7 +13,7 @@ import { PasskeyLoginForm } from "./passkey-login-form";
 
 import "./auth-page.modules.less";
 
-const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL ?? "http://localhost:3000";
+const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL;
 
 type AuthTab = "account" | "email" | "phone" | "passkey";
 

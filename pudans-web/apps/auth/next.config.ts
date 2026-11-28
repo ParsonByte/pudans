@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
-const apiOrigin = process.env.PUDANS_API_ORIGIN ?? "http://localhost:8080";
+const apiOrigin = process.env.PUDANS_API_ORIGIN;
+
+if (!apiOrigin) {
+  throw new Error("PUDANS_API_ORIGIN is required");
+}
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@pudans-dev/api-client", "@pudans-dev/share-component"],
