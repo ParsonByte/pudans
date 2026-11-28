@@ -42,6 +42,10 @@
   padding: 90px 0;
 }
 
+.auth-shell--login {
+  height: 100dvh;
+}
+
 .auth-shell--forgot {
   justify-content: flex-start;
   overflow-y: auto;
@@ -631,6 +635,14 @@
   color: var(--auth-muted);
   font-size: 11px;
   letter-spacing: 0.12em;
+}
+
+@media (max-height: 820px) {
+  .auth-shell--login {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
 }
 
 @media (max-width: 900px) {
