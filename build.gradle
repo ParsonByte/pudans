@@ -1,0 +1,117 @@
+plugins {
+    alias(libs.plugins.spring.boot) apply false
+}
+
+def versionProperties = new Properties()
+rootProject.file('VERSION').withInputStream { versionProperties.load(it) }
+
+def requiredVersionKeys = [
+        'GATEWAY.VERSION',
+        'IAM.VERSION',
+        'REPOSITORY.VERSION',
+        'NOTIFICATION.VERSION',
+        'MQ.VERSION',
+        'JOB.VERSION',
+        'SEARCH.VERSION',
+        'SHARED.VERSION'
+]
+
+requiredVersionKeys.each { key ->
+    if (!versionProperties.getProperty(key)?.trim()) {
+        throw new GradleException("VERSION is missing a non-blank ${key}")
+    }
+}
+
+def serviceVersionKeys = [
+        'pudans-gateway'     : 'GATEWAY.VERSION',
+        'pudans-iam'         : 'IAM.VERSION',
+        'pudans-repository'  : 'REPOSITORY.VERSION',
+        'pudans-notification': 'NOTIFICATION.VERSION',
+        'pudans-mq'          : 'MQ.VERSION',
+        'pudans-job'         : 'JOB.VERSION',
+        'pudans-search'      : 'SEARCH.VERSION'
+]
+
+def versionKeyFor = { String projectName ->
+    if (serviceVersionKeys.containsKey(projectName)) {
+        return serviceVersionKeys[projectName]
+    }
+    if (projectName == 'pudans-contract-iam'
+            || projectName.startsWith('pudans-kernel-iam')
+            || projectName == 'pudans-kernel-audit'
+            || projectName == 'pudans-contract-audit') {
+        return 'IAM.VERSION'
+    }
+    if (projectName == 'pudans-contract-repository'
+            || projectName.startsWith('pudans-kernel-repository')) {
+        return 'REPOSITORY.VERSION'
+    }
+    if (projectName == 'pudans-contract-notification'
+            || projectName.startsWith('pudans-kernel-notification')) {
+        return 'NOTIFICATION.VERSION'
+    }
+    if (projectName == 'pudans-contract-mq'
+            || projectName.startsWith('pudans-kernel-mq')) {
+        return 'MQ.VERSION'
+    }
+    if (projectName == 'pudans-contract-job'
+            || projectName == 'pudans-kernel-job-executor') {
+        return 'JOB.VERSION'
+    }
+    if (projectName == 'pudans-contract-search'
+            || projectName.startsWith('pudans-kernel-search')) {
+        return 'SEARCH.VERSION'
+    }
+    return 'SHARED.VERSION'
+}
+
+allprojects {
+    group = 'cn.tolim'
+    version = versionProperties.getProperty(versionKeyFor(project.name))
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+def versionCatalog = extensions
+        .getByType(org.gradle.api.artifacts.VersionCatalogsExtension)
+        .named('libs')
+
+subprojects {
+    apply plugin: 'java-library'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    }
+
+    dependencies {
+        implementation platform(versionCatalog.findLibrary('spring-boot-bom').get())
+        implementation platform(versionCatalog.findLibrary('spring-cloud-bom').get())
+        implementation platform(versionCatalog.findLibrary('spring-cloud-alibaba-bom').get())
+
+        testImplementation versionCatalog.findLibrary('spring-boot-starter-test').get()
+
+        compileOnly versionCatalog.findLibrary('lombok').get()
+        annotationProcessor versionCatalog.findLibrary('lombok').get()
+        testCompileOnly versionCatalog.findLibrary('lombok').get()
+        testAnnotationProcessor versionCatalog.findLibrary('lombok').get()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.compilerArgs += '-parameters'
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+        systemProperty 'spring.cloud.nacos.discovery.enabled', 'false'
+        systemProperty 'spring.cloud.nacos.config.enabled', 'false'
+        systemProperty 'management.server.port', '0'
+        systemProperty 'management.tracing.export.otlp.enabled', 'false'
+        systemProperty 'management.logging.export.otlp.enabled', 'false'
+        systemProperty 'management.otlp.metrics.export.enabled', 'false'
+    }
+}

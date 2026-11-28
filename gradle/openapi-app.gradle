@@ -1,0 +1,168 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
+import java.util.concurrent.TimeUnit
+
+class OpenApiAppSettings {
+    String apiGroup
+    int port
+    String mainClassName
+    int waitTimeInSeconds = 180
+}
+
+def openApiSettings = extensions.create('openApi', OpenApiAppSettings)
+
+def appProjectName = project.name
+def appProjectDir = project.projectDir
+def appDocsVersion = project.version
+def appApiDocsDir = new File(rootProject.projectDir, 'api-docs/openapi/v3_0')
+def appDocClasspath = files(sourceSets.main.runtimeClasspath, configurations.docRuntimeOnly)
+def appJavaLauncher = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(25)
+}
+def appLogFile = layout.buildDirectory.file('openapi-doc-run.log').get().asFile
+
+def prettyJson
+prettyJson = { value, indent = 0 ->
+    def pad = '  ' * indent
+    def childPad = '  ' * (indent + 1)
+    if (value instanceof Map) {
+        if (value.isEmpty()) {
+            return '{}'
+        }
+        def entries = value.entrySet().sort { it.key.toString() }
+        return '{\n' + entries.collect { entry ->
+            childPad + JsonOutput.toJson(entry.key.toString()) + ': ' + prettyJson(entry.value, indent + 1)
+        }.join(',\n') + '\n' + pad + '}'
+    }
+    if (value instanceof List) {
+        if (value.isEmpty()) {
+            return '[]'
+        }
+        return '[\n' + value.collect { item ->
+            childPad + prettyJson(item, indent + 1)
+        }.join(',\n') + '\n' + pad + ']'
+    }
+    return JsonOutput.toJson(value)
+}
+
+def logTail = { File file, int lines = 40 ->
+    if (!file.isFile()) {
+        return ''
+    }
+    def content = file.readLines()
+    return content.takeRight(Math.min(lines, content.size())).join('\n')
+}
+
+tasks.register('generateOpenApiDocs') {
+    group = 'documentation'
+    description = "Generate the ${appProjectName} OpenAPI 3.0 document from a running doc-profile app."
+    dependsOn tasks.named('classes')
+    dependsOn configurations.named('docRuntimeOnly')
+    inputs.files(sourceSets.main.runtimeClasspath)
+    inputs.files(configurations.named('docRuntimeOnly'))
+    notCompatibleWithConfigurationCache(
+            'Starts and stops an application process while generating OpenAPI documents')
+    outputs.upToDateWhen {
+        false
+    }
+    doLast {
+        def settings = openApiSettings
+        if (!settings.apiGroup || !settings.mainClassName || settings.port <= 0) {
+            throw new GradleException(
+                    'openApi { apiGroup, port, mainClassName } must be configured before generating documents')
+        }
+        def javaExecutable = appJavaLauncher.get().executablePath.asFile.absolutePath
+        def classpath = appDocClasspath.files
+                .collect { it.absolutePath }
+                .join(File.pathSeparator)
+        def command = [
+                javaExecutable,
+                '-XX:TieredStopAtLevel=1',
+                '-Dspring.main.banner-mode=off',
+                '-cp', classpath,
+                settings.mainClassName,
+                '--spring.profiles.active=doc',
+                "--server.port=${settings.port}".toString(),
+                "--pudans.api-docs.version=${appDocsVersion}".toString(),
+                '--spring.cloud.nacos.discovery.enabled=false',
+                '--spring.cloud.nacos.config.enabled=false',
+                '--management.server.port=0',
+                '--management.tracing.export.otlp.enabled=false',
+                '--management.logging.export.otlp.enabled=false',
+                '--management.otlp.metrics.export.enabled=false'
+        ]
+        appLogFile.parentFile.mkdirs()
+        appLogFile.text = ''
+        def processBuilder = new ProcessBuilder(command)
+        processBuilder.directory(appProjectDir)
+        processBuilder.redirectErrorStream(true)
+        processBuilder.redirectOutput(ProcessBuilder.Redirect.appendTo(appLogFile))
+        logger.lifecycle("Starting ${appProjectName} with the doc profile on port ${settings.port}")
+        def process = processBuilder.start()
+        def shutdownHook = new Thread({ process.destroyForcibly() }, 'openapi-doc-shutdown')
+        Runtime.runtime.addShutdownHook(shutdownHook)
+        try {
+            def client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(2))
+                    .build()
+            def documentUrl = "http://127.0.0.1:${settings.port}/v3/api-docs/${settings.apiGroup}"
+            def deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(settings.waitTimeInSeconds)
+            def responseBody = null
+            Exception lastFailure = null
+            while (System.nanoTime() < deadline) {
+                if (!process.isAlive()) {
+                    throw new GradleException(
+                            "OpenAPI doc run for ${appProjectName} exited with code ${process.exitValue()}." +
+                                    "\n${logTail(appLogFile)}")
+                }
+                try {
+                    def request = HttpRequest.newBuilder(URI.create(documentUrl))
+                            .timeout(Duration.ofSeconds(10))
+                            .GET()
+                            .build()
+                    def response = client.send(request, HttpResponse.BodyHandlers.ofString())
+                    if (response.statusCode() == 200 && response.body().contains('"openapi"')) {
+                        responseBody = response.body()
+                        break
+                    }
+                } catch (Exception exception) {
+                    lastFailure = exception
+                }
+                Thread.sleep(1000)
+            }
+            if (responseBody == null) {
+                throw new GradleException(
+                        "Timed out after ${settings.waitTimeInSeconds}s waiting for ${documentUrl}." +
+                                (lastFailure == null ? '' : " Last error: ${lastFailure.message}.") +
+                                "\n${logTail(appLogFile)}")
+            }
+            def document = new JsonSlurper().parseText(responseBody)
+            if (!(document instanceof Map)
+                    || !(document.openapi instanceof String)
+                    || !document.openapi.startsWith('3.0')) {
+                throw new GradleException(
+                        "springdoc returned a non OpenAPI 3.0 document for ${settings.apiGroup}")
+            }
+            def outputDir = appApiDocsDir
+            outputDir.mkdirs()
+            def outputFile = new File(outputDir, settings.apiGroup + '.json')
+            outputFile.text = prettyJson(document) + '\n'
+            logger.lifecycle("Generated ${outputFile} (${document.paths?.size() ?: 0} paths)")
+        } finally {
+            process.destroy()
+            if (!process.waitFor(10, TimeUnit.SECONDS)) {
+                process.destroyForcibly()
+                process.waitFor(10, TimeUnit.SECONDS)
+            }
+            try {
+                Runtime.runtime.removeShutdownHook(shutdownHook)
+            } catch (IllegalStateException ignored) {
+            }
+        }
+    }
+}
