@@ -1,0 +1,22 @@
+spring:
+  cloud:
+    sentinel:
+      filter:
+        enabled: false
+      scg:
+        order: -2147483647
+        fallback:
+          mode: response
+          response-status: 429
+          content-type: application/json;charset=UTF-8
+          response-body: '{"code":"RATE_LIMITED","message":"请求过于频繁","data":null}'
+
+pudans:
+  gateway:
+    internal-token: gateway-test-internal-token
+  security:
+    jwt:
+      secret: gateway-test-jwt-secret-0123456789abcdef0123456789abcdef
+      issuer: pudans-iam
+      audience: pudans-api
+      ttl-seconds: 3600

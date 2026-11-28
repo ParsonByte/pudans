@@ -1,0 +1,9 @@
+pudans:
+  internal:
+    token: iam-test-internal-token
+  security:
+    jwt:
+      secret: iam-test-jwt-secret-0123456789abcdef0123456789abcdef
+      issuer: pudans-iam
+      audience: pudans-api
+      ttl-seconds: 3600

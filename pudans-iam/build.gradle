@@ -1,0 +1,67 @@
+plugins {
+    alias(libs.plugins.spring.boot)
+}
+
+description = 'IAM application'
+
+configurations.configureEach {
+    exclude group: 'pull-parser', module: 'pull-parser'
+}
+
+configurations {
+    docRuntimeOnly
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir rootProject.file('sql')
+        }
+    }
+}
+
+dependencies {
+    docRuntimeOnly project(':api-docs')
+    docRuntimeOnly libs.springdoc.openapi.starter.webmvc.api
+
+    implementation project(':pudans-communal:pudans-communal-web')
+    implementation project(':pudans-communal:pudans-communal-security')
+
+    implementation project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-core')
+    implementation project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-communal')
+    implementation project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-appkernel')
+    implementation project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-protocol')
+    implementation project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authentication')
+    implementation project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-identity-source')
+    implementation project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-synchronizer')
+    implementation project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-portal')
+    implementation project(':pudans-kernel-modules:pudans-kernel-iam:pudans-kernel-iam-authorization')
+    implementation project(':pudans-contract:pudans-contract-repository')
+
+    implementation libs.spring.boot.starter.webmvc
+    implementation libs.spring.boot.starter.security
+    implementation libs.spring.boot.starter.data.jpa
+    implementation libs.spring.boot.starter.actuator
+    implementation libs.spring.boot.starter.opentelemetry
+    implementation libs.micrometer.registry.prometheus
+    implementation project(':pudans-communal:pudans-communal-log-servlet')
+    implementation libs.spring.cloud.starter.loadbalancer
+    implementation libs.spring.cloud.starter.alibaba.nacos.discovery
+    implementation libs.spring.cloud.starter.alibaba.nacos.config
+
+    runtimeOnly libs.postgresql
+
+    testImplementation libs.spring.boot.starter.test
+    testImplementation libs.spring.boot.testcontainers
+    testImplementation libs.testcontainers.postgresql
+    testImplementation libs.testcontainers.junit.jupiter
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+apply from: rootProject.file('gradle/openapi-app.gradle')
+
+openApi {
+    apiGroup = 'apis_iam.v1alpha1'
+    port = 18091
+    mainClassName = 'cn.tolim.pudans.iam.IamApplication'
+}

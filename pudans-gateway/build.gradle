@@ -1,0 +1,29 @@
+plugins {
+    alias(libs.plugins.spring.boot)
+}
+
+description = 'API gateway (Spring Cloud Gateway, WebFlux)'
+
+sourceSets {
+    test {
+        resources {
+            srcDir rootProject.file('platform/nacos/config')
+        }
+    }
+}
+
+dependencies {
+    implementation project(':pudans-communal:pudans-communal-core')
+
+    implementation libs.spring.cloud.starter.gateway.server.webflux
+    implementation libs.spring.cloud.starter.loadbalancer
+    implementation libs.spring.cloud.starter.alibaba.nacos.discovery
+    implementation libs.spring.cloud.starter.alibaba.nacos.config
+    implementation libs.spring.cloud.starter.alibaba.sentinel
+    implementation libs.spring.cloud.alibaba.sentinel.gateway
+    implementation libs.sentinel.datasource.nacos
+    implementation libs.spring.boot.starter.actuator
+    implementation libs.spring.boot.starter.opentelemetry
+    implementation libs.micrometer.registry.prometheus
+    implementation project(':pudans-communal:pudans-communal-log-webflux')
+}

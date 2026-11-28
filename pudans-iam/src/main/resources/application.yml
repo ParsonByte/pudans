@@ -1,0 +1,59 @@
+server:
+  port: 8081
+  error:
+    path: /apis/pudans.tolim.cn/v1alpha1/iam/error
+
+spring:
+  application:
+    name: pudans-iam
+  config:
+    import: optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP&refreshEnabled=true,optional:nacos:pudans-observability.yaml?group=DEFAULT_GROUP&refreshEnabled=false
+  cloud:
+    nacos:
+      config:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_CONFIG_ENABLED:true}
+      discovery:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_DISCOVERY_ENABLED:true}
+  datasource:
+    url: ${PUDANS_DB_URL:jdbc:postgresql://127.0.0.1:5432/pudans_iam}
+    username: ${PUDANS_DB_USER:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+  data:
+    redis:
+      host: ${PUDANS_REDIS_HOST:127.0.0.1}
+      port: ${PUDANS_REDIS_PORT:6379}
+  cache:
+    type: redis
+    redis:
+      key-prefix: pudans
+      use-key-prefix: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  server:
+    port: ${PUDANS_MANAGEMENT_PORT:9081}
+    address: ${PUDANS_MANAGEMENT_ADDRESS:127.0.0.1}
+  endpoints:
+    web:
+      base-path: /apis/pudans.tolim.cn/v1alpha1/iam/actuator
+      exposure:
+        include: health,info,metrics,prometheus
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false

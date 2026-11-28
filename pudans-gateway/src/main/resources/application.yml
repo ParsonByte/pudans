@@ -1,0 +1,49 @@
+server:
+  port: 8080
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: pudans-gateway
+  config:
+    import: optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP&refreshEnabled=true,optional:nacos:pudans-observability.yaml?group=DEFAULT_GROUP&refreshEnabled=false
+  cloud:
+    nacos:
+      config:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_CONFIG_ENABLED:true}
+      discovery:
+        server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+        enabled: ${PUDANS_NACOS_DISCOVERY_ENABLED:true}
+    gateway:
+      server:
+        webflux:
+          trusted-proxies: ${PUDANS_TRUSTED_PROXIES:.*}
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowed-origins: ${PUDANS_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+                allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD]
+                allowed-headers: '*'
+                exposed-headers: [Location]
+                allow-credentials: true
+                max-age: 3600
+
+management:
+  server:
+    port: ${PUDANS_MANAGEMENT_PORT:9080}
+    address: ${PUDANS_MANAGEMENT_ADDRESS:127.0.0.1}
+  endpoints:
+    web:
+      base-path: /apis/pudans.tolim.cn/v1alpha1/actuator
+      exposure:
+        include: health,info,metrics,prometheus
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
