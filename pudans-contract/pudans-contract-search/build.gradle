@@ -1,0 +1,8 @@
+description = 'Search service Feign contracts (interfaces only)'
+
+dependencies {
+    api libs.spring.cloud.starter.openfeign
+    api libs.jackson.databind
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
