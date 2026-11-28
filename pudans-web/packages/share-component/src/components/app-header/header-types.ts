@@ -35,6 +35,7 @@ export type AppHeaderProps = {
   className?: string;
   consoleHref?: string;
   docsHref?: string;
+  loginGateEnabled?: boolean;
   loginHref?: string;
   loginStateEnabled?: boolean;
   logoSrc?: string;

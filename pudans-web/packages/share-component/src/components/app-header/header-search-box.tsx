@@ -5,9 +5,13 @@ import { Button, Input, type InputRef } from "antd";
 import gsap from "gsap";
 import { Search } from "lucide-react";
 
+import { LoginGate } from "./header-login-gate";
+
 type SearchBoxProps = {
   discoveries?: string[];
   history?: string[];
+  locked?: boolean;
+  loginHref?: string;
   onExpandedChange?: (expanded: boolean) => void;
   onSearch?: (keyword: string) => void;
   placeholder?: string;
@@ -16,6 +20,8 @@ type SearchBoxProps = {
 export function SearchBox({
   discoveries = [],
   history = [],
+  locked = false,
+  loginHref,
   onExpandedChange,
   onSearch,
   placeholder = "搜索",
@@ -66,7 +72,9 @@ export function SearchBox({
       ease: "expo.out",
       onComplete: () => {
         setPanelVisible(true);
-        inputRef.current?.focus();
+        if (!locked) {
+          inputRef.current?.focus();
+        }
       },
     });
   };
@@ -132,19 +140,24 @@ export function SearchBox({
       {expanded ? (
         <>
           <Input
-            allowClear
+            allowClear={!locked}
             aria-label={placeholder}
             className="pudans-app-header__search"
-            onChange={(event) => setValue(event.target.value)}
+            onChange={(event) => {
+              if (!locked) {
+                setValue(event.target.value);
+              }
+            }}
             onKeyDown={(event) => {
               if (event.key === "Escape") {
                 event.preventDefault();
                 collapse();
               }
             }}
-            onPressEnter={submit}
-            placeholder={placeholder}
+            onPressEnter={locked ? undefined : submit}
+            placeholder={locked ? "登录后搜索" : placeholder}
             prefix={<Search size={16} />}
+            readOnly={locked}
             ref={inputRef}
             suffix={
               <button
@@ -156,11 +169,20 @@ export function SearchBox({
                 <CloseOutlined />
               </button>
             }
-            value={value}
+            value={locked ? "" : value}
           />
-          {panelVisible && (history.length > 0 || discoveries.length > 0) ? (
+          {panelVisible && (locked || history.length > 0 || discoveries.length > 0) ? (
             <div className="pudans-app-header__search-panel">
-              {history.length > 0 ? (
+              {locked ? (
+                <LoginGate
+                  compact
+                  description="登录后可搜索产品、文档与服务。"
+                  items={[]}
+                  loginHref={loginHref}
+                  title="登录后使用搜索"
+                />
+              ) : null}
+              {!locked && history.length > 0 ? (
                 <section className="pudans-app-header__search-section">
                   <h3 className="pudans-app-header__search-section-title">历史搜索</h3>
                   <div className="pudans-app-header__search-tags">
@@ -172,7 +194,7 @@ export function SearchBox({
                   </div>
                 </section>
               ) : null}
-              {discoveries.length > 0 ? (
+              {!locked && discoveries.length > 0 ? (
                 <section className="pudans-app-header__search-section">
                   <h3 className="pudans-app-header__search-section-title">搜索发现</h3>
                   <div className="pudans-app-header__search-tags">

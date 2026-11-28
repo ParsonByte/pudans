@@ -519,6 +519,203 @@
   outline: none;
 }
 
+.pudans-app-header__mega--locked {
+  min-height: 360px;
+  overflow: hidden;
+}
+
+.pudans-app-header__mega--locked .pudans-app-header__mega-inner {
+  pointer-events: none;
+}
+
+.pudans-app-header__hamburger-panel--locked {
+  width: 360px;
+  padding: 24px;
+  background: var(--pudans-header-bg);
+  border: 1px solid var(--pudans-header-border);
+  box-shadow: var(--pudans-header-shadow);
+}
+
+.pudans-login-gate {
+  display: grid;
+  width: 100%;
+  place-items: center;
+}
+
+.pudans-login-gate--overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 24px;
+  background: color-mix(in srgb, var(--pudans-header-bg) 72%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+  backdrop-filter: blur(10px) saturate(135%);
+}
+
+.pudans-login-gate__panel {
+  width: min(460px, 100%);
+  padding: 0;
+  text-align: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.pudans-login-gate--compact .pudans-login-gate__panel {
+  width: 100%;
+  padding: 2px 0 0;
+}
+
+.pudans-login-gate__panel h3 {
+  margin: 0 0 10px;
+  color: var(--pudans-header-text);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.pudans-login-gate--compact .pudans-login-gate__panel h3 {
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.pudans-login-gate__description {
+  margin: 0 0 18px;
+  color: var(--pudans-header-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.pudans-login-gate--compact .pudans-login-gate__description {
+  margin-bottom: 14px;
+}
+
+.pudans-login-gate__items {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 0;
+  margin: 0 0 22px;
+  list-style: none;
+}
+
+.pudans-login-gate__items li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--pudans-header-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.pudans-login-gate__items svg {
+  flex-shrink: 0;
+  color: var(--pudans-header-brand);
+}
+
+.pudans-login-gate__panel .ant-btn-primary {
+  height: 40px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.pudans-login-gate__compact-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 12px;
+  color: var(--pudans-header-brand);
+  background: var(--pudans-header-brand-soft);
+  border-radius: 50%;
+}
+
+.pudans-login-gate__art {
+  position: relative;
+  width: 160px;
+  height: 94px;
+  margin: 0 auto 18px;
+}
+
+.pudans-login-gate__art-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--pudans-header-brand) 12%, transparent) 1px,
+      transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--pudans-header-brand) 12%, transparent) 1px,
+      transparent 1px);
+  background-size: 16px 16px;
+  border-radius: 10px;
+  opacity: 0.55;
+}
+
+.pudans-login-gate__art-window {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  width: 116px;
+  height: 58px;
+  padding: 0 12px;
+  background: var(--pudans-header-bg);
+  border: 1px solid var(--pudans-header-border);
+  border-radius: 8px;
+  box-shadow: var(--pudans-header-shadow);
+}
+
+.pudans-login-gate__art-avatar {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  background: var(--pudans-header-brand);
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
+.pudans-login-gate__art-copy {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+}
+
+.pudans-login-gate__art-copy i {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: var(--pudans-header-brand);
+  border-radius: 2px;
+  opacity: 0.24;
+}
+
+.pudans-login-gate__art-copy i:nth-child(2) {
+  width: 68%;
+  background: var(--pudans-header-muted);
+  opacity: 0.35;
+}
+
+.pudans-login-gate__art-copy i:nth-child(3) {
+  width: 44%;
+  background: var(--pudans-header-muted);
+  opacity: 0.35;
+}
+
+.pudans-login-gate__art-chip {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 36px;
+  height: 28px;
+  background: var(--pudans-header-bg);
+  border: 1px solid var(--pudans-header-border);
+  border-radius: 6px;
+  box-shadow: var(--pudans-header-shadow);
+}
+
 @keyframes pudans-app-header-reveal {
   from {
     opacity: 0;
@@ -573,5 +770,10 @@
     right: 16px;
     left: 16px;
     width: auto;
+  }
+
+  .pudans-app-header__hamburger-panel--locked {
+    width: auto;
+    padding: 20px;
   }
 }

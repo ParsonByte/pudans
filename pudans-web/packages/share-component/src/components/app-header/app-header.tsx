@@ -33,6 +33,7 @@ export function AppHeader({
   className,
   consoleHref = "/console",
   docsHref = "/docs",
+  loginGateEnabled = true,
   loginHref = "/login",
   loginStateEnabled = true,
   logoSrc = "/ui-assets/pudans.svg",
@@ -62,6 +63,10 @@ export function AppHeader({
   const activeMenu = menus.find((menu) => menu.key === activeMenuKey);
   const resolvedUser = user ?? (loginState.user ? toHeaderUser(loginState.user) : undefined);
   const userLoading = loginStateEnabled && !user && loginState.isLoading;
+  const anonymous = !resolvedUser && (loginStateEnabled
+    ? loginState.status === "anonymous" || loginState.status === "error"
+    : true);
+  const locked = loginGateEnabled && anonymous;
   const resolvedLogout =
     onLogout ?? (loginStateEnabled && !user ? loginState.logout : undefined);
   const rootStyle = {
@@ -160,6 +165,8 @@ export function AppHeader({
             <SearchBox
               discoveries={searchDiscoveries}
               history={searchHistory}
+              locked={locked}
+              loginHref={loginHref}
               onExpandedChange={setSearchExpanded}
               onSearch={onSearch}
               placeholder={searchPlaceholder}
@@ -184,8 +191,21 @@ export function AppHeader({
           )}
         </div>
       </div>
-      {activeMenu ? <MegaMenu menu={activeMenu} /> : null}
-      {hamburgerOpen ? <HamburgerMenu menus={menus} onSelect={handleHamburgerSelect} /> : null}
+      {activeMenu ? (
+        <MegaMenu
+          locked={locked && activeMenu.key !== "about"}
+          loginHref={loginHref}
+          menu={activeMenu}
+        />
+      ) : null}
+      {hamburgerOpen ? (
+        <HamburgerMenu
+          locked={locked}
+          loginHref={loginHref}
+          menus={menus}
+          onSelect={handleHamburgerSelect}
+        />
+      ) : null}
     </header>
   );
 }

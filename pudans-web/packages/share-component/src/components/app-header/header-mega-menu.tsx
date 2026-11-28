@@ -1,17 +1,23 @@
+import { LoginGate } from "./header-login-gate";
 import type { AppHeaderMenu } from "./header-types";
 
 type MegaMenuProps = {
+  locked?: boolean;
+  loginHref?: string;
   menu: AppHeaderMenu;
 };
 
-export function MegaMenu({ menu }: MegaMenuProps) {
+export function MegaMenu({ locked = false, loginHref, menu }: MegaMenuProps) {
   return (
     <div
       aria-label={typeof menu.label === "string" ? menu.label : undefined}
-      className="pudans-app-header__mega"
+      className={[
+        "pudans-app-header__mega",
+        locked ? "pudans-app-header__mega--locked" : "",
+      ].filter(Boolean).join(" ")}
       role="region"
     >
-      <div className="pudans-app-header__mega-inner">
+      <div aria-hidden={locked || undefined} className="pudans-app-header__mega-inner">
         <div className="pudans-app-header__mega-aside">
           <p className="pudans-app-header__mega-eyebrow">PUDANS</p>
           {menu.href ? (
@@ -54,6 +60,7 @@ export function MegaMenu({ menu }: MegaMenuProps) {
           ))}
         </div>
       </div>
+      {locked ? <LoginGate loginHref={loginHref} overlay /> : null}
     </div>
   );
 }
