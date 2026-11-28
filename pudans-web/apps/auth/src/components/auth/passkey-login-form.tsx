@@ -72,8 +72,6 @@ export function PasskeyLoginForm({ notify, onMfaRequired }: PasskeyLoginFormProp
         <span className="auth-passkey-ring" />
         <Fingerprint size={44} />
       </div>
-      <h3>使用通行密钥登录</h3>
-      <p>使用设备上的指纹、面容或安全密钥完成验证，无需输入密码。</p>
       <Button
         block
         icon={<Fingerprint size={18} />}

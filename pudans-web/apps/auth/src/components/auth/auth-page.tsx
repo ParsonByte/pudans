@@ -6,6 +6,7 @@ import { notification, theme } from "antd";
 
 import { AccountLoginForm } from "./account-login-form";
 import { AuthBrandPanel } from "./auth-brand-panel";
+import { IdpProviderLogin } from "./idp-provider-login";
 import { MfaVerify } from "./mfa-verify";
 import { OtpLoginForm } from "./otp-login-form";
 import { PasskeyLoginForm } from "./passkey-login-form";
@@ -133,6 +134,9 @@ export function AuthPage() {
                 {activeTab === "passkey" ? (
                   <PasskeyLoginForm notify={notify} onMfaRequired={setMfaChallengeId} />
                 ) : null}
+              </div>
+              <div className="auth-mobile-providers">
+                <IdpProviderLogin notify={notify} onMfaRequired={setMfaChallengeId} />
               </div>
             </>
           )}

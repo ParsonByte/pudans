@@ -33,22 +33,34 @@
   border-color: rgba(214, 196, 82, 0.28);
 }
 
-.auth-shell--login {
+.auth-shell--login,
+.auth-shell--forgot {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 96px 0 84px;
+  padding: 90px 0;
 }
 
-.auth-shell--login .auth-topbar {
+.auth-shell--forgot {
+  justify-content: flex-start;
+  overflow-y: auto;
+}
+
+.auth-shell--forgot .auth-forgot-frame {
+  margin: auto;
+}
+
+.auth-shell--login .auth-topbar,
+.auth-shell--forgot .auth-topbar {
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
 }
 
-.auth-shell--login .auth-footer {
+.auth-shell--login .auth-footer,
+.auth-shell--forgot .auth-footer {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -123,6 +135,14 @@
   background: #ffffff;
 }
 
+.auth-brand-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 196px;
+  margin: 0 auto;
+}
+
 .auth-brand::after {
   position: absolute;
   top: clamp(24px, 4vw, 48px);
@@ -169,15 +189,27 @@
 }
 
 .auth-qr-frame {
+  position: relative;
   display: grid;
   width: 196px;
   height: 196px;
-  margin: 0 auto;
+  margin: 0;
   overflow: hidden;
   background: #ffffff;
   border: 1px solid var(--auth-border-soft);
   border-radius: 10px;
   place-items: center;
+}
+
+.auth-qr-mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, #ffffff 84%, transparent);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 
 .auth-qr-frame .ant-qrcode {
@@ -196,13 +228,6 @@
   text-align: center;
 }
 
-.auth-qr-hint {
-  margin: 10px 0 0;
-  color: var(--auth-muted);
-  font-size: 11px;
-  line-height: 1.6;
-}
-
 .auth-qr-label {
   margin: 0 0 8px;
   color: var(--auth-muted);
@@ -213,7 +238,11 @@
 
 .auth-qr-others {
   width: 196px;
-  margin: 14px auto 0;
+  margin: 12px auto 0;
+}
+
+.auth-mobile-providers {
+  display: none;
 }
 
 .auth-qr-providers {
@@ -315,21 +344,26 @@
 .auth-tabs {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
   gap: clamp(18px, 2.6vw, 34px);
   margin-bottom: 30px;
   border-bottom: 1px solid var(--auth-border-soft);
 }
 
 .auth-tab-content {
-  height: 330px;
+  height: 240px;
 }
 
 .auth-tab-button {
   position: relative;
-  padding: 0 0 14px;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 0;
   color: var(--auth-muted);
   font-size: 15px;
   font-weight: 500;
+  line-height: 22px;
   cursor: pointer;
   background: none;
   border: 0;
@@ -364,7 +398,7 @@
 }
 
 .auth-form .ant-form-item {
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 
 .auth-form .ant-input,
@@ -379,7 +413,7 @@
 
 .auth-form .ant-btn-primary {
   height: 46px;
-  margin-top: 6px;
+  margin-top: 12px;
   border-radius: 6px;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -460,7 +494,7 @@
 }
 
 .auth-passkey {
-  padding: 4px 0 0;
+  padding: 0;
   text-align: center;
 }
 
@@ -471,8 +505,14 @@
   justify-content: center;
   width: 96px;
   height: 96px;
-  margin: 4px auto 22px;
+  margin: 12px auto 40px;
   color: var(--auth-primary);
+}
+
+.auth-passkey .ant-btn {
+  height: 46px;
+  border-radius: 6px;
+  font-weight: 500;
 }
 
 .auth-passkey-ring {
@@ -482,21 +522,6 @@
     rgba(56, 66, 255, 0) 72%);
   border: 1px solid var(--auth-border-soft);
   border-radius: 50%;
-}
-
-.auth-passkey h3 {
-  margin: 0 0 8px;
-  color: var(--auth-text);
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.auth-passkey p {
-  max-width: 320px;
-  margin: 0 auto 22px;
-  color: var(--auth-muted);
-  font-size: 13px;
-  line-height: 1.7;
 }
 
 .auth-divider {
@@ -610,7 +635,11 @@
 
 @media (max-width: 900px) {
   .auth-shell--login {
-    padding: 88px 0 76px;
+    padding: 82px 0;
+  }
+
+  .auth-shell--forgot {
+    padding: 88px 0;
   }
 
   .auth-topbar {
@@ -638,6 +667,24 @@
   .auth-mobile-head {
     display: block;
     margin-bottom: 24px;
+  }
+
+  .auth-mobile-providers {
+    display: block;
+    margin-top: 24px;
+  }
+
+  .auth-mobile-providers .auth-qr-others {
+    width: 100%;
+    margin: 0;
+  }
+
+  .auth-mobile-providers .auth-qr-label {
+    text-align: center;
+  }
+
+  .auth-mobile-providers .auth-qr-providers {
+    justify-content: center;
   }
 
   .auth-mobile-alt:focus-visible {

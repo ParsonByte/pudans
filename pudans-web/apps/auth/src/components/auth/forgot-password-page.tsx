@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import { apiClient } from "@pudans-dev/api-client";
 import { Button, Form, Input, Segmented, notification, theme } from "antd";
@@ -11,7 +11,7 @@ import { apiErrorMessage } from "./auth-api";
 
 import "./auth-page.modules.less";
 
-type ResetStep = "request" | "reset" | "done";
+type ResetStep = "request" | "verify" | "done";
 type ResetChannel = "mail" | "sms";
 
 type RequestValues = {
@@ -37,6 +37,8 @@ export function ForgotPasswordPage() {
   const [channel, setChannel] = useState<ResetChannel>("mail");
   const [identifier, setIdentifier] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   const style = {
     "--auth-primary": token.colorPrimary,
@@ -48,28 +50,41 @@ export function ForgotPasswordPage() {
     "--auth-bg": token.colorBgLayout,
   } as CSSProperties;
 
-  const requestCode = async (values: RequestValues) => {
-    setLoading(true);
+  useEffect(() => {
+    if (countdown <= 0) {
+      return;
+    }
+    const timer = window.setTimeout(() => setCountdown((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [countdown]);
+
+  const goToVerify = (values: RequestValues) => {
+    setIdentifier(values.identifier.trim());
+    setStep("verify");
+    setCountdown(0);
+  };
+
+  const sendCode = async () => {
+    setSending(true);
     try {
       await apiClient.iam.authentication.forgotPassword({
         forgotPasswordRequest: {
           channel,
-          identifier: values.identifier.trim(),
+          identifier,
         },
       });
-      setIdentifier(values.identifier.trim());
-      setStep("reset");
       notify.success({
-        description: `验证码已发送至 ${values.identifier.trim()} 对应的${channel === "mail" ? "邮箱" : "手机号"}。`,
+        description: `验证码已发送至 ${identifier} 对应的${channel === "mail" ? "邮箱" : "手机号"}。`,
         title: "验证码已发送",
       });
+      setCountdown(60);
     } catch (reason) {
       notify.error({
         description: apiErrorMessage(reason, "验证码发送失败，请稍后重试"),
         title: "发送失败",
       });
     } finally {
-      setLoading(false);
+      setSending(false);
     }
   };
 
@@ -100,7 +115,7 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <main className="auth-shell" style={style}>
+    <main className="auth-shell auth-shell--forgot" style={style}>
       {notificationContext}
       <div aria-hidden="true" className="auth-orbit auth-orbit--one" />
       <div aria-hidden="true" className="auth-orbit auth-orbit--two" />
@@ -117,17 +132,14 @@ export function ForgotPasswordPage() {
           <ArrowLeft size={14} /> 返回登录
         </Link>
         <h1>找回密码</h1>
-        <p className="auth-forgot-copy">
-          验证账号归属后即可设置新密码。验证码将发送至账号已绑定的
-          {channel === "mail" ? "邮箱" : "手机号"}。
-        </p>
+        <p className="auth-forgot-copy">验证账号归属后即可设置新密码。</p>
 
         {step === "request" ? (
           <Form
             className="auth-form auth-forgot-form"
             form={requestForm}
             layout="vertical"
-            onFinish={requestCode}
+            onFinish={goToVerify}
             requiredMark={false}
             size="large"
           >
@@ -138,24 +150,13 @@ export function ForgotPasswordPage() {
             >
               <Input autoComplete="username" placeholder="输入账号名、邮箱或手机号" />
             </Form.Item>
-            <Form.Item label="验证方式">
-              <Segmented
-                block
-                onChange={(value) => setChannel(value as ResetChannel)}
-                options={[
-                  { icon: <Mail size={15} />, label: "邮箱验证", value: "mail" },
-                  { icon: <Smartphone size={15} />, label: "短信验证", value: "sms" },
-                ]}
-                value={channel}
-              />
-            </Form.Item>
-            <Button block htmlType="submit" loading={loading} type="primary">
+            <Button block htmlType="submit" type="primary">
               下一步：验证身份
             </Button>
           </Form>
         ) : null}
 
-        {step === "reset" ? (
+        {step === "verify" ? (
           <Form
             className="auth-form auth-forgot-form"
             form={resetForm}
@@ -164,15 +165,43 @@ export function ForgotPasswordPage() {
             requiredMark={false}
             size="large"
           >
-            <p className="auth-forgot-hint">
-              验证码已发送至 {identifier} 对应的{channel === "mail" ? "邮箱" : "手机号"}，10 分钟内有效。
-            </p>
+            <div className="auth-forgot-hint">
+              正在验证 <strong>{identifier}</strong> 的账号归属。
+            </div>
+            <Form.Item label="验证方式">
+              <Segmented
+                block
+                onChange={(value) => {
+                  setChannel(value as ResetChannel);
+                  setCountdown(0);
+                }}
+                options={[
+                  { icon: <Mail size={15} />, label: "邮箱验证", value: "mail" },
+                  { icon: <Smartphone size={15} />, label: "短信验证", value: "sms" },
+                ]}
+                value={channel}
+              />
+            </Form.Item>
             <Form.Item
               label="验证码"
               name="token"
               rules={[{ message: "请输入验证码", required: true }]}
             >
-              <Input autoComplete="one-time-code" maxLength={6} placeholder="输入验证码" />
+              <Input
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="输入验证码"
+                suffix={
+                  <button
+                    className="auth-code-button"
+                    disabled={countdown > 0 || sending}
+                    onClick={sendCode}
+                    type="button"
+                  >
+                    {countdown > 0 ? `${countdown}s 后重发` : "获取验证码"}
+                  </button>
+                }
+              />
             </Form.Item>
             <Form.Item
               label="新密码"
