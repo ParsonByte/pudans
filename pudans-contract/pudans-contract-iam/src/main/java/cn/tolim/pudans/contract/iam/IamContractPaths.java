@@ -14,6 +14,18 @@ public final class IamContractPaths {
     public static final String AUTH_LOGIN_CONFIG_SUFFIX = "/auth/login/config";
     public static final String AUTH_LOGIN_CONFIG = BASE + AUTH_LOGIN_CONFIG_SUFFIX;
 
+    public static final String AUTH_OTP_SEND_SUFFIX = "/auth/login/otp/send";
+    public static final String AUTH_OTP_SEND = BASE + AUTH_OTP_SEND_SUFFIX;
+
+    public static final String AUTH_OTP_LOGIN_SUFFIX = "/auth/login/otp";
+    public static final String AUTH_OTP_LOGIN = BASE + AUTH_OTP_LOGIN_SUFFIX;
+
+    public static final String AUTH_PASSKEY_OPTIONS_SUFFIX = "/auth/passkey/options";
+    public static final String AUTH_PASSKEY_OPTIONS = BASE + AUTH_PASSKEY_OPTIONS_SUFFIX;
+
+    public static final String AUTH_PASSKEY_VERIFY_SUFFIX = "/auth/passkey/verify";
+    public static final String AUTH_PASSKEY_VERIFY = BASE + AUTH_PASSKEY_VERIFY_SUFFIX;
+
     public static final String AUTH_MFA_CHALLENGE_SUFFIX = "/auth/mfa/challenge";
     public static final String AUTH_MFA_CHALLENGE = BASE + AUTH_MFA_CHALLENGE_SUFFIX;
 

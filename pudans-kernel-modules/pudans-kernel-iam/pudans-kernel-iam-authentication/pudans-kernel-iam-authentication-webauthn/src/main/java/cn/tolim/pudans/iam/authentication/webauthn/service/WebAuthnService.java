@@ -154,10 +154,21 @@ public class WebAuthnService {
                 properties.getTimeout().toMillis(), userVerification(), allowed);
     }
 
+    // Verifies an assertion and resolves the credential owner for passwordless login
+    @Transactional
+    public PasskeyAuthentication authenticate(WebAuthnAssertionRequest request) {
+        return authenticate(null, request);
+    }
+
     // Verifies an assertion and updates the credential signature counter
     @Transactional
     public WebAuthnCredentialResponse completeAuthentication(String userId,
                                                              WebAuthnAssertionRequest request) {
+        return authenticate(userId, request).credential();
+    }
+
+    private PasskeyAuthentication authenticate(String expectedUserId,
+                                               WebAuthnAssertionRequest request) {
         requireEnabled();
         if (request == null || request.credentialId() == null
                 || request.credentialId().isBlank()) {
@@ -166,7 +177,7 @@ public class WebAuthnService {
         WebAuthnCredentialEntity credential = repository
                 .findByCredentialId(request.credentialId())
                 .orElseThrow(WebAuthnCredentialNotFoundException::new);
-        if (userId != null && !userId.equals(credential.getUserId())) {
+        if (expectedUserId != null && !expectedUserId.equals(credential.getUserId())) {
             throw new WebAuthnCredentialNotFoundException();
         }
         if (credential.getStatus() != WebAuthnCredentialStatus.ACTIVE) {
@@ -175,7 +186,7 @@ public class WebAuthnService {
         WebAuthnAssertionResult result = assertionVerifier.verify(request, credential);
         credential.setSignCount(result.signCount()).setLastUsedAt(now());
         repository.save(credential);
-        return toResponse(credential);
+        return new PasskeyAuthentication(credential.getUserId(), toResponse(credential));
     }
 
     // Lists safe metadata of all credentials of a user
@@ -213,6 +224,10 @@ public class WebAuthnService {
             }
         }
         return disabled;
+    }
+
+    // Result of a passwordless passkey assertion
+    public record PasskeyAuthentication(String userId, WebAuthnCredentialResponse credential) {
     }
 
     private WebAuthnCredentialDescriptor descriptor(WebAuthnCredentialEntity credential) {

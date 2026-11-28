@@ -14,6 +14,15 @@ public final class IamAuthApiPaths {
     public static final String LOGIN_CONFIG = IamContractPaths.AUTH_LOGIN_CONFIG;
     public static final String LOGIN_CONFIG_CONTRACT = IamContractPaths.AUTH_LOGIN_CONFIG;
 
+    public static final String OTP_SEND = IamContractPaths.AUTH_OTP_SEND;
+    public static final String OTP_LOGIN = IamContractPaths.AUTH_OTP_LOGIN;
+
+    public static final String PASSKEY_OPTIONS = IamContractPaths.AUTH_PASSKEY_OPTIONS;
+    public static final String PASSKEY_VERIFY = IamContractPaths.AUTH_PASSKEY_VERIFY;
+
+    public static final String FORGOT_PASSWORD = IamContractPaths.AUTH_FORGOT_PASSWORD;
+    public static final String RESET_PASSWORD = IamContractPaths.AUTH_RESET_PASSWORD;
+
     public static final String LOGOUT = IamContractPaths.AUTH_LOGOUT;
     public static final String LOGOUT_CONTRACT = IamContractPaths.AUTH_LOGOUT;
 
@@ -75,6 +84,12 @@ public final class IamAuthApiPaths {
 
     public static final String[] LOGIN_PATHS = {LOGIN};
     public static final String[] LOGIN_CONFIG_PATHS = {LOGIN_CONFIG};
+    public static final String[] OTP_SEND_PATHS = {OTP_SEND};
+    public static final String[] OTP_LOGIN_PATHS = {OTP_LOGIN};
+    public static final String[] PASSKEY_OPTIONS_PATHS = {PASSKEY_OPTIONS};
+    public static final String[] PASSKEY_VERIFY_PATHS = {PASSKEY_VERIFY};
+    public static final String[] FORGOT_PASSWORD_PATHS = {FORGOT_PASSWORD};
+    public static final String[] RESET_PASSWORD_PATHS = {RESET_PASSWORD};
     public static final String[] LOGOUT_PATHS = {LOGOUT};
     public static final String[] MFA_CHALLENGE_PATHS = {MFA_CHALLENGE};
     public static final String[] MFA_VERIFY_PATHS = {MFA_VERIFY};

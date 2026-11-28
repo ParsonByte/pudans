@@ -126,6 +126,22 @@ class WebAuthnServiceTests {
     }
 
     @Test
+    void resolvesCredentialOwnerForPasswordlessAuthentication() {
+        WebAuthnCredentialEntity credential = activeCredential();
+        when(repository.findByCredentialId("credential-1"))
+                .thenReturn(Optional.of(credential));
+        when(assertionVerifier.verify(any(WebAuthnAssertionRequest.class), eq(credential)))
+                .thenReturn(new WebAuthnAssertionResult("credential-1", USER_ID, 1, true));
+
+        WebAuthnService.PasskeyAuthentication authentication = service.authenticate(
+                new WebAuthnAssertionRequest("challenge-2", "credential-1", "client-data",
+                        "authenticator-data", "signature"));
+
+        assertEquals(USER_ID, authentication.userId());
+        assertEquals("credential-1", authentication.credential().credentialId());
+    }
+
+    @Test
     void rejectsDisabledCredential() {
         WebAuthnCredentialEntity credential = activeCredential();
         credential.setStatus(WebAuthnCredentialStatus.DISABLED);

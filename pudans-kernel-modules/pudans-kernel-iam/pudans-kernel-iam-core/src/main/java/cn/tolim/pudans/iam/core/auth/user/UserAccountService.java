@@ -18,11 +18,14 @@ import cn.tolim.pudans.iam.core.auth.exception.AuthenticationFailedException;
 import cn.tolim.pudans.iam.core.auth.exception.SessionNotActiveException;
 import cn.tolim.pudans.iam.infra.security.userdetails.UserDetails;
 import cn.tolim.pudans.iam.infra.security.userdetails.UserType;
+import cn.tolim.pudans.iam.infra.util.PhoneUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -82,6 +85,141 @@ public class UserAccountService {
         }
         if (!matches(rawPassword, entity.getPassword())) {
             throw new AuthenticationFailedException();
+        }
+        return new AuthenticatedAccount(entity.getId(), entity.getUsername(), IamAuthTypes.USER,
+                resolveOrganizationId(entity.getId(), IamAuthTypes.USER), entity.getFullName());
+    }
+
+    // Finds an enabled account by username, email address or phone number
+    // Parameter identifier: String
+    // Returns: Optional
+    public Optional<AuthenticatedAccount> findAccountByIdentifier(String identifier) {
+        if (StringUtils.isBlank(identifier)) {
+            return Optional.empty();
+        }
+        String value = identifier.trim();
+        Optional<AdministratorEntity> administrator = administratorRepository.findByUsername(value);
+        if (administrator.isEmpty()) {
+            administrator = administratorRepository.findByEmail(value);
+        }
+        if (administrator.isEmpty()) {
+            String phone = PhoneUtils.getPhoneNumber(value);
+            if (StringUtils.isNotBlank(phone)) {
+                administrator = administratorRepository.findByPhone(phone);
+            }
+        }
+        if (administrator.isPresent()) {
+            return Optional.of(toAccount(administrator.get()));
+        }
+        Optional<UserEntity> user = userRepository.findByUsername(value);
+        if (user.isEmpty()) {
+            user = userRepository.findByEmail(value);
+        }
+        if (user.isEmpty()) {
+            String phone = PhoneUtils.getPhoneNumber(value);
+            if (StringUtils.isNotBlank(phone)) {
+                user = userRepository.findByPhone(phone);
+            }
+        }
+        return user.map(this::toAccount);
+    }
+
+    // Finds an enabled account by its email address
+    // Parameter email: String
+    // Returns: Optional
+    public Optional<AuthenticatedAccount> findAccountByEmail(String email) {
+        String value = StringUtils.trimToNull(email);
+        if (value == null) {
+            return Optional.empty();
+        }
+        return administratorRepository.findByEmail(value)
+                .map(this::toAccount)
+                .or(() -> userRepository.findByEmail(value).map(this::toAccount));
+    }
+
+    // Finds an enabled account by its phone number
+    // Parameter phone: String
+    // Returns: Optional
+    public Optional<AuthenticatedAccount> findAccountByPhone(String phone) {
+        String value = PhoneUtils.getPhoneNumber(StringUtils.trimToNull(phone));
+        if (StringUtils.isBlank(value)) {
+            return Optional.empty();
+        }
+        return administratorRepository.findByPhone(value)
+                .map(this::toAccount)
+                .or(() -> userRepository.findByPhone(value).map(this::toAccount));
+    }
+
+    // Resolves an enabled account by its user ID
+    // Parameter userId: String
+    // Returns: AuthenticatedAccount
+    public AuthenticatedAccount requireAccountById(String userId) {
+        if (StringUtils.isBlank(userId)) {
+            throw new AuthenticationFailedException();
+        }
+        Optional<AdministratorEntity> administrator = administratorRepository.findById(userId);
+        if (administrator.isPresent()) {
+            return toAccount(administrator.get());
+        }
+        return userRepository.findById(userId)
+                .map(this::toAccount)
+                .orElseThrow(AuthenticationFailedException::new);
+    }
+
+    // Encodes a raw password with the configured password encoder
+    // Parameter rawPassword: String
+    // Returns: String
+    public String encodePassword(String rawPassword) {
+        return passwordEncoder.encode(rawPassword);
+    }
+
+    // Resolves the email address of an administrator or a business user
+    // Parameter userId: String
+    // Parameter userType: String
+    // Returns: String
+    public String resolveEmail(String userId, String userType) {
+        if (IamAuthTypes.isAdmin(userType)) {
+            return administratorRepository.findById(userId)
+                    .map(AdministratorEntity::getEmail).orElse(null);
+        }
+        return userRepository.findById(userId).map(UserEntity::getEmail).orElse(null);
+    }
+
+    // Resolves the phone number of an administrator or a business user
+    // Parameter userId: String
+    // Parameter userType: String
+    // Returns: String
+    public String resolvePhone(String userId, String userType) {
+        if (IamAuthTypes.isAdmin(userType)) {
+            return administratorRepository.findById(userId)
+                    .map(AdministratorEntity::getPhone).orElse(null);
+        }
+        return userRepository.findById(userId).map(UserEntity::getPhone).orElse(null);
+    }
+
+    // Updates the password of an administrator or a business user
+    // Parameter userId: String
+    // Parameter userType: String
+    // Parameter encodedPassword: String
+    public void updatePassword(String userId, String userType, String encodedPassword) {
+        LocalDateTime now = LocalDateTime.now();
+        if (IamAuthTypes.isAdmin(userType)) {
+            administratorRepository.updatePassword(userId, encodedPassword, now);
+        } else {
+            userRepository.updatePassword(userId, encodedPassword, now);
+        }
+    }
+
+    private AuthenticatedAccount toAccount(AdministratorEntity entity) {
+        assertAccountUsable(entity.getStatus(), entity.getClass().getSimpleName());
+        return new AuthenticatedAccount(entity.getId(), entity.getUsername(), IamAuthTypes.ADMIN,
+                null, entity.getFullName());
+    }
+
+    private AuthenticatedAccount toAccount(UserEntity entity) {
+        assertAccountUsable(entity.getStatus(), entity.getClass().getSimpleName());
+        if (entity.getExpireDate() != null && entity.getExpireDate().isBefore(LocalDate.now())) {
+            throw new AuthenticationFailedException("Account is expired");
         }
         return new AuthenticatedAccount(entity.getId(), entity.getUsername(), IamAuthTypes.USER,
                 resolveOrganizationId(entity.getId(), IamAuthTypes.USER), entity.getFullName());

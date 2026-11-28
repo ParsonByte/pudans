@@ -148,6 +148,12 @@ All apps live under the same parent domain, for example `auth.example.com` and
 `PUDANS_COOKIE_DOMAIN=.example.com` for both IAM and the gateway so every app subdomain shares the
 same session. The default empty value keeps a host-only cookie for local development.
 
+The auth app supports password, email and SMS verification code, and passkey login at
+`/auth/login`, `/auth/login/otp`, and `/auth/passkey/*`. Password reset uses
+`/auth/password/forgot` and `/auth/password/reset`. Email and SMS delivery requires an enabled
+provider in `pudans-notification`; passkey login requires an active WebAuthn credential and RP
+configuration.
+
 ## SQL
 
 Every changelog is under `sql/<service>/`; each service has `changelog-master.xml`. Kernel DDL

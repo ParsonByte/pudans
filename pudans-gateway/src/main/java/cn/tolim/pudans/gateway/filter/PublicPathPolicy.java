@@ -20,6 +20,10 @@ public final class PublicPathPolicy {
             IAM_PATH_PREFIX + "auth/mfa/webauthn/options";
     public static final String MFA_WEBAUTHN_VERIFY_PATH =
             IAM_PATH_PREFIX + "auth/mfa/webauthn/verify";
+    public static final String OTP_SEND_PATH = IAM_PATH_PREFIX + "auth/login/otp/send";
+    public static final String OTP_LOGIN_PATH = IAM_PATH_PREFIX + "auth/login/otp";
+    public static final String PASSKEY_OPTIONS_PATH = IAM_PATH_PREFIX + "auth/passkey/options";
+    public static final String PASSKEY_VERIFY_PATH = IAM_PATH_PREFIX + "auth/passkey/verify";
     public static final String FORGOT_PASSWORD_PATH = IAM_PATH_PREFIX + "auth/password/forgot";
     public static final String RESET_PASSWORD_PATH = IAM_PATH_PREFIX + "auth/password/reset";
 
@@ -74,6 +78,10 @@ public final class PublicPathPolicy {
         paths.add(MFA_VERIFY_PATH);
         paths.add(MFA_WEBAUTHN_OPTIONS_PATH);
         paths.add(MFA_WEBAUTHN_VERIFY_PATH);
+        paths.add(OTP_SEND_PATH);
+        paths.add(OTP_LOGIN_PATH);
+        paths.add(PASSKEY_OPTIONS_PATH);
+        paths.add(PASSKEY_VERIFY_PATH);
         paths.add(FORGOT_PASSWORD_PATH);
         paths.add(RESET_PASSWORD_PATH);
         paths.add(SESSION_VALIDATE_PATH);

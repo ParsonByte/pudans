@@ -46,6 +46,11 @@ class PublicPathPolicyTests {
         assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.MFA_VERIFY_PATH)).isTrue();
         assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.FORGOT_PASSWORD_PATH)).isTrue();
         assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.RESET_PASSWORD_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.OTP_SEND_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.OTP_LOGIN_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.PASSKEY_OPTIONS_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.POST, PublicPathPolicy.PASSKEY_VERIFY_PATH)).isTrue();
+        assertThat(PublicPathPolicy.isPublic(HttpMethod.GET, PublicPathPolicy.OTP_LOGIN_PATH)).isFalse();
         assertThat(PublicPathPolicy.isPublic(HttpMethod.GET, PublicPathPolicy.CSRF_PATH)).isTrue();
         assertThat(PublicPathPolicy.isPublic(HttpMethod.GET, PublicPathPolicy.CAPTCHA_PATH)).isTrue();
     }

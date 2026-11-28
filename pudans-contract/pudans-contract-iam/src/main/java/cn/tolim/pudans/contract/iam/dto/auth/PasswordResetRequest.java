@@ -20,6 +20,12 @@ public class PasswordResetRequest implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    // Username, email address or phone number
+    private String identifier;
+
+    // Delivery channel: mail or sms
+    private String channel;
+
     // One-time reset token or code
     private String token;
 

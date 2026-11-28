@@ -94,7 +94,19 @@ public class AuthenticationService {
                     ip, userAgent, false, exception.getMessage());
             throw exception;
         }
-        String appCode = normalize(request.getAppCode());
+        return completeLogin(account, request.getAppCode(), request.getTargetUrl(), ip, userAgent);
+    }
+
+    // Completes a first-factor authentication with application access, MFA and session creation
+    // Parameter account: AuthenticatedAccount
+    // Parameter appCodeValue: String
+    // Parameter targetUrl: String
+    // Parameter ip: String
+    // Parameter userAgent: String
+    // Returns: LoginResponse
+    public LoginResponse completeLogin(AuthenticatedAccount account, String appCodeValue,
+                                       String targetUrl, String ip, String userAgent) {
+        String appCode = normalize(appCodeValue);
         String resolvedTarget = null;
         if (appCode != null) {
             AppEntity app = applicationAccessService.requireTicketReadyApp(appCode);
@@ -105,9 +117,9 @@ public class AuthenticationService {
                         "app_access_denied");
                 throw new cn.tolim.pudans.iam.core.auth.exception.AppAccessDeniedException(app.getCode());
             }
-            resolvedTarget = ticketTargetValidator.validate(app, request.getTargetUrl());
+            resolvedTarget = ticketTargetValidator.validate(app, targetUrl);
         }
-        String redirectUrl = resolvedTarget != null ? resolvedTarget : request.getTargetUrl();
+        String redirectUrl = resolvedTarget != null ? resolvedTarget : targetUrl;
         Set<MfaMethod> mfaMethods = availableMfaMethods(account.userId(), account.userType());
         if (!mfaMethods.isEmpty()) {
             MfaChallenge challenge = mfaChallengeService.create(account.userId(), account.userType(),

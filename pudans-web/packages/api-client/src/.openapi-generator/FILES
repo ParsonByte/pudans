@@ -129,6 +129,8 @@ models/effective-policy-view.ts
 models/executor-status-response.ts
 models/file-metadata-response.ts
 models/file-page-response.ts
+models/forgot-password-request.ts
+models/forgot-password-response.ts
 models/geo-location-provider.ts
 models/geo-location.ts
 models/geo-point.ts
@@ -160,6 +162,9 @@ models/mfa-challenge-response.ts
 models/mfa-verify-request.ts
 models/my-application-summary.ts
 models/notification-stats-response.ts
+models/otp-login-request.ts
+models/otp-send-request.ts
+models/otp-send-response.ts
 models/page-dead-letter-response.ts
 models/page-provider-response.ts
 models/page-response-dead-letter-response.ts
@@ -169,6 +174,10 @@ models/page-response-message-response.ts
 models/page-send-notification-response.ts
 models/page-template-response.ts
 models/pageable-object.ts
+models/passkey-login-request.ts
+models/passkey-options-request.ts
+models/password-reset-request.ts
+models/password-reset-response.ts
 models/policy-attachment-request.ts
 models/policy-attachment-view.ts
 models/policy-detail.ts

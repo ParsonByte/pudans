@@ -22,6 +22,10 @@ import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObj
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS, type RequestArgs, BaseAPI, RequiredError, operationServerMap } from '../base';
 // @ts-ignore
+import type { ForgotPasswordRequest } from '../models';
+// @ts-ignore
+import type { ForgotPasswordResponse } from '../models';
+// @ts-ignore
 import type { LoginConfigResponse } from '../models';
 // @ts-ignore
 import type { LoginRequest } from '../models';
@@ -31,11 +35,62 @@ import type { LoginResponse } from '../models';
 import type { LogoutRequest } from '../models';
 // @ts-ignore
 import type { LogoutResponse } from '../models';
+// @ts-ignore
+import type { OtpLoginRequest } from '../models';
+// @ts-ignore
+import type { OtpSendRequest } from '../models';
+// @ts-ignore
+import type { OtpSendResponse } from '../models';
+// @ts-ignore
+import type { PasskeyLoginRequest } from '../models';
+// @ts-ignore
+import type { PasskeyOptionsRequest } from '../models';
+// @ts-ignore
+import type { PasswordResetRequest } from '../models';
+// @ts-ignore
+import type { PasswordResetResponse } from '../models';
+// @ts-ignore
+import type { WebAuthnAuthenticationOptions } from '../models';
 /**
  * IamAuthenticationApi - axios parameter creator
  */
 export const IamAuthenticationApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
+        /**
+         *
+         * @summary 发送密码重置验证码
+         * @param {ForgotPasswordRequest} forgotPasswordRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        forgotPassword: async (forgotPasswordRequest: ForgotPasswordRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'forgotPasswordRequest' is not null or undefined
+            assertParamExists('forgotPassword', 'forgotPasswordRequest', forgotPasswordRequest)
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/password/forgot`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(forgotPasswordRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
         /**
          *
          * @summary 登录
@@ -108,6 +163,76 @@ export const IamAuthenticationApiAxiosParamCreator = function (configuration?: C
         },
         /**
          *
+         * @summary 验证码登录
+         * @param {OtpLoginRequest} otpLoginRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        loginWithOtp: async (otpLoginRequest: OtpLoginRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'otpLoginRequest' is not null or undefined
+            assertParamExists('loginWithOtp', 'otpLoginRequest', otpLoginRequest)
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/login/otp`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(otpLoginRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         *
+         * @summary 通行密钥登录
+         * @param {PasskeyLoginRequest} passkeyLoginRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        loginWithPasskey: async (passkeyLoginRequest: PasskeyLoginRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'passkeyLoginRequest' is not null or undefined
+            assertParamExists('loginWithPasskey', 'passkeyLoginRequest', passkeyLoginRequest)
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/passkey/verify`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(passkeyLoginRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         *
          * @summary 退出登录
          * @param {LogoutRequest} [logoutRequest]
          * @param {*} [options] Override http request option.
@@ -139,6 +264,109 @@ export const IamAuthenticationApiAxiosParamCreator = function (configuration?: C
                 options: localVarRequestOptions,
             };
         },
+        /**
+         *
+         * @summary 获取通行密钥登录选项
+         * @param {PasskeyOptionsRequest} [passkeyOptionsRequest]
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        passkeyLoginOptions: async (passkeyOptionsRequest?: PasskeyOptionsRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/passkey/options`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(passkeyOptionsRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         *
+         * @summary 重置密码
+         * @param {PasswordResetRequest} passwordResetRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        resetPassword: async (passwordResetRequest: PasswordResetRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'passwordResetRequest' is not null or undefined
+            assertParamExists('resetPassword', 'passwordResetRequest', passwordResetRequest)
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/password/reset`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(passwordResetRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         *
+         * @summary 发送登录验证码
+         * @param {OtpSendRequest} otpSendRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        sendLoginOtp: async (otpSendRequest: OtpSendRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'otpSendRequest' is not null or undefined
+            assertParamExists('sendLoginOtp', 'otpSendRequest', otpSendRequest)
+            const localVarPath = `/apis/pudans.tolim.cn/v1alpha1/iam/auth/login/otp/send`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(otpSendRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -148,6 +376,19 @@ export const IamAuthenticationApiAxiosParamCreator = function (configuration?: C
 export const IamAuthenticationApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = IamAuthenticationApiAxiosParamCreator(configuration)
     return {
+        /**
+         *
+         * @summary 发送密码重置验证码
+         * @param {ForgotPasswordRequest} forgotPasswordRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async forgotPassword(forgotPasswordRequest: ForgotPasswordRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ForgotPasswordResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.forgotPassword(forgotPasswordRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.forgotPassword']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
         /**
          *
          * @summary 登录
@@ -176,6 +417,32 @@ export const IamAuthenticationApiFp = function(configuration?: Configuration) {
         },
         /**
          *
+         * @summary 验证码登录
+         * @param {OtpLoginRequest} otpLoginRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async loginWithOtp(otpLoginRequest: OtpLoginRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<LoginResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.loginWithOtp(otpLoginRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.loginWithOtp']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         *
+         * @summary 通行密钥登录
+         * @param {PasskeyLoginRequest} passkeyLoginRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async loginWithPasskey(passkeyLoginRequest: PasskeyLoginRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<LoginResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.loginWithPasskey(passkeyLoginRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.loginWithPasskey']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         *
          * @summary 退出登录
          * @param {LogoutRequest} [logoutRequest]
          * @param {*} [options] Override http request option.
@@ -187,6 +454,45 @@ export const IamAuthenticationApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.logout']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         *
+         * @summary 获取通行密钥登录选项
+         * @param {PasskeyOptionsRequest} [passkeyOptionsRequest]
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async passkeyLoginOptions(passkeyOptionsRequest?: PasskeyOptionsRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<WebAuthnAuthenticationOptions>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.passkeyLoginOptions(passkeyOptionsRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.passkeyLoginOptions']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         *
+         * @summary 重置密码
+         * @param {PasswordResetRequest} passwordResetRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async resetPassword(passwordResetRequest: PasswordResetRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PasswordResetResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.resetPassword(passwordResetRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.resetPassword']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         *
+         * @summary 发送登录验证码
+         * @param {OtpSendRequest} otpSendRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async sendLoginOtp(otpSendRequest: OtpSendRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<OtpSendResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.sendLoginOtp(otpSendRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['IamAuthenticationApi.sendLoginOtp']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -196,6 +502,16 @@ export const IamAuthenticationApiFp = function(configuration?: Configuration) {
 export const IamAuthenticationApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
     const localVarFp = IamAuthenticationApiFp(configuration)
     return {
+        /**
+         *
+         * @summary 发送密码重置验证码
+         * @param {IamAuthenticationApiForgotPasswordRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        forgotPassword(requestParameters: IamAuthenticationApiForgotPasswordRequest, options?: RawAxiosRequestConfig): AxiosPromise<ForgotPasswordResponse> {
+            return localVarFp.forgotPassword(requestParameters.forgotPasswordRequest, options).then((request) => request(axios, basePath));
+        },
         /**
          *
          * @summary 登录
@@ -218,6 +534,26 @@ export const IamAuthenticationApiFactory = function (configuration?: Configurati
         },
         /**
          *
+         * @summary 验证码登录
+         * @param {IamAuthenticationApiLoginWithOtpRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        loginWithOtp(requestParameters: IamAuthenticationApiLoginWithOtpRequest, options?: RawAxiosRequestConfig): AxiosPromise<LoginResponse> {
+            return localVarFp.loginWithOtp(requestParameters.otpLoginRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         *
+         * @summary 通行密钥登录
+         * @param {IamAuthenticationApiLoginWithPasskeyRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        loginWithPasskey(requestParameters: IamAuthenticationApiLoginWithPasskeyRequest, options?: RawAxiosRequestConfig): AxiosPromise<LoginResponse> {
+            return localVarFp.loginWithPasskey(requestParameters.passkeyLoginRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         *
          * @summary 退出登录
          * @param {IamAuthenticationApiLogoutRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -226,8 +562,45 @@ export const IamAuthenticationApiFactory = function (configuration?: Configurati
         logout(requestParameters: IamAuthenticationApiLogoutRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<LogoutResponse> {
             return localVarFp.logout(requestParameters.logoutRequest, options).then((request) => request(axios, basePath));
         },
+        /**
+         *
+         * @summary 获取通行密钥登录选项
+         * @param {IamAuthenticationApiPasskeyLoginOptionsRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        passkeyLoginOptions(requestParameters: IamAuthenticationApiPasskeyLoginOptionsRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<WebAuthnAuthenticationOptions> {
+            return localVarFp.passkeyLoginOptions(requestParameters.passkeyOptionsRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         *
+         * @summary 重置密码
+         * @param {IamAuthenticationApiResetPasswordRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        resetPassword(requestParameters: IamAuthenticationApiResetPasswordRequest, options?: RawAxiosRequestConfig): AxiosPromise<PasswordResetResponse> {
+            return localVarFp.resetPassword(requestParameters.passwordResetRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         *
+         * @summary 发送登录验证码
+         * @param {IamAuthenticationApiSendLoginOtpRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        sendLoginOtp(requestParameters: IamAuthenticationApiSendLoginOtpRequest, options?: RawAxiosRequestConfig): AxiosPromise<OtpSendResponse> {
+            return localVarFp.sendLoginOtp(requestParameters.otpSendRequest, options).then((request) => request(axios, basePath));
+        },
     };
 };
+
+/**
+ * Request parameters for forgotPassword operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiForgotPasswordRequest {
+    readonly forgotPasswordRequest: ForgotPasswordRequest
+}
 
 /**
  * Request parameters for login operation in IamAuthenticationApi.
@@ -244,6 +617,20 @@ export interface IamAuthenticationApiLoginConfig1Request {
 }
 
 /**
+ * Request parameters for loginWithOtp operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiLoginWithOtpRequest {
+    readonly otpLoginRequest: OtpLoginRequest
+}
+
+/**
+ * Request parameters for loginWithPasskey operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiLoginWithPasskeyRequest {
+    readonly passkeyLoginRequest: PasskeyLoginRequest
+}
+
+/**
  * Request parameters for logout operation in IamAuthenticationApi.
  */
 export interface IamAuthenticationApiLogoutRequest {
@@ -251,9 +638,41 @@ export interface IamAuthenticationApiLogoutRequest {
 }
 
 /**
+ * Request parameters for passkeyLoginOptions operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiPasskeyLoginOptionsRequest {
+    readonly passkeyOptionsRequest?: PasskeyOptionsRequest
+}
+
+/**
+ * Request parameters for resetPassword operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiResetPasswordRequest {
+    readonly passwordResetRequest: PasswordResetRequest
+}
+
+/**
+ * Request parameters for sendLoginOtp operation in IamAuthenticationApi.
+ */
+export interface IamAuthenticationApiSendLoginOtpRequest {
+    readonly otpSendRequest: OtpSendRequest
+}
+
+/**
  * IamAuthenticationApi - object-oriented interface
  */
 export class IamAuthenticationApi extends BaseAPI {
+    /**
+     *
+     * @summary 发送密码重置验证码
+     * @param {IamAuthenticationApiForgotPasswordRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public forgotPassword(requestParameters: IamAuthenticationApiForgotPasswordRequest, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).forgotPassword(requestParameters.forgotPasswordRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
     /**
      *
      * @summary 登录
@@ -278,6 +697,28 @@ export class IamAuthenticationApi extends BaseAPI {
 
     /**
      *
+     * @summary 验证码登录
+     * @param {IamAuthenticationApiLoginWithOtpRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public loginWithOtp(requestParameters: IamAuthenticationApiLoginWithOtpRequest, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).loginWithOtp(requestParameters.otpLoginRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
+     * @summary 通行密钥登录
+     * @param {IamAuthenticationApiLoginWithPasskeyRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public loginWithPasskey(requestParameters: IamAuthenticationApiLoginWithPasskeyRequest, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).loginWithPasskey(requestParameters.passkeyLoginRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
      * @summary 退出登录
      * @param {IamAuthenticationApiLogoutRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -285,5 +726,38 @@ export class IamAuthenticationApi extends BaseAPI {
      */
     public logout(requestParameters: IamAuthenticationApiLogoutRequest = {}, options?: RawAxiosRequestConfig) {
         return IamAuthenticationApiFp(this.configuration).logout(requestParameters.logoutRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
+     * @summary 获取通行密钥登录选项
+     * @param {IamAuthenticationApiPasskeyLoginOptionsRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public passkeyLoginOptions(requestParameters: IamAuthenticationApiPasskeyLoginOptionsRequest = {}, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).passkeyLoginOptions(requestParameters.passkeyOptionsRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
+     * @summary 重置密码
+     * @param {IamAuthenticationApiResetPasswordRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public resetPassword(requestParameters: IamAuthenticationApiResetPasswordRequest, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).resetPassword(requestParameters.passwordResetRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     *
+     * @summary 发送登录验证码
+     * @param {IamAuthenticationApiSendLoginOtpRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public sendLoginOtp(requestParameters: IamAuthenticationApiSendLoginOtpRequest, options?: RawAxiosRequestConfig) {
+        return IamAuthenticationApiFp(this.configuration).sendLoginOtp(requestParameters.otpSendRequest, options).then((request) => request(this.axios, this.basePath));
     }
 }
