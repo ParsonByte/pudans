@@ -1,0 +1,18 @@
+[
+  {
+    "resource": "/apis/pudans.tolim.cn/v1alpha1/notification/send",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 20,
+    "strategy": 0,
+    "controlBehavior": 0
+  },
+  {
+    "resource": "/apis/pudans.tolim.cn/v1alpha1/notification/send/batch",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 5,
+    "strategy": 0,
+    "controlBehavior": 0
+  }
+]

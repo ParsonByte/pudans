@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: ${PUDANS_DB_URL:jdbc:postgresql://127.0.0.1:5432/pudans_search}
+    username: ${PUDANS_DB_USER:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:search/changelog-master.xml
+
+pudans:
+  internal:
+    token: ${PUDANS_INTERNAL_TOKEN:pudans-dev-internal-token-please-change}
+  search:
+    auto-create-index: true

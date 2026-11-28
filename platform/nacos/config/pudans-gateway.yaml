@@ -1,0 +1,60 @@
+spring:
+  cloud:
+    sentinel:
+      transport:
+        dashboard: ${PUDANS_SENTINEL_DASHBOARD:127.0.0.1:8858}
+        port: ${PUDANS_SENTINEL_API_PORT:8719}
+      filter:
+        enabled: false
+      scg:
+        enabled: true
+        order: -2147483647
+        fallback:
+          mode: response
+          response-status: 429
+          content-type: application/json;charset=UTF-8
+          response-body: '{"code":"RATE_LIMITED","message":"请求过于频繁","data":null}'
+      datasource:
+        gw-api-group:
+          nacos:
+            server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+            group-id: DEFAULT_GROUP
+            data-id: pudans-gateway-sentinel-gw-api-group.json
+            data-type: json
+            rule-type: gw-api-group
+        gw-flow:
+          nacos:
+            server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+            group-id: DEFAULT_GROUP
+            data-id: pudans-gateway-sentinel-gw-flow.json
+            data-type: json
+            rule-type: gw-flow
+
+pudans:
+  security:
+    jwt:
+      secret: ${PUDANS_JWT_SECRET:pudans-dev-jwt-secret-please-change-0123456789abcdef0123456789abcdef}
+      issuer: pudans-iam
+      audience: pudans-api
+      ttl-seconds: 3600
+  iam:
+    uri: ${PUDANS_IAM_URI:lb://pudans-iam}
+  gateway:
+    internal-token: ${PUDANS_INTERNAL_TOKEN:pudans-dev-internal-token-please-change}
+    frontend:
+      home-uri: ${PUDANS_HOME_URI:http://localhost:3000}
+      login-uri: ${PUDANS_LOGIN_URI:http://localhost:3000}
+    auth:
+      login-page-url: ${PUDANS_LOGIN_PAGE_URL:/login}
+      session-cookie-name: ${PUDANS_SESSION_COOKIE_NAME:PUDANS_SID}
+      session-enabled: ${PUDANS_GATEWAY_SESSION_ENABLED:true}
+      session-validate-url: ${PUDANS_SESSION_VALIDATE_URL:${pudans.iam.uri:lb://pudans-iam}/apis/pudans.tolim.cn/v1alpha1/iam/session/validate}
+      session-cache-ttl-seconds: 10
+      session-timeout-millis: 3000
+      cookie-secure: ${PUDANS_COOKIE_SECURE:false}
+      cookie-same-site: Lax
+      redirect-page-requests: true
+      trust-forwarded-headers: true
+    discovery:
+      refresh-ms: ${PUDANS_GATEWAY_DISCOVERY_REFRESH_MS:15000}
+    apps: {}

@@ -1,0 +1,65 @@
+[
+  {
+    "resource": "pudans-iam-auth-api",
+    "resourceMode": 1,
+    "grade": 1,
+    "count": 10,
+    "intervalSec": 1,
+    "controlBehavior": 0,
+    "burst": 5
+  },
+  {
+    "resource": "pudans-iam-api",
+    "resourceMode": 1,
+    "grade": 1,
+    "count": 50,
+    "intervalSec": 1,
+    "controlBehavior": 0,
+    "burst": 10
+  },
+  {
+    "resource": "pudans-repository-api",
+    "resourceMode": 1,
+    "grade": 1,
+    "count": 20,
+    "intervalSec": 1,
+    "controlBehavior": 0,
+    "burst": 5
+  },
+  {
+    "resource": "pudans-notification-api",
+    "resourceMode": 1,
+    "grade": 1,
+    "count": 30,
+    "intervalSec": 1,
+    "controlBehavior": 0,
+    "burst": 5
+  },
+  {
+    "resource": "pudans-mq-api",
+    "resourceMode": 1,
+    "grade": 1,
+    "count": 50,
+    "intervalSec": 1,
+    "controlBehavior": 0,
+    "burst": 10
+  },
+  {
+    "resource": "pudans-job-api",
+    "resourceMode": 1,
+    "grade": 1,
+    "count": 30,
+    "intervalSec": 1,
+    "controlBehavior": 0,
+    "burst": 5
+  },
+  {
+    "resource": "pudans-search-api",
+    "resourceMode": 1,
+    "grade": 1,
+    "count": 30,
+    "intervalSec": 1,
+    "controlBehavior": 0,
+    "burst": 5
+  }
+]

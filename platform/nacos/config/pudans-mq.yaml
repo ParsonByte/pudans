@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: ${PUDANS_DB_URL:jdbc:postgresql://127.0.0.1:5432/pudans_mq}
+    username: ${PUDANS_DB_USER:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:mq/changelog-master.xml
+
+pudans:
+  internal:
+    token: ${PUDANS_INTERNAL_TOKEN:pudans-dev-internal-token-please-change}
+  messaging:
+    enabled: true
+    broker: ${PUDANS_MESSAGING_BROKER:in-memory}
+    rocketmq:
+      name-server: ${PUDANS_ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+      producer-group: ${PUDANS_ROCKETMQ_PRODUCER_GROUP:pudans-mq-producer}
+      send-timeout-ms: ${PUDANS_ROCKETMQ_SEND_TIMEOUT_MS:3000}
+      consumer-thread-min: 5
+      consumer-thread-max: 20
+      access-key: ${PUDANS_ROCKETMQ_ACCESS_KEY:}
+      secret-key: ${PUDANS_ROCKETMQ_SECRET_KEY:}
+  mq:
+    announcement-topic: ${PUDANS_MQ_ANNOUNCEMENT_TOPIC:pudans-message-announcement}
+    announcement-consumer-group: ${PUDANS_MQ_ANNOUNCEMENT_GROUP:pudans-mq-announcement}
+    scheduler-enabled: true

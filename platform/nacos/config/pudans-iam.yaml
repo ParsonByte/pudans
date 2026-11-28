@@ -1,0 +1,48 @@
+spring:
+  datasource:
+    url: ${PUDANS_DB_URL:jdbc:postgresql://127.0.0.1:5432/pudans_iam}
+    username: ${PUDANS_DB_USER:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+  data:
+    redis:
+      host: ${PUDANS_REDIS_HOST:127.0.0.1}
+      port: ${PUDANS_REDIS_PORT:6379}
+  cache:
+    type: redis
+    redis:
+      key-prefix: pudans
+      use-key-prefix: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+pudans:
+  internal:
+    token: ${PUDANS_INTERNAL_TOKEN:pudans-dev-internal-token-please-change}
+  security:
+    jwt:
+      secret: ${PUDANS_JWT_SECRET:pudans-dev-jwt-secret-please-change-0123456789abcdef0123456789abcdef}
+      issuer: pudans-iam
+      audience: pudans-api
+      ttl-seconds: 3600
+  iam:
+    auth:
+      session:
+        ttl: 8h
+        app-session-ttl: 8h
+        cleanup-enabled: true
+        cleanup-cron: "0 */10 * * * *"
+      mfa:
+        challenge-ttl: 5m
+      ticket:
+        ttl: 60s
+      cookie:
+        name: PUDANS_SID
+        secure: ${PUDANS_COOKIE_SECURE:false}
+        same-site: Lax
+        path: /
+      cors:
+        allowed-origins:
+          - ${PUDANS_HOME_ORIGIN:http://localhost:3000}
+        allow-credentials: true

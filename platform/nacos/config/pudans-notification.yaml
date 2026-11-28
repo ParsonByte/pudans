@@ -1,0 +1,66 @@
+spring:
+  datasource:
+    url: ${PUDANS_DB_URL:jdbc:postgresql://127.0.0.1:5432/pudans_notification}
+    username: ${PUDANS_DB_USER:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:notification/changelog-master.xml
+  mail:
+    host: ${PUDANS_MAIL_HOST:localhost}
+    port: ${PUDANS_MAIL_PORT:25}
+    username: ${PUDANS_MAIL_USERNAME:}
+    password: ${PUDANS_MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    test-connection: false
+    properties:
+      mail.smtp.auth: ${PUDANS_MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${PUDANS_MAIL_STARTTLS_ENABLED:false}
+      mail.smtp.ssl.enable: ${PUDANS_MAIL_SSL_ENABLED:false}
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+  cloud:
+    sentinel:
+      web-context-unify: false
+      transport:
+        dashboard: ${PUDANS_SENTINEL_DASHBOARD:127.0.0.1:8858}
+        port: ${PUDANS_SENTINEL_API_PORT:8720}
+      datasource:
+        flow:
+          nacos:
+            server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+            group-id: DEFAULT_GROUP
+            data-id: pudans-notification-sentinel-flow.json
+            data-type: json
+            rule-type: flow
+        degrade:
+          nacos:
+            server-addr: ${PUDANS_NACOS_ADDR:127.0.0.1:8848}
+            group-id: DEFAULT_GROUP
+            data-id: pudans-notification-sentinel-degrade.json
+            data-type: json
+            rule-type: degrade
+
+pudans:
+  internal:
+    token: ${PUDANS_INTERNAL_TOKEN:pudans-dev-internal-token-please-change}
+  notification:
+    default-max-attempts: ${PUDANS_NOTIFICATION_MAX_ATTEMPTS:3}
+    mail:
+      enabled: ${PUDANS_NOTIFICATION_MAIL_ENABLED:false}
+      from: ${PUDANS_MAIL_FROM:no-reply@pudans.local}
+    sms:
+      enabled: ${PUDANS_NOTIFICATION_SMS_ENABLED:false}
+      default-provider: ${PUDANS_NOTIFICATION_SMS_PROVIDER:}
+    retry:
+      scheduler-enabled: ${PUDANS_NOTIFICATION_RETRY_ENABLED:true}
+      scheduler-fixed-delay-ms: 30000
+      batch-size: 50
+    crypto:
+      key-provider: ${PUDANS_NOTIFICATION_CRYPTO_KEY_PROVIDER:memory}
+      tenant-id: pudans-notification

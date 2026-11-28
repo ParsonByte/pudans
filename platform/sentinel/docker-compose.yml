@@ -1,0 +1,5 @@
+services:
+  dashboard:
+    image: bladex/sentinel-dashboard@sha256:84a8700fc30856cf86f5ddd5874f3ae785b22e7427cc60b3d00a79168452b4e9
+    ports:
+      - "8858:8858"

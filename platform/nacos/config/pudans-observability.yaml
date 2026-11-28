@@ -1,0 +1,59 @@
+spring:
+  reactor:
+    context-propagation: auto
+
+logging:
+  file:
+    name: ${PUDANS_LOG_FILE:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${PUDANS_ENVIRONMENT:local}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests:
+          - 100ms
+          - 300ms
+          - 500ms
+          - 1s
+          - 2s
+          - 5s
+  tracing:
+    sampling:
+      probability: ${PUDANS_TRACING_SAMPLING:0.1}
+    export:
+      otlp:
+        enabled: ${PUDANS_TRACING_EXPORT_ENABLED:true}
+    mdc:
+      trace-id-key: traceId
+      span-id-key: spanId
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${PUDANS_OTLP_TRACING_ENDPOINT:http://127.0.0.1:4318/v1/traces}
+          transport: ${PUDANS_OTLP_TRACING_TRANSPORT:http}
+          timeout: ${PUDANS_OTLP_TRACING_TIMEOUT:5s}
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
+
+pudans:
+  log:
+    structured: ${PUDANS_LOG_STRUCTURED:true}
+    environment: ${PUDANS_ENVIRONMENT:local}
+    request-logging: true
+    slow-request-threshold: 1s

@@ -1,0 +1,103 @@
+spring:
+  datasource:
+    url: ${PUDANS_DB_URL:jdbc:postgresql://127.0.0.1:5432/pudans_repository}
+    username: ${PUDANS_DB_USER:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: pudans-repository
+      maximum-pool-size: ${PUDANS_DB_POOL_MAX:10}
+      minimum-idle: ${PUDANS_DB_POOL_MIN_IDLE:2}
+      connection-timeout: ${PUDANS_DB_CONNECTION_TIMEOUT_MS:30000}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  liquibase:
+    enabled: true
+    change-log: classpath:repository/changelog-master.xml
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: ${PUDANS_REPOSITORY_MAX_FILE_SIZE:100MB}
+      max-request-size: ${PUDANS_REPOSITORY_MAX_REQUEST_SIZE:110MB}
+      file-size-threshold: 1MB
+
+spissatus:
+  keys:
+    provider: ${SPISSATUS_KEY_PROVIDER:memory}
+    file-directory: ${SPISSATUS_KEY_FILE_DIRECTORY:}
+    master-password: ${SPISSATUS_KEY_MASTER_PASSWORD:}
+    keystore-path: ${SPISSATUS_KEYSTORE_PATH:}
+    keystore-password: ${SPISSATUS_KEYSTORE_PASSWORD:}
+
+pudans:
+  internal:
+    token: ${PUDANS_INTERNAL_TOKEN:pudans-dev-internal-token-please-change}
+  repository:
+    enabled: ${PUDANS_REPOSITORY_ENABLED:true}
+    default-provider: ${PUDANS_REPOSITORY_DEFAULT_PROVIDER:local}
+    default-tenant-id: ${PUDANS_REPOSITORY_DEFAULT_TENANT:default}
+    default-created-by: ${PUDANS_REPOSITORY_DEFAULT_CREATED_BY:system}
+    max-file-size: ${PUDANS_REPOSITORY_MAX_FILE_SIZE_BYTES:104857600}
+    presigned-url-ttl: ${PUDANS_REPOSITORY_PRESIGNED_URL_TTL:15m}
+    max-page-size: ${PUDANS_REPOSITORY_MAX_PAGE_SIZE:200}
+    checksum:
+      enabled: ${PUDANS_REPOSITORY_CHECKSUM_ENABLED:true}
+      max-bytes: ${PUDANS_REPOSITORY_CHECKSUM_MAX_BYTES:8388608}
+    crypto:
+      key-id: ${PUDANS_REPOSITORY_CRYPTO_KEY_ID:pudans-repository-secret}
+      tenant-id: ${PUDANS_REPOSITORY_CRYPTO_TENANT:pudans}
+      caller-id: ${PUDANS_REPOSITORY_CRYPTO_CALLER:pudans-repository}
+      caller-environment: ${PUDANS_REPOSITORY_CRYPTO_ENVIRONMENT:default}
+      key-bits: ${PUDANS_REPOSITORY_CRYPTO_KEY_BITS:256}
+    local:
+      enabled: ${PUDANS_REPOSITORY_LOCAL_ENABLED:true}
+      base-directory: ${PUDANS_REPOSITORY_LOCAL_DIR:./data/repository}
+    aliyun-oss:
+      enabled: ${PUDANS_REPOSITORY_ALIYUN_OSS_ENABLED:false}
+      endpoint: ${PUDANS_REPOSITORY_ALIYUN_OSS_ENDPOINT:}
+      bucket: ${PUDANS_REPOSITORY_ALIYUN_OSS_BUCKET:}
+      domain: ${PUDANS_REPOSITORY_ALIYUN_OSS_DOMAIN:}
+      location: ${PUDANS_REPOSITORY_ALIYUN_OSS_LOCATION:pudans}
+      access-key-id: ${PUDANS_REPOSITORY_ALIYUN_OSS_ACCESS_KEY_ID:}
+      access-key-secret: ${PUDANS_REPOSITORY_ALIYUN_OSS_ACCESS_KEY_SECRET:}
+    tencent-cos:
+      enabled: ${PUDANS_REPOSITORY_TENCENT_COS_ENABLED:false}
+      endpoint: ${PUDANS_REPOSITORY_TENCENT_COS_ENDPOINT:}
+      bucket: ${PUDANS_REPOSITORY_TENCENT_COS_BUCKET:}
+      domain: ${PUDANS_REPOSITORY_TENCENT_COS_DOMAIN:}
+      location: ${PUDANS_REPOSITORY_TENCENT_COS_LOCATION:pudans}
+      app-id: ${PUDANS_REPOSITORY_TENCENT_COS_APP_ID:}
+      secret-id: ${PUDANS_REPOSITORY_TENCENT_COS_SECRET_ID:}
+      secret-key: ${PUDANS_REPOSITORY_TENCENT_COS_SECRET_KEY:}
+      region: ${PUDANS_REPOSITORY_TENCENT_COS_REGION:}
+    minio:
+      enabled: ${PUDANS_REPOSITORY_MINIO_ENABLED:false}
+      endpoint: ${PUDANS_REPOSITORY_MINIO_ENDPOINT:}
+      bucket: ${PUDANS_REPOSITORY_MINIO_BUCKET:}
+      domain: ${PUDANS_REPOSITORY_MINIO_DOMAIN:}
+      location: ${PUDANS_REPOSITORY_MINIO_LOCATION:pudans}
+      access-key: ${PUDANS_REPOSITORY_MINIO_ACCESS_KEY:}
+      secret-key: ${PUDANS_REPOSITORY_MINIO_SECRET_KEY:}
+    qiniu:
+      enabled: ${PUDANS_REPOSITORY_QINIU_ENABLED:false}
+      bucket: ${PUDANS_REPOSITORY_QINIU_BUCKET:}
+      domain: ${PUDANS_REPOSITORY_QINIU_DOMAIN:}
+      location: ${PUDANS_REPOSITORY_QINIU_LOCATION:pudans}
+      access-key: ${PUDANS_REPOSITORY_QINIU_ACCESS_KEY:}
+      secret-key: ${PUDANS_REPOSITORY_QINIU_SECRET_KEY:}
+      region: ${PUDANS_REPOSITORY_QINIU_REGION:z0}
+    s3:
+      enabled: ${PUDANS_REPOSITORY_S3_ENABLED:false}
+      endpoint: ${PUDANS_REPOSITORY_S3_ENDPOINT:}
+      bucket: ${PUDANS_REPOSITORY_S3_BUCKET:}
+      domain: ${PUDANS_REPOSITORY_S3_DOMAIN:}
+      location: ${PUDANS_REPOSITORY_S3_LOCATION:pudans}
+      access-key-id: ${PUDANS_REPOSITORY_S3_ACCESS_KEY_ID:}
+      secret-access-key: ${PUDANS_REPOSITORY_S3_SECRET_ACCESS_KEY:}
+      region: ${PUDANS_REPOSITORY_S3_REGION:us-east-1}

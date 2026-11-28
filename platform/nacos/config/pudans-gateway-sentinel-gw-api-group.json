@@ -1,0 +1,65 @@
+[
+  {
+    "apiName": "pudans-iam-api",
+    "predicateItems": [
+      {
+        "pattern": "/apis/pudans.tolim.cn/v1alpha1/iam/",
+        "matchStrategy": 1
+      }
+    ]
+  },
+  {
+    "apiName": "pudans-iam-auth-api",
+    "predicateItems": [
+      {
+        "pattern": "/apis/pudans.tolim.cn/v1alpha1/iam/auth/",
+        "matchStrategy": 1
+      }
+    ]
+  },
+  {
+    "apiName": "pudans-repository-api",
+    "predicateItems": [
+      {
+        "pattern": "/apis/pudans.tolim.cn/v1alpha1/repository/",
+        "matchStrategy": 1
+      }
+    ]
+  },
+  {
+    "apiName": "pudans-notification-api",
+    "predicateItems": [
+      {
+        "pattern": "/apis/pudans.tolim.cn/v1alpha1/notification/",
+        "matchStrategy": 1
+      }
+    ]
+  },
+  {
+    "apiName": "pudans-mq-api",
+    "predicateItems": [
+      {
+        "pattern": "/apis/pudans.tolim.cn/v1alpha1/mq/",
+        "matchStrategy": 1
+      }
+    ]
+  },
+  {
+    "apiName": "pudans-job-api",
+    "predicateItems": [
+      {
+        "pattern": "/apis/pudans.tolim.cn/v1alpha1/job/",
+        "matchStrategy": 1
+      }
+    ]
+  },
+  {
+    "apiName": "pudans-search-api",
+    "predicateItems": [
+      {
+        "pattern": "/apis/pudans.tolim.cn/v1alpha1/search/",
+        "matchStrategy": 1
+      }
+    ]
+  }
+]

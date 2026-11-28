@@ -1,0 +1,20 @@
+[
+  {
+    "resource": "/apis/pudans.tolim.cn/v1alpha1/notification/send",
+    "grade": 0,
+    "count": 2000,
+    "timeWindow": 10,
+    "minRequestAmount": 5,
+    "statIntervalMs": 1000,
+    "slowRatioThreshold": 0.5
+  },
+  {
+    "resource": "/apis/pudans.tolim.cn/v1alpha1/notification/send/batch",
+    "grade": 0,
+    "count": 5000,
+    "timeWindow": 10,
+    "minRequestAmount": 5,
+    "statIntervalMs": 1000,
+    "slowRatioThreshold": 0.5
+  }
+]
