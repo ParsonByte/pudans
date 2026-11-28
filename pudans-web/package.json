@@ -3,13 +3,16 @@
   "private": true,
   "workspaces": [
     "apps/*",
+    "apps/console/*",
     "packages/*"
   ],
   "scripts": {
     "api-client:gen": "npm run gen --workspace @pudans-dev/api-client",
     "build:auth": "npm run build --workspace @pudans-dev/auth",
+    "build:iam-console": "npm run build --workspace @pudans-dev/iam-console",
     "build:portal": "npm run build --workspace @pudans-dev/portal",
     "dev:auth": "npm run dev --workspace @pudans-dev/auth",
+    "dev:iam-console": "npm run dev --workspace @pudans-dev/iam-console",
     "dev:portal": "npm run dev --workspace @pudans-dev/portal"
   },
   "devDependencies": {

@@ -1,0 +1,21 @@
+.iam-console-layout {
+  --iam-console-header-height: 65px;
+  min-height: 100vh;
+  padding-top: var(--iam-console-header-height);
+}
+
+.iam-console-layout__header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1000;
+}
+
+.iam-console-layout__body {
+  transition: margin-left 200ms ease;
+}
+
+.iam-console-layout__content {
+  min-height: calc(100vh - var(--iam-console-header-height));
+}
